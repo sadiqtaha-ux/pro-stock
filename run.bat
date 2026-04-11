@@ -1,7 +1,7 @@
 @echo off
-title StockPro - Serveur de developpement
+title Pro-Stock - Serveur de developpement
 echo ============================================
-echo   StockPro - MediCare Industries
+echo   Pro-Stock - MediCare Industries
 echo   Demarrage du serveur Django...
 echo ============================================
 echo.
