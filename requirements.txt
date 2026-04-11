@@ -1,0 +1,53 @@
+# ============================================================
+# StockPro - MediCare Industries
+# Fichier des dépendances Python
+# ============================================================
+
+# Framework Django
+Django==4.2.21
+
+# Base de données PostgreSQL
+psycopg2-binary==2.9.10
+
+# Gestion des variables d'environnement
+python-decouple==3.8
+
+# Traitement des images
+Pillow==11.2.1
+
+# Formulaires Django améliorés
+django-crispy-forms==2.1
+crispy-bootstrap5==0.7
+
+# Génération de PDF
+reportlab==4.1.0
+
+# Tâches asynchrones
+celery==5.4.0
+redis==5.2.1
+django-celery-beat==2.7.0
+django-celery-results==2.5.1
+
+# API REST (optionnel mais recommandé)
+djangorestframework==3.15.1
+
+# Filtres Django
+django-filter==23.5
+
+# Import/Export Excel
+openpyxl==3.1.2
+django-import-export==3.3.6
+
+# Gestion des permissions
+django-guardian==2.4.0
+
+# Charts & Visualisation
+plotly==5.19.0
+
+# Utilitaires
+python-dateutil==2.9.0
+pytz==2024.1
+whitenoise==6.6.0
+
+# Développement uniquement (commenter en production)
+django-debug-toolbar==4.4.6

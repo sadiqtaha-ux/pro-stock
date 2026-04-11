@@ -1,0 +1,319 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="StockPro — Gestion de stock pharmaceutique — MediCare Industries Meknès">
+    <title>{% block title %}StockPro{% endblock %} | MediCare Industries</title>
+
+    <!-- Bootstrap 5.3 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CSS StockPro -->
+    <link rel="stylesheet" href="{% static 'css/stockpro.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- BARRE DE NAVIGATION LATÉRALE (SIDEBAR) -->
+<!-- ============================================================ -->
+{% if user.is_authenticated %}
+<div class="sidebar" id="sidebar">
+    <!-- Logo -->
+    <div class="sidebar-brand">
+        <div class="brand-icon">
+            <i class="bi bi-capsule-pill"></i>
+        </div>
+        <div class="brand-text">
+            <span class="brand-name">StockPro</span>
+            <span class="brand-subtitle">MediCare Industries</span>
+        </div>
+    </div>
+
+    <!-- Navigation principale -->
+    <nav class="sidebar-nav">
+        <ul class="nav flex-column">
+
+            <li class="nav-section-title">Principal</li>
+
+            <li class="nav-item">
+                <a href="{% url 'dashboard:index' %}" class="nav-link {% block active_dashboard %}{% endblock %}" id="nav-dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Tableau de bord</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Gestion du stock</li>
+
+            <li class="nav-item">
+                <a href="{% url 'produits:produit-liste' %}" class="nav-link {% block active_produits %}{% endblock %}" id="nav-produits">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Produits</span>
+                    {% if nb_alertes_stock > 0 %}
+                    <span class="badge bg-warning ms-auto">{{ nb_alertes_stock }}</span>
+                    {% endif %}
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="{% url 'produits:fournisseur-liste' %}" class="nav-link {% block active_fournisseurs %}{% endblock %}" id="nav-fournisseurs">
+                    <i class="bi bi-truck"></i>
+                    <span>Fournisseurs</span>
+                </a>
+            </li>
+
+            <li class="nav-item nav-collapsible">
+                <a href="#submenu-mouvements" data-bs-toggle="collapse" class="nav-link {% block active_mouvements %}{% endblock %}" id="nav-mouvements">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <span>Mouvements</span>
+                    <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
+                </a>
+                <ul class="collapse submenu {% block show_mouvements %}{% endblock %}" id="submenu-mouvements">
+                    <li><a href="{% url 'mouvements:entree-liste' %}" class="nav-link">
+                        <i class="bi bi-box-arrow-in-right"></i> Entrées
+                    </a></li>
+                    <li><a href="{% url 'mouvements:sortie-liste' %}" class="nav-link">
+                        <i class="bi bi-box-arrow-right"></i> Sorties
+                    </a></li>
+                    <li><a href="{% url 'mouvements:historique' %}" class="nav-link">
+                        <i class="bi bi-clock-history"></i> Historique
+                    </a></li>
+                    <li><a href="{% url 'mouvements:inventaire-liste' %}" class="nav-link">
+                        <i class="bi bi-clipboard-check"></i> Inventaires
+                    </a></li>
+                </ul>
+            </li>
+
+            <li class="nav-section-title">Approvisionnement</li>
+
+            <li class="nav-item nav-collapsible">
+                <a href="#submenu-appro" data-bs-toggle="collapse" class="nav-link {% block active_appro %}{% endblock %}" id="nav-appro">
+                    <i class="bi bi-cart-check"></i>
+                    <span>Approvisionnement</span>
+                    <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
+                </a>
+                <ul class="collapse submenu {% block show_appro %}{% endblock %}" id="submenu-appro">
+                    <li><a href="{% url 'approvisionnement:commande-liste' %}" class="nav-link">
+                        <i class="bi bi-file-earmark-text"></i> Commandes
+                    </a></li>
+                    <li><a href="{% url 'approvisionnement:suggestions-liste' %}" class="nav-link">
+                        <i class="bi bi-lightbulb"></i> Suggestions
+                    </a></li>
+                    <li class="submenu-section">Méthodes</li>
+                    <li><a href="{% url 'approvisionnement:methode-reappro-fixe' %}" class="nav-link">
+                        <i class="bi bi-calendar-check"></i> Réappro Fixe
+                    </a></li>
+                    <li><a href="{% url 'approvisionnement:methode-point-commande' %}" class="nav-link">
+                        <i class="bi bi-graph-down-arrow"></i> Point de commande
+                    </a></li>
+                    <li><a href="{% url 'approvisionnement:methode-recompletement' %}" class="nav-link">
+                        <i class="bi bi-arrow-repeat"></i> Récompletement
+                    </a></li>
+                    <li><a href="{% url 'approvisionnement:mrp-liste' %}" class="nav-link">
+                        <i class="bi bi-diagram-3"></i> MRP
+                    </a></li>
+                </ul>
+            </li>
+
+            <li class="nav-section-title">Magasin</li>
+
+            <li class="nav-item">
+                <a href="{% url 'magasin:plan' %}" class="nav-link {% block active_magasin %}{% endblock %}" id="nav-magasin">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                    <span>Plan 2D</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'magasin:emplacement-liste' %}" class="nav-link" id="nav-emplacements">
+                    <i class="bi bi-map"></i>
+                    <span>Emplacements</span>
+                </a>
+            </li>
+
+            <li class="nav-section-title">Rapports</li>
+
+            <li class="nav-item">
+                <a href="{% url 'dashboard:rapports' %}" class="nav-link" id="nav-rapports">
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+                    <span>Rapports</span>
+                </a>
+            </li>
+
+            {% if peut_administrer %}
+            <li class="nav-section-title">Administration</li>
+            <li class="nav-item">
+                <a href="{% url 'core:utilisateurs-liste' %}" class="nav-link" id="nav-users">
+                    <i class="bi bi-people"></i>
+                    <span>Utilisateurs</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'core:journal' %}" class="nav-link" id="nav-journal">
+                    <i class="bi bi-journal-text"></i>
+                    <span>Journal</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/" class="nav-link" id="nav-admin" target="_blank">
+                    <i class="bi bi-gear"></i>
+                    <span>Admin Django</span>
+                    <i class="bi bi-box-arrow-up-right ms-auto small"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <!-- Info utilisateur bas de sidebar -->
+    <div class="sidebar-footer">
+        <div class="user-info">
+            {% if user.photo %}
+                <img src="{{ user.photo.url }}" alt="{{ user.get_full_name }}" class="user-avatar">
+            {% else %}
+                <div class="user-avatar-placeholder">
+                    {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                </div>
+            {% endif %}
+            <div class="user-details">
+                <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                <span class="user-role">{{ user.get_role_display }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- CONTENU PRINCIPAL -->
+<!-- ============================================================ -->
+<div class="main-content" id="main-content">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <button class="btn btn-icon btn-sidebar-toggle" id="sidebarToggle" title="Réduire/Agrandir le menu">
+                <i class="bi bi-list"></i>
+            </button>
+            <!-- Fil d'Ariane -->
+            <nav aria-label="breadcrumb" class="d-none d-md-flex">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Accueil</a></li>
+                    {% block breadcrumb %}{% endblock %}
+                </ol>
+            </nav>
+        </div>
+        <div class="topbar-right">
+            <!-- Alertes stock -->
+            {% if nb_alertes_stock > 0 %}
+            <a href="{% url 'produits:produit-liste' %}?statut_stock=alerte" class="btn btn-sm btn-warning me-2" title="Alertes stock">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="d-none d-md-inline">{{ nb_alertes_stock }} alerte{{ nb_alertes_stock|pluralize }}</span>
+            </a>
+            {% endif %}
+
+            <!-- Notifications -->
+            <div class="dropdown me-2">
+                <button class="btn btn-icon position-relative" data-bs-toggle="dropdown" id="btn-notifications" aria-expanded="false">
+                    <i class="bi bi-bell"></i>
+                    {% if nb_notifications_non_lues > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ nb_notifications_non_lues }}
+                    </span>
+                    {% endif %}
+                </button>
+                <div class="dropdown-menu dropdown-menu-end notifications-dropdown" id="dropdown-notifications">
+                    <div class="dropdown-header d-flex justify-content-between align-items-center">
+                        <span>Notifications</span>
+                        <a href="{% url 'core:notifications-tout-lire' %}" class="small">Tout lire</a>
+                    </div>
+                    <div class="notifications-list">
+                        {# Chargé en AJAX #}
+                        <p class="text-center text-muted py-3 mb-0 small">Chargement...</p>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'core:notifications' %}" class="dropdown-item text-center small">
+                        Voir toutes les notifications
+                    </a>
+                </div>
+            </div>
+
+            <!-- Profil utilisateur -->
+            <div class="dropdown">
+                <button class="btn btn-icon" data-bs-toggle="dropdown" id="btn-profil">
+                    {% if user.photo %}
+                        <img src="{{ user.photo.url }}" alt="Photo" class="rounded-circle" style="width:28px;height:28px;object-fit:cover;">
+                    {% else %}
+                        <i class="bi bi-person-circle"></i>
+                    {% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><h6 class="dropdown-header">{{ user.get_full_name|default:user.username }}</h6></li>
+                    <li><span class="dropdown-item-text text-muted small">{{ user.get_role_display }}</span></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{% url 'core:profil' %}"><i class="bi bi-person me-2"></i>Mon profil</a></li>
+                    <li><a class="dropdown-item" href="{% url 'core:parametres' %}"><i class="bi bi-gear me-2"></i>Paramètres</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form method="post" action="{% url 'core:logout' %}" class="d-inline w-100">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item text-danger w-100 text-start" id="btn-deconnexion">
+                                <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZONE DES MESSAGES DJANGO -->
+    {% if messages %}
+    <div class="messages-container px-4 pt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+            <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}x-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- CONTENU DE LA PAGE -->
+    <div class="page-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="page-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted small">
+                &copy; {{ COMPANY_INFO.nom }} — Meknès, Maroc
+            </span>
+            <span class="text-muted small">
+                StockPro v1.0 | Django 4.2
+            </span>
+        </div>
+    </footer>
+
+</div><!-- /main-content -->
+{% else %}
+<!-- Page non authentifiée -->
+{% block unauthenticated_content %}{% endblock %}
+{% endif %}
+
+<!-- ============================================================ -->
+<!-- SCRIPTS -->
+<!-- ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/stockpro.js' %}"></script>
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

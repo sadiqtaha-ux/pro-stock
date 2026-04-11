@@ -1,0 +1,55 @@
+# ============================================================
+# .gitignore — StockPro / MediCare Industries
+# Adapté pour Django 4.2 + Python 3.13
+# ============================================================
+
+# --- Environnement Python ---
+venv/
+env/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Django ---
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# --- Fichiers Media & Static générés ---
+/media/
+/staticfiles/
+
+# --- Variables d'environnement (JAMAIS commiter) ---
+.env
+*.env
+!.env.example
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Celery ---
+celerybeat-schedule
+celerybeat.pid
+
+# --- Couverture de tests ---
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+
+# --- Logs ---
+logs/*.log

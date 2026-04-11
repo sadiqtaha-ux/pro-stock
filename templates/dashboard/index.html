@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Tableau de bord{% endblock %}
+{% block active_dashboard %}active{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Tableau de bord principal</li>{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-1 fw-bold">Vue exécutive</h4>
+            <p class="text-muted mb-0 fs-13">Aperçu en temps réel de votre stock pharmaceutique.</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="rafraichirKPIs()">
+                <i class="bi bi-arrow-clockwise me-2"></i>Rafraîchir
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4" id="kpi-refresh-zone">
+    <!-- Valeur du stock -->
+    <div class="col-md-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-primary-soft">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <div>
+                <div class="kpi-value" id="kpi-valeur_stock" data-format-number>{{ kpi_valeur_stock|default:0 }}</div>
+                <div class="kpi-label">Valeur du stock (DH)</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ruptures -->
+    <div class="col-md-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-danger-soft">
+                <i class="bi bi-x-octagon"></i>
+            </div>
+            <div>
+                <div class="kpi-value text-danger" id="kpi-nb_ruptures">{{ kpi_nb_ruptures|default:0 }}</div>
+                <div class="kpi-label">Ruptures de stock</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertes Stock -->
+    <div class="col-md-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-warning-soft">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div>
+                <div class="kpi-value text-warning" id="kpi-nb_alertes">{{ kpi_nb_alertes|default:0 }}</div>
+                <div class="kpi-label">Alertes de stock</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Commandes en attente -->
+    <div class="col-md-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-success-soft">
+                <i class="bi bi-cart"></i>
+            </div>
+            <div>
+                <div class="kpi-value text-success" id="kpi-nb_commandes_attente">{{ kpi_commandes_en_attente|default:0 }}</div>
+                <div class="kpi-label">Commandes en attente</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="panel h-100">
+            <div class="panel-header">
+                <h5 class="panel-title">Évolution des Entrées / Sorties (30j)</h5>
+            </div>
+            <div class="panel-body" style="height: 300px;">
+                <canvas id="chart-mouvements"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="panel h-100">
+            <div class="panel-header">
+                <h5 class="panel-title">Valorisation par Catégorie</h5>
+            </div>
+            <div class="panel-body" style="height: 300px;">
+                <canvas id="chart-valorisation"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Charger stats Mouvements
+    fetch('{% url "dashboard:api-mouvements" %}')
+        .then(res => res.json())
+        .then(data => {
+            const labels = data.entrees.map(d => d.date);
+            const entrees = data.entrees.map(d => d.total);
+            const sorties = data.sorties.map(d => d.total);
+            
+            StockProCharts.creerGraphiqueLigne('chart-mouvements', {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Entrées',
+                        data: entrees,
+                        borderColor: StockProCharts.colors.success,
+                        backgroundColor: 'transparent',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Sorties',
+                        data: sorties,
+                        borderColor: StockProCharts.colors.danger,
+                        backgroundColor: 'transparent',
+                        tension: 0.3
+                    }
+                ]
+            });
+        });
+
+    // Charger statistiques de valorisation
+    fetch('{% url "dashboard:api-valorisation" %}')
+        .then(res => res.json())
+        .then(data => {
+            StockProCharts.creerCamembert('chart-valorisation', data.labels, data.valeurs, data.couleurs);
+        });
+});
+</script>
+{% endblock %}
