@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Nouveau mouvement{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 750px;">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'mouvements:liste' %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h2 class="fw-bold mb-0">Nouveau mouvement</h2>
+      <small class="text-muted">Enregistrer une entrée ou une sortie de stock</small>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Type de mouvement -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Type de mouvement <span class="text-danger">*</span></label>
+          <div class="d-flex gap-3">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="type_mouvement"
+                     id="entree" value="ENTREE"
+                     {% if form.type_mouvement.value == "ENTREE" %}checked{% endif %}>
+              <label class="form-check-label text-success fw-semibold" for="entree">
+                <i class="bi bi-arrow-down-circle me-1"></i> Entrée (réception)
+              </label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="type_mouvement"
+                     id="sortie" value="SORTIE"
+                     {% if form.type_mouvement.value == "SORTIE" %}checked{% endif %}>
+              <label class="form-check-label text-danger fw-semibold" for="sortie">
+                <i class="bi bi-arrow-up-circle me-1"></i> Sortie (consommation)
+              </label>
+            </div>
+          </div>
+          {% if form.type_mouvement.errors %}
+            <div class="text-danger small mt-1">{{ form.type_mouvement.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Matière première -->
+        <div class="mb-3">
+          <label for="{{ form.matiere.id_for_label }}" class="form-label fw-semibold">
+            Matière première <span class="text-danger">*</span>
+          </label>
+          <select name="{{ form.matiere.html_name }}" id="{{ form.matiere.id_for_label }}"
+                  class="form-select {% if form.matiere.errors %}is-invalid{% endif %}">
+            <option value="">-- Sélectionner une matière --</option>
+            {% for val, label in form.matiere.field.choices %}
+              {% if val %}
+                <option value="{{ val }}"
+                  {% if form.matiere.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endif %}
+            {% endfor %}
+          </select>
+          {% if form.matiere.errors %}
+            <div class="invalid-feedback">{{ form.matiere.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="row">
+          <!-- Quantité -->
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.quantite.id_for_label }}" class="form-label fw-semibold">
+              Quantité <span class="text-danger">*</span>
+            </label>
+            <input type="number" name="{{ form.quantite.html_name }}"
+                   id="{{ form.quantite.id_for_label }}"
+                   value="{{ form.quantite.value|default:'' }}"
+                   step="0.001" min="0"
+                   class="form-control {% if form.quantite.errors %}is-invalid{% endif %}"
+                   placeholder="Ex: 500">
+            {% if form.quantite.errors %}
+              <div class="invalid-feedback">{{ form.quantite.errors }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Stock avant -->
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.quantite_avant.id_for_label }}" class="form-label fw-semibold">
+              Stock avant mouvement <span class="text-danger">*</span>
+            </label>
+            <input type="number" name="{{ form.quantite_avant.html_name }}"
+                   id="{{ form.quantite_avant.id_for_label }}"
+                   value="{{ form.quantite_avant.value|default:'' }}"
+                   step="0.001" min="0"
+                   class="form-control {% if form.quantite_avant.errors %}is-invalid{% endif %}"
+                   placeholder="Stock actuel">
+            {% if form.quantite_avant.errors %}
+              <div class="invalid-feedback">{{ form.quantite_avant.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Numéro de lot -->
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.numero_lot.id_for_label }}" class="form-label fw-semibold">
+              Numéro de lot
+            </label>
+            <input type="text" name="{{ form.numero_lot.html_name }}"
+                   id="{{ form.numero_lot.id_for_label }}"
+                   value="{{ form.numero_lot.value|default:'' }}"
+                   class="form-control"
+                   placeholder="Ex: LOT-2026-001">
+          </div>
+
+          <!-- Date péremption -->
+          <div class="col-md-6 mb-3">
+            <label for="{{ form.date_peremption.id_for_label }}" class="form-label fw-semibold">
+              Date de péremption
+            </label>
+            <input type="date" name="{{ form.date_peremption.html_name }}"
+                   id="{{ form.date_peremption.id_for_label }}"
+                   value="{{ form.date_peremption.value|default:'' }}"
+                   class="form-control">
+          </div>
+        </div>
+
+        <!-- Motif -->
+        <div class="mb-3">
+          <label for="{{ form.motif.id_for_label }}" class="form-label fw-semibold">Motif</label>
+          <textarea name="{{ form.motif.html_name }}" id="{{ form.motif.id_for_label }}"
+                    rows="2" class="form-control"
+                    placeholder="Ex: Réception commande #042, Consommation production...">{{ form.motif.value|default:'' }}</textarea>
+        </div>
+
+        <!-- Boutons -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a href="{% url 'mouvements:liste' %}" class="btn btn-outline-secondary">
+            Annuler
+          </a>
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-check-lg me-1"></i> Enregistrer
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
