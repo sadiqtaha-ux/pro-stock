@@ -1,34 +1,24 @@
-"""
-App Produits - URLs
-"""
-
+"""produits/urls.py"""
 from django.urls import path
 from . import views
 
-app_name = 'produits'
+app_name = "produits"
 
 urlpatterns = [
-    # Produits
-    path('', views.ProduitListeView.as_view(), name='produit-liste'),
-    path('nouveau/', views.ProduitCreerView.as_view(), name='produit-creer'),
-    path('<int:pk>/', views.ProduitDetailView.as_view(), name='produit-detail'),
-    path('<int:pk>/modifier/', views.ProduitModifierView.as_view(), name='produit-modifier'),
+    # Matières premières
+    path("",                          views.MatiereListeView.as_view(),   name="matiere-liste"),
+    path("nouvelle/",                 views.MatiereCreerView.as_view(),   name="matiere-create"),
+    path("<int:pk>/",                 views.MatiereDetailView.as_view(),  name="matiere-detail"),
+    path("<int:pk>/modifier/",        views.MatiereModifierView.as_view(),name="matiere-update"),
 
     # Fournisseurs
-    path('fournisseurs/', views.FournisseurListeView.as_view(), name='fournisseur-liste'),
-    path('fournisseurs/nouveau/', views.FournisseurCreerView.as_view(), name='fournisseur-creer'),
-    path('fournisseurs/<int:pk>/', views.FournisseurDetailView.as_view(), name='fournisseur-detail'),
-    path('fournisseurs/<int:pk>/modifier/', views.FournisseurModifierView.as_view(), name='fournisseur-modifier'),
-
-    # Catégories
-    path('categories/', views.CategorieListeView.as_view(), name='categorie-liste'),
+    path("fournisseurs/",             views.FournisseurListeView.as_view(),   name="fournisseur-liste"),
+    path("fournisseurs/nouveau/",     views.FournisseurCreerView.as_view(),   name="fournisseur-create"),
+    path("fournisseurs/<int:pk>/modifier/", views.FournisseurModifierView.as_view(), name="fournisseur-update"),
 
     # Unités de mesure
-    path('unites/', views.UniteMesureListeView.as_view(), name='unite-liste'),
-
-    # Lots
-    path('lots/', views.LotListeView.as_view(), name='lot-liste'),
+    path("unites/",                   views.UniteListeView.as_view(),     name="unite-liste"),
 
     # API
-    path('api/search/', views.produit_search_api, name='api-search'),
+    path("api/search/",               views.matiere_search_api,           name="matiere-search"),
 ]
