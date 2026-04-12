@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}État du stock{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- En-tête -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">État du stock</h2>
+      <small class="text-muted">Mise à jour : {{ date|date:"d/m/Y H:i" }}</small>
+    </div>
+    <a href="{% url 'mouvements:export-csv' %}" class="btn btn-outline-success">
+      <i class="bi bi-download me-1"></i> Exporter CSV
+    </a>
+  </div>
+
+  <!-- Alertes -->
+  {% if alertes %}
+  <div class="alert alert-danger border-0 shadow-sm mb-4">
+    <h6 class="fw-bold mb-2">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      {{ nb_alertes }} alerte{{ nb_alertes|pluralize }} active{{ nb_alertes|pluralize }}
+    </h6>
+    <div class="d-flex flex-wrap gap-2">
+      {% for alerte in alertes %}
+        <span class="badge {% if alerte.niveau == 'rupture' %}bg-danger{% else %}bg-warning text-dark{% endif %} fs-6">
+          {{ alerte.matiere.nom }} — {{ alerte.stock }}
+          {% if alerte.niveau == 'rupture' %}RUPTURE{% else %}CRITIQUE{% endif %}
+        </span>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-success border-0 shadow-sm mb-4">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    Tous les stocks sont au-dessus des seuils minimum.
+  </div>
+  {% endif %}
+
+  <!-- Tableau état du stock -->
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Matière première</th>
+              <th>Référence</th>
+              <th class="text-end">Stock actuel</th>
+              <th class="text-end">Stock min</th>
+              <th class="text-end">Stock max</th>
+              <th style="width: 200px;">Niveau</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in stock_data %}
+            <tr>
+              <td class="fw-semibold">{{ item.matiere.nom }}</td>
+              <td><small class="text-muted">{{ item.matiere.reference }}</small></td>
+              <td class="text-end fw-bold
+                {% if item.statut == 'rupture' %}text-danger
+                {% elif item.statut == 'critique' %}text-warning
+                {% else %}text-success{% endif %}">
+                {{ item.stock_actuel }}
+                {% if item.matiere.unite %}<small class="text-muted">{{ item.matiere.unite }}</small>{% endif %}
+              </td>
+              <td class="text-end text-muted">
+                {% if item.matiere.stock_min %}{{ item.matiere.stock_min }}{% else %}—{% endif %}
+              </td>
+              <td class="text-end text-muted">
+                {% if item.matiere.stock_max %}{{ item.matiere.stock_max }}{% else %}—{% endif %}
+              </td>
+              <td>
+                <div class="progress" style="height: 20px;">
+                  <div class="progress-bar
+                    {% if item.statut == 'rupture' %}bg-danger
+                    {% elif item.statut == 'critique' %}bg-warning
+                    {% elif item.pourcentage > 60 %}bg-success
+                    {% else %}bg-info{% endif %}"
+                    role="progressbar"
+                    style="width: {{ item.pourcentage }}%"
+                    aria-valuenow="{{ item.pourcentage }}"
+                    aria-valuemin="0" aria-valuemax="100">
+                    {{ item.pourcentage }}%
+                  </div>
+                </div>
+              </td>
+              <td>
+                {% if item.statut == 'rupture' %}
+                  <span class="badge bg-danger">
+                    <i class="bi bi-x-circle me-1"></i>Rupture
+                  </span>
+                {% elif item.statut == 'critique' %}
+                  <span class="badge bg-warning text-dark">
+                    <i class="bi bi-exclamation-triangle me-1"></i>Critique
+                  </span>
+                {% else %}
+                  <span class="badge bg-success">
+                    <i class="bi bi-check-circle me-1"></i>Normal
+                  </span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                Aucune matière première trouvée
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
