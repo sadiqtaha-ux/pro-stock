@@ -51,16 +51,30 @@
 
             <li class="nav-section-title">Gestion du stock</li>
 
-            <li class="nav-item">
-                <a href="{% url 'produits:matiere-liste' %}" class="nav-link {% block active_produits %}{% endblock %}" id="nav-produits">
+            <!-- Matières Premières (sous-menu) -->
+            <li class="nav-item nav-collapsible">
+                <a href="#submenu-produits" data-bs-toggle="collapse" class="nav-link {% block active_produits %}{% endblock %}" id="nav-produits">
                     <i class="bi bi-box-seam"></i>
                     <span>Matières Premières</span>
                     {% if nb_alertes_stock > 0 %}
                     <span class="badge bg-warning ms-auto">{{ nb_alertes_stock }}</span>
                     {% endif %}
+                    <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
                 </a>
+                <ul class="collapse submenu {% block show_produits %}{% endblock %}" id="submenu-produits">
+                    <li><a href="{% url 'produits:matiere-liste' %}" class="nav-link">
+                        <i class="bi bi-list-ul"></i> Liste
+                    </a></li>
+                    <li><a href="{% url 'produits:matiere-create' %}" class="nav-link">
+                        <i class="bi bi-plus-circle"></i> Nouvelle matière
+                    </a></li>
+                    <li><a href="{% url 'produits:unite-liste' %}" class="nav-link">
+                        <i class="bi bi-rulers"></i> Unités de mesure
+                    </a></li>
+                </ul>
             </li>
 
+            <!-- Fournisseurs -->
             <li class="nav-item">
                 <a href="{% url 'produits:fournisseur-liste' %}" class="nav-link {% block active_fournisseurs %}{% endblock %}" id="nav-fournisseurs">
                     <i class="bi bi-truck"></i>
@@ -68,6 +82,7 @@
                 </a>
             </li>
 
+            <!-- Mouvements (sous-menu) -->
             <li class="nav-item nav-collapsible">
                 <a href="#submenu-mouvements" data-bs-toggle="collapse" class="nav-link {% block active_mouvements %}{% endblock %}" id="nav-mouvements">
                     <i class="bi bi-arrow-left-right"></i>
@@ -75,6 +90,9 @@
                     <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
                 </a>
                 <ul class="collapse submenu {% block show_mouvements %}{% endblock %}" id="submenu-mouvements">
+                    <li><a href="{% url 'mouvements:etat-stock' %}" class="nav-link">
+                        <i class="bi bi-activity"></i> État du stock
+                    </a></li>
                     <li><a href="{% url 'mouvements:entree-liste' %}" class="nav-link">
                         <i class="bi bi-box-arrow-in-right"></i> Entrées
                     </a></li>
@@ -89,6 +107,7 @@
 
             <li class="nav-section-title">Approvisionnement</li>
 
+            <!-- Approvisionnement (sous-menu) -->
             <li class="nav-item nav-collapsible">
                 <a href="#submenu-appro" data-bs-toggle="collapse" class="nav-link {% block active_appro %}{% endblock %}" id="nav-appro">
                     <i class="bi bi-cart-check"></i>
@@ -96,8 +115,14 @@
                     <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
                 </a>
                 <ul class="collapse submenu {% block show_appro %}{% endblock %}" id="submenu-appro">
+                    <li><a href="{% url 'approvisionnement:dashboard' %}" class="nav-link">
+                        <i class="bi bi-speedometer"></i> Vue d'ensemble
+                    </a></li>
                     <li><a href="{% url 'approvisionnement:commande-liste' %}" class="nav-link">
                         <i class="bi bi-file-earmark-text"></i> Commandes
+                    </a></li>
+                    <li><a href="{% url 'approvisionnement:commande-create' %}" class="nav-link">
+                        <i class="bi bi-plus-circle"></i> Nouvelle commande
                     </a></li>
                     <li class="submenu-section">Méthodes</li>
                     <li><a href="{% url 'approvisionnement:reappro-fixe' %}" class="nav-link">
@@ -112,6 +137,9 @@
                     <li><a href="{% url 'approvisionnement:mrp-liste' %}" class="nav-link">
                         <i class="bi bi-diagram-3"></i> Plan MRP
                     </a></li>
+                    <li><a href="{% url 'approvisionnement:mrp-create' %}" class="nav-link">
+                        <i class="bi bi-plus-circle"></i> Nouveau plan MRP
+                    </a></li>
                 </ul>
             </li>
 
@@ -123,11 +151,25 @@
                     <span>Plan 2D</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="{% url 'magasin:emplacement-liste' %}" class="nav-link" id="nav-emplacements">
+
+            <!-- Organisation magasin (sous-menu) -->
+            <li class="nav-item nav-collapsible">
+                <a href="#submenu-magasin" data-bs-toggle="collapse" class="nav-link" id="nav-magasin-sub">
                     <i class="bi bi-map"></i>
-                    <span>Emplacements</span>
+                    <span>Organisation</span>
+                    <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
                 </a>
+                <ul class="collapse submenu {% block show_magasin %}{% endblock %}" id="submenu-magasin">
+                    <li><a href="{% url 'magasin:emplacement-liste' %}" class="nav-link">
+                        <i class="bi bi-geo-alt"></i> Emplacements
+                    </a></li>
+                    <li><a href="{% url 'magasin:zone-liste' %}" class="nav-link">
+                        <i class="bi bi-bounding-box"></i> Zones
+                    </a></li>
+                    <li><a href="{% url 'magasin:rayon-liste' %}" class="nav-link">
+                        <i class="bi bi-columns-gap"></i> Rayons
+                    </a></li>
+                </ul>
             </li>
 
             <li class="nav-section-title">Rapports</li>
