@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Suggestions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3">Suggestions d'approvisionnement</h1>
+      <p class="text-muted">Commandes générées automatiquement par le système.</p>
+    </div>
+    {% if nb_urgentes > 0 %}
+    <span class="badge bg-danger fs-6">{{ nb_urgentes }} urgente(s)</span>
+    {% endif %}
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-center">
+        <div class="col-auto">
+          <select name="statut" class="form-select form-select-sm">
+            <option value="">Tous les statuts</option>
+            {% for val, label in statuts %}
+            <option value="{{ val }}" {% if request.GET.statut == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <select name="methode" class="form-select form-select-sm">
+            <option value="">Toutes les méthodes</option>
+            {% for val, label in methodes %}
+            <option value="{{ val }}" {% if request.GET.methode == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-sm btn-primary">Filtrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Produit</th>
+            <th>Fournisseur</th>
+            <th>Quantité</th>
+            <th>Méthode</th>
+            <th>Date</th>
+            <th>Urgente</th>
+            <th>Statut</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in suggestions %}
+          <tr class="{% if s.urgente %}table-warning{% endif %}">
+            <td><strong>{{ s.produit }}</strong></td>
+            <td>{{ s.fournisseur|default:"—" }}</td>
+            <td>{{ s.quantite_suggeree }} {{ s.produit.unite_stock }}</td>
+            <td><span class="badge bg-info text-dark">{{ s.methode }}</span></td>
+            <td>{{ s.date_suggestion|date:"d/m/Y" }}</td>
+            <td>
+              {% if s.urgente %}
+                <span class="badge bg-danger">Oui</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.statut == 'NOUVELLE' %}
+                <span class="badge bg-warning">Nouvelle</span>
+              {% elif s.statut == 'TRANSFORMEE' %}
+                <span class="badge bg-success">Transformée</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ s.statut }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.statut == 'NOUVELLE' %}
+              <form method="post" action="{% url 'approvisionnement:suggestion-transformer' s.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-success">Transformer</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">Aucune suggestion</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

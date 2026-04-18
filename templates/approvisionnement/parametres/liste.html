@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Paramètres approvisionnement{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3">Paramètres d'approvisionnement</h1>
+      <p class="text-muted">Configuration EOQ, points de commande et seuils par produit.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Produit</th>
+            <th>Méthode</th>
+            <th>EOQ</th>
+            <th>Point commande</th>
+            <th>Stock sécurité</th>
+            <th>Délai (j)</th>
+            <th>Coût passation</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for param in parametres %}
+          <tr>
+            <td><strong>{{ param.produit.designation }}</strong></td>
+            <td>
+              <span class="badge bg-info text-dark">{{ param.produit.methode_appro }}</span>
+            </td>
+            <td>{{ param.qec_calcule|default:"—" }} {{ param.produit.unite_stock }}</td>
+            <td>{{ param.point_commande_calcule|default:"—" }} {{ param.produit.unite_stock }}</td>
+            <td>{{ param.stock_securite_calcule|default:"—" }} {{ param.produit.unite_stock }}</td>
+            <td>{{ param.delai_fournisseur|default:"—" }} j</td>
+            <td>{{ param.cout_passation|default:"—" }} DH</td>
+            <td>
+              <form method="post"
+                    action="{% url 'approvisionnement:parametres-calculer' param.produit.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-primary">
+                  Recalculer
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">
+              Aucun paramètre configuré.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

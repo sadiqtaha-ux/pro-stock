@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Nouveau plan MRP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3">{% if object %}Modifier plan MRP{% else %}Nouveau plan MRP{% endif %}</h1>
+      <p class="text-muted">Définir la période et les paramètres de planification.</p>
+    </div>
+    <a href="{% url 'approvisionnement:mrp-liste' %}" class="btn btn-outline-secondary">Retour</a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label fw-500">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}
+          <div class="form-text text-muted">{{ field.help_text }}</div>
+          {% endif %}
+          {% if field.errors %}
+          <div class="text-danger small mt-1">{{ field.errors }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-primary">Créer le plan</button>
+          <a href="{% url 'approvisionnement:mrp-liste' %}" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Approvisionnement{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">Tableau de bord — Approvisionnement</h1>
+    <a href="{% url 'approvisionnement:commande-creer' %}" class="btn btn-primary">
+      + Nouvelle commande
+    </a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted">Commandes en cours</h6>
+        <h2>{{ commandes_en_cours }}</h2>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted">Suggestions actives</h6>
+        <h2>{{ suggestions_actives }}</h2>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted">Alertes stock</h6>
+        <h2 class="text-danger">{{ alertes }}</h2>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <h6 class="text-muted">Produits gérés</h6>
+        <h2>{{ total_produits }}</h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Dernières commandes</div>
+    <div class="card-body p-0">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>N°</th><th>Fournisseur</th><th>Date</th><th>Statut</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cmd in dernieres_commandes %}
+          <tr>
+            <td>#{{ cmd.pk }}</td>
+            <td>{{ cmd.fournisseur }}</td>
+            <td>{{ cmd.date_commande|date:"d/m/Y" }}</td>
+            <td><span class="badge bg-warning">{{ cmd.statut }}</span></td>
+            <td>
+              <a href="{% url 'approvisionnement:commande-detail' cmd.pk %}" class="btn btn-sm btn-outline-primary">Voir</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-3">Aucune commande</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
