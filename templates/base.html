@@ -52,9 +52,9 @@
             <li class="nav-section-title">Gestion du stock</li>
 
             <li class="nav-item">
-                <a href="{% url 'produits:produit-liste' %}" class="nav-link {% block active_produits %}{% endblock %}" id="nav-produits">
+                <a href="{% url 'produits:matiere-liste' %}" class="nav-link {% block active_produits %}{% endblock %}" id="nav-produits">
                     <i class="bi bi-box-seam"></i>
-                    <span>Produits</span>
+                    <span>Matières Premières</span>
                     {% if nb_alertes_stock > 0 %}
                     <span class="badge bg-warning ms-auto">{{ nb_alertes_stock }}</span>
                     {% endif %}
@@ -81,11 +81,8 @@
                     <li><a href="{% url 'mouvements:sortie-liste' %}" class="nav-link">
                         <i class="bi bi-box-arrow-right"></i> Sorties
                     </a></li>
-                    <li><a href="{% url 'mouvements:historique' %}" class="nav-link">
+                    <li><a href="{% url 'mouvements:liste' %}" class="nav-link">
                         <i class="bi bi-clock-history"></i> Historique
-                    </a></li>
-                    <li><a href="{% url 'mouvements:inventaire-liste' %}" class="nav-link">
-                        <i class="bi bi-clipboard-check"></i> Inventaires
                     </a></li>
                 </ul>
             </li>
@@ -102,21 +99,18 @@
                     <li><a href="{% url 'approvisionnement:commande-liste' %}" class="nav-link">
                         <i class="bi bi-file-earmark-text"></i> Commandes
                     </a></li>
-                    <li><a href="{% url 'approvisionnement:suggestions-liste' %}" class="nav-link">
-                        <i class="bi bi-lightbulb"></i> Suggestions
-                    </a></li>
                     <li class="submenu-section">Méthodes</li>
-                    <li><a href="{% url 'approvisionnement:methode-reappro-fixe' %}" class="nav-link">
+                    <li><a href="{% url 'approvisionnement:reappro-fixe' %}" class="nav-link">
                         <i class="bi bi-calendar-check"></i> Réappro Fixe
                     </a></li>
-                    <li><a href="{% url 'approvisionnement:methode-point-commande' %}" class="nav-link">
+                    <li><a href="{% url 'approvisionnement:point-commande' %}" class="nav-link">
                         <i class="bi bi-graph-down-arrow"></i> Point de commande
                     </a></li>
-                    <li><a href="{% url 'approvisionnement:methode-recompletement' %}" class="nav-link">
+                    <li><a href="{% url 'approvisionnement:recompletement' %}" class="nav-link">
                         <i class="bi bi-arrow-repeat"></i> Récompletement
                     </a></li>
                     <li><a href="{% url 'approvisionnement:mrp-liste' %}" class="nav-link">
-                        <i class="bi bi-diagram-3"></i> MRP
+                        <i class="bi bi-diagram-3"></i> Plan MRP
                     </a></li>
                 </ul>
             </li>
@@ -210,7 +204,7 @@
         <div class="topbar-right">
             <!-- Alertes stock -->
             {% if nb_alertes_stock > 0 %}
-            <a href="{% url 'produits:produit-liste' %}?statut_stock=alerte" class="btn btn-sm btn-warning me-2" title="Alertes stock">
+            <a href="{% url 'produits:matiere-liste' %}?statut_stock=alerte" class="btn btn-sm btn-warning me-2" title="Alertes stock">
                 <i class="bi bi-exclamation-triangle"></i>
                 <span class="d-none d-md-inline">{{ nb_alertes_stock }} alerte{{ nb_alertes_stock|pluralize }}</span>
             </a>
