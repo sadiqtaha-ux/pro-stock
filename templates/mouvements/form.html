@@ -2,159 +2,257 @@
 {% block title %}Nouveau mouvement{% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width: 750px;">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'mouvements:liste' %}" class="btn btn-outline-secondary me-3">
-      <i class="bi bi-arrow-left"></i>
-    </a>
+.form-page { font-family: 'DM Sans', sans-serif; padding: 2rem; background: #f8f9fb; min-height: 100vh; }
+
+.form-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0e7490 100%);
+  border-radius: 20px; padding: 2rem 2.5rem; margin-bottom: 2rem;
+  position: relative; overflow: hidden;
+}
+.form-hero::before {
+  content: ''; position: absolute; top: -50px; right: -50px;
+  width: 250px; height: 250px;
+  background: radial-gradient(circle, rgba(14,116,144,0.3) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.form-hero h1 {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.9rem;
+  color: #fff; margin: 0 0 0.3rem; position: relative; z-index: 1;
+}
+.form-hero p { color: rgba(255,255,255,0.6); margin: 0; position: relative; z-index: 1; font-size: 0.9rem; }
+.btn-back {
+  background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.2);
+  color: #fff; border-radius: 10px; padding: 0.5rem 1.2rem;
+  font-size: 0.88rem; font-weight: 600; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.2s; position: relative; z-index: 1;
+}
+.btn-back:hover { background: rgba(255,255,255,0.25); color: #fff; }
+
+/* Type selector */
+.type-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+.type-option { position: relative; }
+.type-option input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.type-label {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 1.2rem 1.5rem; border-radius: 14px;
+  border: 2px solid #e2e8f0; background: #fff;
+  cursor: pointer; transition: all 0.2s; user-select: none;
+}
+.type-label:hover { border-color: #94a3b8; transform: translateY(-2px); }
+.type-option input:checked + .type-label.entree {
+  border-color: #16a34a; background: #f0fdf4;
+  box-shadow: 0 4px 20px rgba(22,163,74,0.15);
+}
+.type-option input:checked + .type-label.sortie {
+  border-color: #dc2626; background: #fff5f5;
+  box-shadow: 0 4px 20px rgba(220,38,38,0.15);
+}
+.type-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; flex-shrink: 0;
+}
+.type-icon.green { background: #dcfce7; }
+.type-icon.red { background: #fee2e2; }
+.type-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; color: #0f172a; }
+.type-desc { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
+
+/* Form card */
+.form-card {
+  background: #fff; border-radius: 20px; border: 1px solid #e8ecf0;
+  overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+.form-section {
+  padding: 1.8rem 2rem; border-bottom: 1px solid #f1f5f9;
+}
+.form-section:last-child { border-bottom: none; }
+.section-title {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+  color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
+
+.form-label-custom { font-size: 0.82rem; font-weight: 600; color: #374151; margin-bottom: 6px; display: block; }
+.form-label-custom span.req { color: #ef4444; margin-left: 3px; }
+
+.form-control-custom {
+  width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px;
+  padding: 0.7rem 1rem; font-size: 0.9rem; font-family: 'DM Sans', sans-serif;
+  background: #f8fafc; transition: all 0.2s; outline: none;
+  color: #0f172a;
+}
+.form-control-custom:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,0.1); }
+.form-control-custom.is-invalid { border-color: #ef4444; background: #fff5f5; }
+
+.input-hint { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
+
+/* Submit area */
+.form-footer {
+  padding: 1.5rem 2rem; background: #f8fafc;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.btn-submit {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; color: #fff;
+  padding: 0.8rem 2.5rem; border-radius: 12px; font-family: 'Syne', sans-serif;
+  font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: 0 4px 15px rgba(14,165,233,0.3);
+}
+.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(14,165,233,0.4); }
+.btn-cancel {
+  background: #f1f5f9; color: #64748b; border: none; border-radius: 12px;
+  padding: 0.8rem 1.8rem; font-weight: 600; font-size: 0.9rem;
+  text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-cancel:hover { background: #e2e8f0; color: #475569; }
+
+/* Alert */
+.alert-custom {
+  border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 1.5rem;
+  display: flex; align-items: center; gap: 10px; font-size: 0.88rem; font-weight: 500;
+}
+.alert-success-custom { background: #f0fdf4; color: #15803d; border: 1.5px solid #bbf7d0; }
+.alert-error-custom { background: #fff5f5; color: #dc2626; border: 1.5px solid #fecaca; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.form-hero { animation: fadeUp 0.4s ease; }
+.type-selector { animation: fadeUp 0.4s ease 0.1s both; }
+.form-card { animation: fadeUp 0.4s ease 0.2s both; }
+</style>
+
+<div class="form-page">
+
+  <!-- Hero -->
+  <div class="form-hero d-flex justify-content-between align-items-center">
     <div>
-      <h2 class="fw-bold mb-0">Nouveau mouvement</h2>
-      <small class="text-muted">Enregistrer une entrée ou une sortie de stock</small>
+      <h1>➕ Nouveau mouvement</h1>
+      <p>Enregistrer une entrée ou une sortie de stock</p>
     </div>
+    <a href="{% url 'mouvements:liste' %}" class="btn-back">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
   </div>
 
   {% if messages %}
     {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+      <div class="alert-custom {% if 'success' in message.tags %}alert-success-custom{% else %}alert-error-custom{% endif %}">
+        <i class="bi {% if 'success' in message.tags %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %}"></i>
         {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
     {% endfor %}
   {% endif %}
 
-  <div class="card shadow-sm">
-    <div class="card-body p-4">
-      <form method="post" novalidate>
-        {% csrf_token %}
+  <form method="post" novalidate>
+    {% csrf_token %}
 
-        <!-- Type de mouvement -->
-        <div class="mb-4">
-          <label class="form-label fw-semibold">Type de mouvement <span class="text-danger">*</span></label>
-          <div class="d-flex gap-3">
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" name="type_mouvement"
-                     id="entree" value="ENTREE"
-                     {% if form.type_mouvement.value == "ENTREE" %}checked{% endif %}>
-              <label class="form-check-label text-success fw-semibold" for="entree">
-                <i class="bi bi-arrow-down-circle me-1"></i> Entrée (réception)
-              </label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" name="type_mouvement"
-                     id="sortie" value="SORTIE"
-                     {% if form.type_mouvement.value == "SORTIE" %}checked{% endif %}>
-              <label class="form-check-label text-danger fw-semibold" for="sortie">
-                <i class="bi bi-arrow-up-circle me-1"></i> Sortie (consommation)
-              </label>
-            </div>
+    <!-- Type de mouvement -->
+    <div class="type-selector">
+      <div class="type-option">
+        <input type="radio" name="type_mouvement" id="entree" value="ENTREE"
+               {% if form.type_mouvement.value == "ENTREE" %}checked{% endif %}>
+        <label for="entree" class="type-label entree">
+          <div class="type-icon green">⬇️</div>
+          <div>
+            <div class="type-title">Entrée</div>
+            <div class="type-desc">Réception fournisseur, retour</div>
           </div>
-          {% if form.type_mouvement.errors %}
-            <div class="text-danger small mt-1">{{ form.type_mouvement.errors }}</div>
-          {% endif %}
-        </div>
+        </label>
+      </div>
+      <div class="type-option">
+        <input type="radio" name="type_mouvement" id="sortie" value="SORTIE"
+               {% if form.type_mouvement.value == "SORTIE" %}checked{% endif %}>
+        <label for="sortie" class="type-label sortie">
+          <div class="type-icon red">⬆️</div>
+          <div>
+            <div class="type-title">Sortie</div>
+            <div class="type-desc">Consommation production, perte</div>
+          </div>
+        </label>
+      </div>
+    </div>
 
-        <!-- Matière première -->
-        <div class="mb-3">
-          <label for="{{ form.matiere.id_for_label }}" class="form-label fw-semibold">
-            Matière première <span class="text-danger">*</span>
-          </label>
-          <select name="{{ form.matiere.html_name }}" id="{{ form.matiere.id_for_label }}"
-                  class="form-select {% if form.matiere.errors %}is-invalid{% endif %}">
-            <option value="">-- Sélectionner une matière --</option>
-            {% for val, label in form.matiere.field.choices %}
-              {% if val %}
-                <option value="{{ val }}"
-                  {% if form.matiere.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
-                  {{ label }}
-                </option>
-              {% endif %}
-            {% endfor %}
-          </select>
-          {% if form.matiere.errors %}
-            <div class="invalid-feedback">{{ form.matiere.errors }}</div>
-          {% endif %}
-        </div>
+    <div class="form-card">
 
-        <div class="row">
-          <!-- Quantité -->
-          <div class="col-md-6 mb-3">
-            <label for="{{ form.quantite.id_for_label }}" class="form-label fw-semibold">
-              Quantité <span class="text-danger">*</span>
-            </label>
+      <!-- Matière & Quantité -->
+      <div class="form-section">
+        <div class="section-title">🧪 Matière première & quantités</div>
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label class="form-label-custom">Matière première <span class="req">*</span></label>
+            <select name="{{ form.matiere.html_name }}" class="form-control-custom {% if form.matiere.errors %}is-invalid{% endif %}">
+              <option value="">-- Sélectionner une matière première --</option>
+              {% for val, label in form.matiere.field.choices %}
+                {% if val %}
+                  <option value="{{ val }}" {% if form.matiere.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+            {% if form.matiere.errors %}<div style="color:#ef4444;font-size:0.78rem;margin-top:4px;">{{ form.matiere.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label-custom">Quantité <span class="req">*</span></label>
             <input type="number" name="{{ form.quantite.html_name }}"
-                   id="{{ form.quantite.id_for_label }}"
                    value="{{ form.quantite.value|default:'' }}"
                    step="0.001" min="0"
-                   class="form-control {% if form.quantite.errors %}is-invalid{% endif %}"
+                   class="form-control-custom {% if form.quantite.errors %}is-invalid{% endif %}"
                    placeholder="Ex: 500">
-            {% if form.quantite.errors %}
-              <div class="invalid-feedback">{{ form.quantite.errors }}</div>
-            {% endif %}
+            <div class="input-hint">Quantité du mouvement à enregistrer</div>
           </div>
-
-          <!-- Stock avant -->
-          <div class="col-md-6 mb-3">
-            <label for="{{ form.quantite_avant.id_for_label }}" class="form-label fw-semibold">
-              Stock avant mouvement <span class="text-danger">*</span>
-            </label>
+          <div class="col-md-6">
+            <label class="form-label-custom">Stock avant mouvement <span class="req">*</span></label>
             <input type="number" name="{{ form.quantite_avant.html_name }}"
-                   id="{{ form.quantite_avant.id_for_label }}"
                    value="{{ form.quantite_avant.value|default:'' }}"
                    step="0.001" min="0"
-                   class="form-control {% if form.quantite_avant.errors %}is-invalid{% endif %}"
+                   class="form-control-custom {% if form.quantite_avant.errors %}is-invalid{% endif %}"
                    placeholder="Stock actuel">
-            {% if form.quantite_avant.errors %}
-              <div class="invalid-feedback">{{ form.quantite_avant.errors }}</div>
-            {% endif %}
+            <div class="input-hint">Stock actuel avant ce mouvement</div>
           </div>
         </div>
+      </div>
 
-        <div class="row">
-          <!-- Numéro de lot -->
-          <div class="col-md-6 mb-3">
-            <label for="{{ form.numero_lot.id_for_label }}" class="form-label fw-semibold">
-              Numéro de lot
-            </label>
+      <!-- Traçabilité -->
+      <div class="form-section">
+        <div class="section-title">🏷️ Traçabilité du lot</div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label-custom">Numéro de lot</label>
             <input type="text" name="{{ form.numero_lot.html_name }}"
-                   id="{{ form.numero_lot.id_for_label }}"
                    value="{{ form.numero_lot.value|default:'' }}"
-                   class="form-control"
+                   class="form-control-custom"
                    placeholder="Ex: LOT-2026-001">
           </div>
-
-          <!-- Date péremption -->
-          <div class="col-md-6 mb-3">
-            <label for="{{ form.date_peremption.id_for_label }}" class="form-label fw-semibold">
-              Date de péremption
-            </label>
+          <div class="col-md-6">
+            <label class="form-label-custom">Date de péremption</label>
             <input type="date" name="{{ form.date_peremption.html_name }}"
-                   id="{{ form.date_peremption.id_for_label }}"
                    value="{{ form.date_peremption.value|default:'' }}"
-                   class="form-control">
+                   class="form-control-custom">
           </div>
         </div>
+      </div>
 
-        <!-- Motif -->
-        <div class="mb-3">
-          <label for="{{ form.motif.id_for_label }}" class="form-label fw-semibold">Motif</label>
-          <textarea name="{{ form.motif.html_name }}" id="{{ form.motif.id_for_label }}"
-                    rows="2" class="form-control"
-                    placeholder="Ex: Réception commande #042, Consommation production...">{{ form.motif.value|default:'' }}</textarea>
-        </div>
+      <!-- Motif -->
+      <div class="form-section">
+        <div class="section-title">📝 Motif du mouvement</div>
+        <textarea name="{{ form.motif.html_name }}" rows="3" class="form-control-custom"
+                  placeholder="Ex: Réception commande #042, Consommation production batch #15...">{{ form.motif.value|default:'' }}</textarea>
+      </div>
 
-        <!-- Boutons -->
-        <div class="d-flex justify-content-end gap-2 mt-4">
-          <a href="{% url 'mouvements:liste' %}" class="btn btn-outline-secondary">
-            Annuler
-          </a>
-          <button type="submit" class="btn btn-primary px-4">
-            <i class="bi bi-check-lg me-1"></i> Enregistrer
-          </button>
-        </div>
+      <!-- Footer -->
+      <div class="form-footer">
+        <a href="{% url 'mouvements:liste' %}" class="btn-cancel">
+          <i class="bi bi-x-lg"></i> Annuler
+        </a>
+        <button type="submit" class="btn-submit">
+          <i class="bi bi-check-lg"></i> Enregistrer le mouvement
+        </button>
+      </div>
 
-      </form>
     </div>
-  </div>
+  </form>
 </div>
 {% endblock %}

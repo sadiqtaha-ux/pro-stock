@@ -2,120 +2,336 @@
 {% block title %}État du stock{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
-  <!-- En-tête -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
+.etat-page { font-family: 'DM Sans', sans-serif; padding: 2rem; background: #f8f9fb; min-height: 100vh; }
+
+.etat-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0e7490 100%);
+  border-radius: 20px; padding: 2.5rem; margin-bottom: 2rem;
+  position: relative; overflow: hidden;
+}
+.etat-hero::before {
+  content: ''; position: absolute; top: -60px; right: -60px;
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(14,116,144,0.3) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.etat-hero::after {
+  content: ''; position: absolute; bottom: -40px; left: 20%;
+  width: 350px; height: 180px;
+  background: radial-gradient(ellipse, rgba(56,189,248,0.1) 0%, transparent 70%);
+}
+.etat-hero h1 {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.2rem;
+  color: #fff; margin: 0 0 0.3rem; position: relative; z-index: 1; letter-spacing: -1px;
+}
+.etat-hero p { color: rgba(255,255,255,0.6); margin: 0; position: relative; z-index: 1; font-size: 0.9rem; }
+.btn-csv-hero {
+  background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.3);
+  color: #fff; border-radius: 12px; padding: 0.7rem 1.5rem;
+  font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.9rem;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+  transition: all 0.2s; position: relative; z-index: 1;
+}
+.btn-csv-hero:hover { background: rgba(255,255,255,0.25); color: #fff; }
+
+/* KPI cards */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+.kpi-card {
+  background: #fff; border-radius: 16px; padding: 1.5rem;
+  border: 1px solid #e8ecf0; text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.kpi-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+.kpi-number { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.5rem; line-height: 1; margin-bottom: 0.3rem; }
+.kpi-label { font-size: 0.8rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-card.total .kpi-number { color: #0f172a; }
+.kpi-card.ok .kpi-number { color: #16a34a; }
+.kpi-card.critique .kpi-number { color: #d97706; }
+.kpi-card.rupture .kpi-number { color: #dc2626; }
+
+/* Alert banner */
+.alert-banner {
+  border-radius: 16px; padding: 1.2rem 1.5rem; margin-bottom: 1.5rem;
+  display: flex; align-items: flex-start; gap: 1rem;
+}
+.alert-banner.danger { background: linear-gradient(135deg, #fff5f5, #fef2f2); border: 1.5px solid #fecaca; }
+.alert-banner.success { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1.5px solid #bbf7d0; }
+.alert-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+.alert-icon.danger { background: #fee2e2; }
+.alert-icon.success { background: #dcfce7; }
+.alert-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem; }
+.alert-title.danger { color: #991b1b; }
+.alert-title.success { color: #15803d; }
+.alert-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.badge-alerte {
+  padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.badge-alerte.rupture { background: #fee2e2; color: #dc2626; }
+.badge-alerte.critique { background: #fef3c7; color: #d97706; }
+
+/* Stock cards grid */
+.stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stock-card {
+  background: #fff; border-radius: 16px; padding: 1.5rem;
+  border: 1px solid #e8ecf0; transition: all 0.2s; position: relative; overflow: hidden;
+}
+.stock-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 16px 16px 0 0;
+}
+.stock-card.ok::before { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.stock-card.critique::before { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.stock-card.rupture::before { background: linear-gradient(90deg, #dc2626, #f87171); }
+.stock-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+
+.stock-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+.stock-nom { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; color: #0f172a; }
+.stock-ref { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
+.stock-badge { padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+.stock-badge.ok { background: #dcfce7; color: #15803d; }
+.stock-badge.critique { background: #fef3c7; color: #d97706; }
+.stock-badge.rupture { background: #fee2e2; color: #dc2626; }
+
+.stock-value {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2rem;
+  line-height: 1; margin-bottom: 0.2rem;
+}
+.stock-value.ok { color: #16a34a; }
+.stock-value.critique { color: #d97706; }
+.stock-value.rupture { color: #dc2626; }
+.stock-unite { font-size: 0.8rem; color: #94a3b8; font-weight: 500; }
+
+.progress-custom { height: 8px; border-radius: 10px; background: #f1f5f9; margin: 1rem 0; overflow: hidden; }
+.progress-bar-custom { height: 100%; border-radius: 10px; transition: width 1s ease; }
+.progress-bar-custom.ok { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.progress-bar-custom.critique { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.progress-bar-custom.rupture { background: linear-gradient(90deg, #dc2626, #f87171); }
+
+.stock-minmax { display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; }
+.stock-minmax span { display: flex; align-items: center; gap: 4px; }
+
+/* Table view toggle */
+.view-toggle { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+.btn-view {
+  padding: 0.5rem 1.2rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+  border: 1.5px solid #e2e8f0; background: #fff; color: #64748b;
+  cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-view.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+.btn-view:hover:not(.active) { background: #f8fafc; }
+
+.table-section { display: none; }
+.table-section.visible { display: block; }
+.grid-section { display: block; }
+.grid-section.hidden { display: none; }
+
+.table-card { background: #fff; border-radius: 16px; border: 1px solid #e8ecf0; overflow: hidden; }
+.table-card thead th { background: #f8fafc; color: #64748b; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 1rem 1.2rem; border-bottom: 1.5px solid #e8ecf0; border-top: none; }
+.table-card tbody td { padding: 1rem 1.2rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.88rem; }
+.table-card tbody tr:last-child td { border-bottom: none; }
+.table-card tbody tr:hover { background: #f8fafc; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.etat-hero { animation: fadeUp 0.4s ease; }
+.kpi-row { animation: fadeUp 0.4s ease 0.1s both; }
+.alert-banner { animation: fadeUp 0.4s ease 0.2s both; }
+.stock-grid { animation: fadeUp 0.4s ease 0.3s both; }
+.stock-card { animation: fadeUp 0.5s ease both; }
+</style>
+
+<div class="etat-page">
+
+  <!-- Hero -->
+  <div class="etat-hero d-flex justify-content-between align-items-center">
     <div>
-      <h2 class="fw-bold mb-0">État du stock</h2>
-      <small class="text-muted">Mise à jour : {{ date|date:"d/m/Y H:i" }}</small>
+      <h1>📊 État du stock</h1>
+      <p>Mise à jour en temps réel — {{ date|date:"d/m/Y à H:i" }}</p>
     </div>
-    <a href="{% url 'mouvements:export-csv' %}" class="btn btn-outline-success">
-      <i class="bi bi-download me-1"></i> Exporter CSV
+    <a href="{% url 'mouvements:export-csv' %}" class="btn-csv-hero">
+      <i class="bi bi-download"></i> Exporter CSV
     </a>
   </div>
 
+  <!-- KPIs -->
+  {% with total=stock_data|length ok_count=0 %}
+  <div class="kpi-row">
+    <div class="kpi-card total">
+      <div class="kpi-number">{{ stock_data|length }}</div>
+      <div class="kpi-label">Matières gérées</div>
+    </div>
+    <div class="kpi-card ok">
+      <div class="kpi-number">
+        {% with count=0 %}
+          {% for item in stock_data %}{% if item.statut == "ok" %}{% with count=count|add:1 %}{% endwith %}{% endif %}{% endfor %}
+          {{ stock_data|length|add:"-"|add:nb_alertes }}
+        {% endwith %}
+      </div>
+      <div class="kpi-label">Stock normal</div>
+    </div>
+    <div class="kpi-card critique">
+      <div class="kpi-number">{{ nb_alertes }}</div>
+      <div class="kpi-label">Alertes actives</div>
+    </div>
+    <div class="kpi-card rupture">
+      <div class="kpi-number">
+        {% with count=0 %}{% for item in stock_data %}{% if item.statut == "rupture" %}{{ forloop.counter }}{% endif %}{% endfor %}{% endwith %}
+        0
+      </div>
+      <div class="kpi-label">Ruptures</div>
+    </div>
+  </div>
+  {% endwith %}
+
   <!-- Alertes -->
   {% if alertes %}
-  <div class="alert alert-danger border-0 shadow-sm mb-4">
-    <h6 class="fw-bold mb-2">
-      <i class="bi bi-exclamation-triangle-fill me-2"></i>
-      {{ nb_alertes }} alerte{{ nb_alertes|pluralize }} active{{ nb_alertes|pluralize }}
-    </h6>
-    <div class="d-flex flex-wrap gap-2">
-      {% for alerte in alertes %}
-        <span class="badge {% if alerte.niveau == 'rupture' %}bg-danger{% else %}bg-warning text-dark{% endif %} fs-6">
-          {{ alerte.matiere.nom }} — {{ alerte.stock }}
-          {% if alerte.niveau == 'rupture' %}RUPTURE{% else %}CRITIQUE{% endif %}
-        </span>
-      {% endfor %}
+  <div class="alert-banner danger">
+    <div class="alert-icon danger">⚠️</div>
+    <div>
+      <div class="alert-title danger">{{ nb_alertes }} alerte{{ nb_alertes|pluralize }} — Action requise</div>
+      <div style="font-size:0.85rem;color:#991b1b;">Ces matières premières sont sous le seuil minimum.</div>
+      <div class="alert-badges">
+        {% for alerte in alertes %}
+          <span class="badge-alerte {{ alerte.niveau }}">
+            {% if alerte.niveau == "rupture" %}🔴{% else %}🟡{% endif %}
+            {{ alerte.matiere.nom }} — {{ alerte.stock }}
+          </span>
+        {% endfor %}
+      </div>
     </div>
   </div>
   {% else %}
-  <div class="alert alert-success border-0 shadow-sm mb-4">
-    <i class="bi bi-check-circle-fill me-2"></i>
-    Tous les stocks sont au-dessus des seuils minimum.
+  <div class="alert-banner success">
+    <div class="alert-icon success">✅</div>
+    <div>
+      <div class="alert-title success">Tous les stocks sont normaux</div>
+      <div style="font-size:0.85rem;color:#15803d;">Aucune matière première n'est sous le seuil minimum.</div>
+    </div>
   </div>
   {% endif %}
 
-  <!-- Tableau état du stock -->
-  <div class="card shadow-sm">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-dark">
-            <tr>
-              <th>Matière première</th>
-              <th>Référence</th>
-              <th class="text-end">Stock actuel</th>
-              <th class="text-end">Stock min</th>
-              <th class="text-end">Stock max</th>
-              <th style="width: 200px;">Niveau</th>
-              <th>Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in stock_data %}
-            <tr>
-              <td class="fw-semibold">{{ item.matiere.nom }}</td>
-              <td><small class="text-muted">{{ item.matiere.reference }}</small></td>
-              <td class="text-end fw-bold
-                {% if item.statut == 'rupture' %}text-danger
-                {% elif item.statut == 'critique' %}text-warning
-                {% else %}text-success{% endif %}">
-                {{ item.stock_actuel }}
-                {% if item.matiere.unite %}<small class="text-muted">{{ item.matiere.unite }}</small>{% endif %}
-              </td>
-              <td class="text-end text-muted">
-                {% if item.matiere.stock_min %}{{ item.matiere.stock_min }}{% else %}—{% endif %}
-              </td>
-              <td class="text-end text-muted">
-                {% if item.matiere.stock_max %}{{ item.matiere.stock_max }}{% else %}—{% endif %}
-              </td>
-              <td>
-                <div class="progress" style="height: 20px;">
-                  <div class="progress-bar
-                    {% if item.statut == 'rupture' %}bg-danger
-                    {% elif item.statut == 'critique' %}bg-warning
-                    {% elif item.pourcentage > 60 %}bg-success
-                    {% else %}bg-info{% endif %}"
-                    role="progressbar"
-                    style="width: {{ item.pourcentage }}%"
-                    aria-valuenow="{{ item.pourcentage }}"
-                    aria-valuemin="0" aria-valuemax="100">
-                    {{ item.pourcentage }}%
-                  </div>
-                </div>
-              </td>
-              <td>
-                {% if item.statut == 'rupture' %}
-                  <span class="badge bg-danger">
-                    <i class="bi bi-x-circle me-1"></i>Rupture
-                  </span>
-                {% elif item.statut == 'critique' %}
-                  <span class="badge bg-warning text-dark">
-                    <i class="bi bi-exclamation-triangle me-1"></i>Critique
-                  </span>
-                {% else %}
-                  <span class="badge bg-success">
-                    <i class="bi bi-check-circle me-1"></i>Normal
-                  </span>
-                {% endif %}
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="7" class="text-center py-5 text-muted">
-                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                Aucune matière première trouvée
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+  <!-- Toggle vue -->
+  <div class="view-toggle">
+    <button class="btn-view active" id="btn-grid" onclick="toggleView('grid')">
+      <i class="bi bi-grid-3x3-gap"></i> Cartes
+    </button>
+    <button class="btn-view" id="btn-table" onclick="toggleView('table')">
+      <i class="bi bi-table"></i> Tableau
+    </button>
+  </div>
+
+  <!-- Vue Cartes -->
+  <div class="grid-section" id="grid-view">
+    <div class="stock-grid">
+      {% for item in stock_data %}
+      <div class="stock-card {{ item.statut }}">
+        <div class="stock-card-header">
+          <div>
+            <div class="stock-nom">{{ item.matiere.nom }}</div>
+            <div class="stock-ref">{{ item.matiere.reference }}</div>
+          </div>
+          <span class="stock-badge {{ item.statut }}">
+            {% if item.statut == "ok" %}✓ Normal
+            {% elif item.statut == "critique" %}⚠ Critique
+            {% else %}✗ Rupture{% endif %}
+          </span>
+        </div>
+        <div class="stock-value {{ item.statut }}">
+          {{ item.stock_actuel }}
+          <span class="stock-unite">{% if item.matiere.unite %}{{ item.matiere.unite }}{% endif %}</span>
+        </div>
+        <div class="progress-custom">
+          <div class="progress-bar-custom {{ item.statut }}" style="width: {{ item.pourcentage }}%"></div>
+        </div>
+        <div class="stock-minmax">
+          <span><i class="bi bi-arrow-down text-danger"></i> Min : {% if item.matiere.stock_min %}{{ item.matiere.stock_min }}{% else %}—{% endif %}</span>
+          <span style="color:#0ea5e9;font-weight:700;">{{ item.pourcentage }}%</span>
+          <span><i class="bi bi-arrow-up text-success"></i> Max : {% if item.matiere.stock_max %}{{ item.matiere.stock_max }}{% else %}—{% endif %}</span>
+        </div>
       </div>
+      {% empty %}
+      <div style="grid-column: 1/-1; text-align:center; padding:4rem; color:#94a3b8;">
+        <div style="font-size:3rem;margin-bottom:1rem;">📭</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:#1e293b;">Aucune matière première</div>
+        <div style="font-size:0.9rem;margin-top:0.5rem;">Ajoutez des matières premières pour voir l'état du stock.</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Vue Tableau -->
+  <div class="table-section" id="table-view">
+    <div class="table-card">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Matière première</th>
+            <th class="text-end">Stock actuel</th>
+            <th class="text-end">Stock min</th>
+            <th class="text-end">Stock max</th>
+            <th>Niveau</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in stock_data %}
+          <tr>
+            <td>
+              <div style="font-weight:600;color:#0f172a;">{{ item.matiere.nom }}</div>
+              <div style="font-size:0.75rem;color:#94a3b8;">{{ item.matiere.reference }}</div>
+            </td>
+            <td class="text-end">
+              <span style="font-weight:700;font-size:1rem;
+                {% if item.statut == 'ok' %}color:#16a34a{% elif item.statut == 'critique' %}color:#d97706{% else %}color:#dc2626{% endif %}">
+                {{ item.stock_actuel }}
+              </span>
+              <small style="color:#94a3b8;margin-left:4px;">{% if item.matiere.unite %}{{ item.matiere.unite }}{% endif %}</small>
+            </td>
+            <td class="text-end" style="color:#94a3b8;">{% if item.matiere.stock_min %}{{ item.matiere.stock_min }}{% else %}—{% endif %}</td>
+            <td class="text-end" style="color:#94a3b8;">{% if item.matiere.stock_max %}{{ item.matiere.stock_max }}{% else %}—{% endif %}</td>
+            <td style="min-width:160px;">
+              <div style="background:#f1f5f9;border-radius:10px;height:8px;overflow:hidden;">
+                <div style="height:100%;border-radius:10px;width:{{ item.pourcentage }}%;
+                  {% if item.statut == 'ok' %}background:linear-gradient(90deg,#16a34a,#4ade80){% elif item.statut == 'critique' %}background:linear-gradient(90deg,#d97706,#fbbf24){% else %}background:linear-gradient(90deg,#dc2626,#f87171){% endif %}">
+                </div>
+              </div>
+              <div style="font-size:0.72rem;color:#94a3b8;margin-top:3px;">{{ item.pourcentage }}%</div>
+            </td>
+            <td>
+              <span class="stock-badge {{ item.statut }}">
+                {% if item.statut == "ok" %}✓ Normal{% elif item.statut == "critique" %}⚠ Critique{% else %}✗ Rupture{% endif %}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align:center;padding:3rem;color:#94a3b8;">Aucune matière première trouvée</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 
 </div>
+
+<script>
+function toggleView(view) {
+  if (view === 'grid') {
+    document.getElementById('grid-view').classList.remove('hidden');
+    document.getElementById('grid-view').classList.add('visible');
+    document.getElementById('table-view').classList.remove('visible');
+    document.getElementById('table-view').classList.add('hidden');
+    document.getElementById('btn-grid').classList.add('active');
+    document.getElementById('btn-table').classList.remove('active');
+  } else {
+    document.getElementById('table-view').classList.remove('hidden');
+    document.getElementById('table-view').classList.add('visible');
+    document.getElementById('grid-view').classList.remove('visible');
+    document.getElementById('grid-view').classList.add('hidden');
+    document.getElementById('btn-table').classList.add('active');
+    document.getElementById('btn-grid').classList.remove('active');
+  }
+}
+</script>
 {% endblock %}
