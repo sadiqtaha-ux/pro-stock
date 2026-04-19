@@ -1,13 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}Réappro Fixe{% endblock %}
-
 {% block content %}
-<div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h1 class="h3">Méthode 1 — Réapprovisionnement Fixe</h1>
-      <p class="text-muted">Date fixe, quantité variable. Commande à intervalle régulier.</p>
-    </div>
+<div class="container-fluid px-4 py-3">
+  <div class="mb-4">
+    <h1 class="h3">Méthode 2 — Réapprovisionnement Périodique</h1>
+    <p class="text-muted">Date fixe, quantité variable. Commande à intervalle régulier.</p>
   </div>
 
   <div class="row g-3 mb-4">
@@ -40,8 +37,8 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-header">Produits gérés par cette méthode</div>
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-semibold">Produits gérés par cette méthode</div>
     <div class="card-body p-0">
       <table class="table mb-0">
         <thead class="table-light">
@@ -51,22 +48,24 @@
             <th>Stock max</th>
             <th>Période T*</th>
             <th>EOQ</th>
-            <th>Prochaine commande</th>
+            <th>Stock sécurité</th>
+            <th>Délai (j)</th>
             <th>Statut</th>
           </tr>
         </thead>
         <tbody>
-          {% for item in produits %}
-          <tr>
-            <td><strong>{{ item.produit }}</strong></td>
-            <td>{{ item.stock_actuel }} {{ item.unite }}</td>
-            <td>{{ item.stock_max }} {{ item.unite }}</td>
-            <td>{{ item.periode }} jours</td>
-            <td>{{ item.eoq }} {{ item.unite }}</td>
-            <td>{{ item.prochaine_commande|date:"d/m/Y"|default:"—" }}</td>
+          {% for m in matieres %}
+          <tr class="{% if m.stock_actuel <= m.stock_minimum %}table-warning{% endif %}">
+            <td><strong>{{ m.nom }}</strong><br><small class="text-muted">{{ m.reference }}</small></td>
+            <td>{{ m.stock_actuel }} {{ m.unite.symbole }}</td>
+            <td>{{ m.stock_maximum }} {{ m.unite.symbole }}</td>
+            <td>{{ m.periode_reappro_jours }} jours</td>
+            <td>{{ m.qec }} {{ m.unite.symbole }}</td>
+            <td>{{ m.stock_securite }} {{ m.unite.symbole }}</td>
+            <td>{{ m.delai_livraison_jours }} j</td>
             <td>
-              {% if item.alerte %}
-                <span class="badge bg-danger">Commande requise</span>
+              {% if m.stock_actuel <= m.stock_minimum %}
+                <span class="badge bg-warning text-dark">Révision requise</span>
               {% else %}
                 <span class="badge bg-success">OK</span>
               {% endif %}
@@ -74,7 +73,8 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">
+            <td colspan="8" class="text-center text-muted py-4">
+              <i class="bi bi-inbox fs-4 d-block mb-2"></i>
               Aucun produit configuré pour cette méthode
             </td>
           </tr>

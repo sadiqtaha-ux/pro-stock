@@ -1,68 +1,127 @@
 {% extends 'base.html' %}
 {% block title %}Approvisionnement{% endblock %}
-
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid px-4 py-3">
+
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3">Tableau de bord — Approvisionnement</h1>
-    <a href="{% url 'approvisionnement:commande-creer' %}" class="btn btn-primary">
-      + Nouvelle commande
+    <h1 class="h3 mb-0">Tableau de bord — Approvisionnement</h1>
+    <a href="{% url 'approvisionnement:commande-create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Nouvelle commande
     </a>
   </div>
 
+  <!-- KPI Cards -->
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="card text-center p-3">
+      <div class="card text-center p-3 border-0 shadow-sm">
+        <div class="text-primary mb-2"><i class="bi bi-cart-check fs-3"></i></div>
         <h6 class="text-muted">Commandes en cours</h6>
-        <h2>{{ commandes_en_cours }}</h2>
+        <h2 class="fw-bold">{{ commandes_en_cours }}</h2>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card text-center p-3">
+      <div class="card text-center p-3 border-0 shadow-sm">
+        <div class="text-success mb-2"><i class="bi bi-lightbulb fs-3"></i></div>
         <h6 class="text-muted">Suggestions actives</h6>
-        <h2>{{ suggestions_actives }}</h2>
+        <h2 class="fw-bold">{{ suggestions_actives }}</h2>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card text-center p-3">
+      <div class="card text-center p-3 border-0 shadow-sm">
+        <div class="text-danger mb-2"><i class="bi bi-exclamation-triangle fs-3"></i></div>
         <h6 class="text-muted">Alertes stock</h6>
-        <h2 class="text-danger">{{ alertes }}</h2>
+        <h2 class="fw-bold text-danger">{{ alertes }}</h2>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card text-center p-3">
+      <div class="card text-center p-3 border-0 shadow-sm">
+        <div class="text-info mb-2"><i class="bi bi-box-seam fs-3"></i></div>
         <h6 class="text-muted">Produits gérés</h6>
-        <h2>{{ total_produits }}</h2>
+        <h2 class="fw-bold">{{ total_produits }}</h2>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-header">Dernières commandes</div>
+  <!-- Méthodes rapides -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <a href="{% url 'approvisionnement:point-commande' %}" class="card p-3 border-0 shadow-sm text-decoration-none text-dark d-block">
+        <i class="bi bi-graph-down-arrow text-warning me-2"></i> Point de commande
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="{% url 'approvisionnement:reappro-fixe' %}" class="card p-3 border-0 shadow-sm text-decoration-none text-dark d-block">
+        <i class="bi bi-calendar-check text-success me-2"></i> Réappro fixe
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="{% url 'approvisionnement:recompletement' %}" class="card p-3 border-0 shadow-sm text-decoration-none text-dark d-block">
+        <i class="bi bi-arrow-repeat text-info me-2"></i> Recomplètement
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="{% url 'approvisionnement:mrp-liste' %}" class="card p-3 border-0 shadow-sm text-decoration-none text-dark d-block">
+        <i class="bi bi-diagram-3 text-primary me-2"></i> Plan MRP
+      </a>
+    </div>
+  </div>
+
+  <!-- Dernières commandes -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Dernières commandes</span>
+      <a href="{% url 'approvisionnement:commande-liste' %}" class="btn btn-sm btn-outline-secondary">Voir tout</a>
+    </div>
     <div class="card-body p-0">
       <table class="table mb-0">
         <thead class="table-light">
           <tr>
-            <th>N°</th><th>Fournisseur</th><th>Date</th><th>Statut</th><th>Actions</th>
+            <th>Réf.</th>
+            <th>Matière</th>
+            <th>Fournisseur</th>
+            <th>Date</th>
+            <th>Statut</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for cmd in dernieres_commandes %}
           <tr>
-            <td>#{{ cmd.pk }}</td>
-            <td>{{ cmd.fournisseur }}</td>
-            <td>{{ cmd.date_commande|date:"d/m/Y" }}</td>
-            <td><span class="badge bg-warning">{{ cmd.statut }}</span></td>
+            <td><span class="text-muted small">{{ cmd.reference|default:"—" }}</span></td>
+            <td>{{ cmd.matiere.nom }}</td>
+            <td>{{ cmd.fournisseur.nom }}</td>
+            <td>{{ cmd.date_creation|date:"d/m/Y" }}</td>
             <td>
-              <a href="{% url 'approvisionnement:commande-detail' cmd.pk %}" class="btn btn-sm btn-outline-primary">Voir</a>
+              {% if cmd.statut == "BROUILLON" %}
+                <span class="badge bg-secondary">Brouillon</span>
+              {% elif cmd.statut == "ENVOYE" %}
+                <span class="badge bg-primary">Envoyé</span>
+              {% elif cmd.statut == "CONFIRME" %}
+                <span class="badge bg-info">Confirmé</span>
+              {% elif cmd.statut == "RECU" %}
+                <span class="badge bg-success">Reçu</span>
+              {% else %}
+                <span class="badge bg-danger">Annulé</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'approvisionnement:commande-detail' cmd.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye"></i>
+              </a>
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="5" class="text-center text-muted py-3">Aucune commande</td></tr>
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+              Aucune commande pour l'instant
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
+
 </div>
 {% endblock %}

@@ -6,37 +6,30 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F
 
 from .models import BonCommande, PlanMRP
 from produits.models import MatierePremiere
 
-
-# ============================================================
-# TABLEAU DE BORD APPROVISIONNEMENT
-# ============================================================
 
 class ApproDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "approvisionnement/dashboard.html"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["nb_commandes_en_attente"] = BonCommande.objects.filter(
-            statut=BonCommande.Statut.BROUILLON
+        ctx["commandes_en_cours"] = BonCommande.objects.filter(
+            statut__in=[BonCommande.Statut.BROUILLON, BonCommande.Statut.ENVOYE]
         ).count()
-        ctx["nb_matieres_en_alerte"] = MatierePremiere.objects.filter(
-            actif=True, stock_actuel__lte=MatierePremiere.stock_minimum.field.default
+        ctx["suggestions_actives"] = 0
+        ctx["alertes"] = MatierePremiere.objects.filter(
+            actif=True, stock_actuel__lte=F("stock_minimum")
         ).count()
-        ctx["commandes"] = BonCommande.objects.select_related(
+        ctx["total_produits"] = MatierePremiere.objects.filter(actif=True).count()
+        ctx["dernieres_commandes"] = BonCommande.objects.select_related(
             "matiere", "fournisseur"
         ).order_by("-date_creation")[:8]
-        ctx["suggestions"] = []   # alimenté par les services de calcul
         return ctx
 
-
-# ============================================================
-# BONS DE COMMANDE
-# ============================================================
 
 class BonCommandeListeView(LoginRequiredMixin, ListView):
     model               = BonCommande
@@ -108,10 +101,6 @@ class BonCommandeModifierView(LoginRequiredMixin, UpdateView):
         return reverse_lazy("approvisionnement:commande-detail", kwargs={"pk": self.object.pk})
 
 
-# ============================================================
-# PLANS MRP
-# ============================================================
-
 class PlanMRPListeView(LoginRequiredMixin, ListView):
     model               = PlanMRP
     template_name       = "approvisionnement/mrp/liste.html"
@@ -136,10 +125,6 @@ class PlanMRPCreerView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-# ============================================================
-# MÉTHODES — pages de calcul
-# ============================================================
-
 class ReapproFixeView(LoginRequiredMixin, TemplateView):
     template_name = "approvisionnement/methodes/reappro_fixe.html"
 
@@ -156,7 +141,6 @@ class PointCommandeView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        from django.db.models import F
         ctx["matieres_en_alerte"] = MatierePremiere.objects.filter(
             methode_approvisionnement="POINT_COMMANDE",
             actif=True,
@@ -176,4 +160,19 @@ class RecompletementView(LoginRequiredMixin, TemplateView):
         ctx["matieres"] = MatierePremiere.objects.filter(
             methode_approvisionnement="RECOMPLETEMENT", actif=True
         ).select_related("unite", "fournisseur_principal")
+        return ctx
+class SuggestionListeView(LoginRequiredMixin, TemplateView):
+    template_name = "approvisionnement/suggestions/liste.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["suggestions"] = []
+        ctx["nb_urgentes"] = 0
+        ctx["statuts"] = [("NOUVELLE", "Nouvelle"), ("TRANSFORMEE", "Transformée")]
+        ctx["methodes"] = [
+            ("POINT_COMMANDE", "Point de commande"),
+            ("REAPPRO_FIXE", "Réappro fixe"),
+            ("RECOMPLETEMENT", "Recomplètement"),
+            ("MRP", "MRP"),
+        ]
         return ctx
