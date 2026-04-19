@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Commande #{{ object.pk }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">Commande #{{ object.pk }}</h1>
+    <div>
+      {% if object.statut == 'BROUILLON' %}
+      <a href="{% url 'approvisionnement:commande-valider' object.pk %}" 
+         class="btn btn-success">Valider la commande</a>
+      <a href="{% url 'approvisionnement:commande-modifier' object.pk %}" 
+         class="btn btn-outline-secondary">Modifier</a>
+      {% endif %}
+      <a href="{% url 'approvisionnement:commande-liste' %}" 
+         class="btn btn-outline-primary">Retour</a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Informations générales</div>
+        <div class="card-body">
+          <table class="table table-borderless mb-0">
+            <tr><td class="text-muted">Fournisseur</td><td><strong>{{ object.fournisseur }}</strong></td></tr>
+            <tr><td class="text-muted">Date commande</td><td>{{ object.date_commande|date:"d/m/Y" }}</td></tr>
+            <tr><td class="text-muted">Livraison prévue</td><td>{{ object.date_livraison_prevue|date:"d/m/Y"|default:"—" }}</td></tr>
+            <tr><td class="text-muted">Statut</td><td>
+              {% if object.statut == 'BROUILLON' %}
+                <span class="badge bg-secondary">Brouillon</span>
+              {% elif object.statut == 'VALIDEE' %}
+                <span class="badge bg-success">Validée</span>
+              {% elif object.statut == 'LIVREE' %}
+                <span class="badge bg-primary">Livrée</span>
+              {% else %}
+                <span class="badge bg-warning">{{ object.statut }}</span>
+              {% endif %}
+            </td></tr>
+            <tr><td class="text-muted">Méthode</td><td>{{ object.methode_declenchement|default:"—" }}</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Lignes de commande</div>
+        <div class="card-body p-0">
+          <table class="table mb-0">
+            <thead class="table-light">
+              <tr><th>Produit</th><th>Quantité</th><th>Prix unitaire</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+              {% for ligne in object.lignes.all %}
+              <tr>
+                <td>{{ ligne.produit }}</td>
+                <td>{{ ligne.quantite }} {{ ligne.unite }}</td>
+                <td>{{ ligne.prix_unitaire|default:"—" }} DH</td>
+                <td>{{ ligne.montant_total|default:"—" }} DH</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">Aucune ligne</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

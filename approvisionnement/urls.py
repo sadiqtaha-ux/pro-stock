@@ -22,4 +22,5 @@ urlpatterns = [
     path("methodes/reappro-fixe/",    views.ReapproFixeView.as_view(),       name="reappro-fixe"),
     path("methodes/point-commande/",  views.PointCommandeView.as_view(),     name="point-commande"),
     path("methodes/recompletement/",  views.RecompletementView.as_view(),    name="recompletement"),
+path("suggestions/", views.SuggestionListeView.as_view(), name="suggestion-liste"),
 ]

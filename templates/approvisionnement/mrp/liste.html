@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Plans MRP{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-0">Méthode MRP — Planification des besoins</h1>
+      <p class="text-muted mb-0">Planification des commandes sur la base des besoins de production.</p>
+    </div>
+    <a href="{% url 'approvisionnement:mrp-create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Nouveau plan MRP
+    </a>
+  </div>
+
+  <!-- Formules MRP -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-primary">
+        <div class="card-body text-center">
+          <h6 class="text-muted">Besoin net</h6>
+          <p class="fw-bold font-monospace">BN = BB − Stock − Réceptions</p>
+          <small class="text-muted">BB = besoin brut de production</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-success">
+        <div class="card-body text-center">
+          <h6 class="text-muted">Ordre proposé</h6>
+          <p class="fw-bold font-monospace">OP = max(BN, EOQ)</p>
+          <small class="text-muted">Arrondi au lot fournisseur</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-warning">
+        <div class="card-body text-center">
+          <h6 class="text-muted">Stock fin période</h6>
+          <p class="fw-bold font-monospace">SF = Stock + OP − BB</p>
+          <small class="text-muted">Projection fin de période</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des plans -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-semibold">Plans MRP enregistrés</div>
+    <div class="card-body p-0">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Matière</th>
+            <th>Période</th>
+            <th>Besoin brut</th>
+            <th>Besoin net</th>
+            <th>Qté proposée</th>
+            <th>Stock fin période</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for plan in plans %}
+          <tr>
+            <td><strong>{{ plan.matiere.nom }}</strong><br><small class="text-muted">{{ plan.matiere.reference }}</small></td>
+            <td>{{ plan.periode|date:"d/m/Y" }}</td>
+            <td>{{ plan.besoin_brut }} {{ plan.matiere.unite.symbole }}</td>
+            <td>{{ plan.besoin_net }} {{ plan.matiere.unite.symbole }}</td>
+            <td><strong>{{ plan.quantite_proposee }} {{ plan.matiere.unite.symbole }}</strong></td>
+            <td>{{ plan.stock_fin_periode }} {{ plan.matiere.unite.symbole }}</td>
+            <td>
+              {% if plan.statut == 'CALCULE' %}
+                <span class="badge bg-secondary">Calculé</span>
+              {% elif plan.statut == 'CONFIRME' %}
+                <span class="badge bg-success">Confirmé</span>
+              {% elif plan.statut == 'LANCE' %}
+                <span class="badge bg-primary">Lancé</span>
+              {% else %}
+                <span class="badge bg-warning">{{ plan.statut }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'approvisionnement:mrp-detail' plan.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">
+              <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+              Aucun plan MRP. Créez-en un pour commencer.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

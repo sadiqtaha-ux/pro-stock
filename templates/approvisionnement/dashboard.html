@@ -1,116 +1,127 @@
-{% extends "base.html" %}
-{% load static %}
-{% load humanize %}
-
-{% block title %}Dashboard Approvisionnement{% endblock %}
-{% block active_appro %}active{% endblock %}
-{% block show_appro %}show{% endblock %}
-{% block breadcrumb %}<li class="breadcrumb-item active">Approvisionnement</li>{% endblock %}
-
+{% extends 'base.html' %}
+{% block title %}Approvisionnement{% endblock %}
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h4 class="mb-1 fw-bold">Gestion des Approvisionnements</h4>
-        <p class="text-muted mb-0 fs-13">Supervisez vos commandes en attente et l'application des 4 méthodes d'approvisionnement.</p>
-    </div>
-</div>
+<div class="container-fluid px-4 py-3">
 
-<div class="row g-3 mb-4">
-    <!-- Commandes Brouillon -->
-    <div class="col-md-4">
-        <div class="kpi-card" style="border-left: 4px solid #0d6efd;">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted mb-1">Commandes en Brouillon</h6>
-                    <h3 class="mb-0 fw-bold">{{ nb_commandes_en_attente }}</h3>
-                </div>
-                <div class="kpi-icon bg-primary-soft">
-                    <i class="bi bi-pencil-square text-primary"></i>
-                </div>
-            </div>
-            <div class="mt-3">
-                <a href="{% url 'approvisionnement:commande-liste' %}?statut=BROUILLON" class="text-decoration-none small">Voir les commandes &rarr;</a>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Matières en alerte -->
-    <div class="col-md-4">
-        <div class="kpi-card" style="border-left: 4px solid #ffc107;">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted mb-1">Action Requise (Alerte Stock)</h6>
-                    <h3 class="mb-0 fw-bold">{{ nb_matieres_en_alerte }}</h3>
-                </div>
-                <div class="kpi-icon bg-warning-soft">
-                    <i class="bi bi-exclamation-triangle text-warning"></i>
-                </div>
-            </div>
-            <div class="mt-3">
-                <a href="{% url 'produits:matiere-liste' %}" class="text-decoration-none small text-warning">Réapprovisionner &rarr;</a>
-            </div>
-        </div>
-    </div>
-</div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Tableau de bord — Approvisionnement</h1>
+    <a href="{% url 'approvisionnement:commande-create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Nouvelle commande
+    </a>
+  </div>
 
-<!-- Méthodes d'approvisionnement -->
-<h5 class="fw-bold mb-3 mt-5">Les 4 Méthodes Applicables</h5>
-<div class="row g-3">
+  <!-- KPI Cards -->
+  <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <a href="{% url 'approvisionnement:reappro-fixe' %}" class="text-decoration-none">
-            <div class="panel text-center dashboard-hover-card">
-                <div class="panel-body text-primary">
-                    <i class="bi bi-calendar-check fs-1 d-block mb-2"></i>
-                    <h6 class="fw-bold mb-1 text-dark">Réappro Fixe</h6>
-                    <small class="text-muted">Quantité fixe, date fixe.</small>
-                </div>
-            </div>
-        </a>
+      <div class="card text-center p-3 border-0 shadow-sm">
+        <div class="text-primary mb-2"><i class="bi bi-cart-check fs-3"></i></div>
+        <h6 class="text-muted">Commandes en cours</h6>
+        <h2 class="fw-bold">{{ commandes_en_cours }}</h2>
+      </div>
     </div>
     <div class="col-md-3">
-        <a href="{% url 'approvisionnement:point-commande' %}" class="text-decoration-none">
-            <div class="panel text-center dashboard-hover-card">
-                <div class="panel-body text-danger">
-                    <i class="bi bi-graph-down-arrow fs-1 d-block mb-2"></i>
-                    <h6 class="fw-bold mb-1 text-dark">Point de commande (ROP)</h6>
-                    <small class="text-muted">Stock min atteint = Commande.</small>
-                </div>
-            </div>
-        </a>
+      <div class="card text-center p-3 border-0 shadow-sm">
+        <div class="text-success mb-2"><i class="bi bi-lightbulb fs-3"></i></div>
+        <h6 class="text-muted">Suggestions actives</h6>
+        <h2 class="fw-bold">{{ suggestions_actives }}</h2>
+      </div>
     </div>
     <div class="col-md-3">
-        <a href="{% url 'approvisionnement:recompletement' %}" class="text-decoration-none">
-            <div class="panel text-center dashboard-hover-card">
-                <div class="panel-body text-success">
-                    <i class="bi bi-arrow-repeat fs-1 d-block mb-2"></i>
-                    <h6 class="fw-bold mb-1 text-dark">Récompletement</h6>
-                    <small class="text-muted">Compléter le stock cible.</small>
-                </div>
-            </div>
-        </a>
+      <div class="card text-center p-3 border-0 shadow-sm">
+        <div class="text-danger mb-2"><i class="bi bi-exclamation-triangle fs-3"></i></div>
+        <h6 class="text-muted">Alertes stock</h6>
+        <h2 class="fw-bold text-danger">{{ alertes }}</h2>
+      </div>
     </div>
     <div class="col-md-3">
-        <a href="{% url 'approvisionnement:mrp-liste' %}" class="text-decoration-none">
-            <div class="panel text-center dashboard-hover-card">
-                <div class="panel-body text-info">
-                    <i class="bi bi-diagram-3 fs-1 d-block mb-2"></i>
-                    <h6 class="fw-bold mb-1 text-dark">Planification MRP</h6>
-                    <small class="text-muted">Besoin brut/net sur la période.</small>
-                </div>
-            </div>
-        </a>
+      <div class="card text-center p-3 border-0 shadow-sm">
+        <div class="text-info mb-2"><i class="bi bi-box-seam fs-3"></i></div>
+        <h6 class="text-muted">Produits gérés</h6>
+        <h2 class="fw-bold">{{ total_produits }}</h2>
+      </div>
     </div>
-</div>
+  </div>
 
-<style>
-.dashboard-hover-card {
-    transition: all 0.3s ease;
-    border: 1px solid transparent;
-}
-.dashboard-hover-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-    border-color: #0d6efd;
-}
-</style>
+  <!-- Méthodes rapides -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <a href="{% url 'approvisionnement:point-commande' %}" class="card p-3 border-0 shadow-sm text-decoration-none text-dark d-block">
+        <i class="bi bi-graph-down-arrow text-warning me-2"></i> Point de commande
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="{% url 'approvisionnement:reappro-fixe' %}" class="card p-3 border-0 shadow-sm text-decoration-none text-dark d-block">
+        <i class="bi bi-calendar-check text-success me-2"></i> Réappro fixe
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="{% url 'approvisionnement:recompletement' %}" class="card p-3 border-0 shadow-sm text-decoration-none text-dark d-block">
+        <i class="bi bi-arrow-repeat text-info me-2"></i> Recomplètement
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="{% url 'approvisionnement:mrp-liste' %}" class="card p-3 border-0 shadow-sm text-decoration-none text-dark d-block">
+        <i class="bi bi-diagram-3 text-primary me-2"></i> Plan MRP
+      </a>
+    </div>
+  </div>
+
+  <!-- Dernières commandes -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Dernières commandes</span>
+      <a href="{% url 'approvisionnement:commande-liste' %}" class="btn btn-sm btn-outline-secondary">Voir tout</a>
+    </div>
+    <div class="card-body p-0">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Réf.</th>
+            <th>Matière</th>
+            <th>Fournisseur</th>
+            <th>Date</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cmd in dernieres_commandes %}
+          <tr>
+            <td><span class="text-muted small">{{ cmd.reference|default:"—" }}</span></td>
+            <td>{{ cmd.matiere.nom }}</td>
+            <td>{{ cmd.fournisseur.nom }}</td>
+            <td>{{ cmd.date_creation|date:"d/m/Y" }}</td>
+            <td>
+              {% if cmd.statut == "BROUILLON" %}
+                <span class="badge bg-secondary">Brouillon</span>
+              {% elif cmd.statut == "ENVOYE" %}
+                <span class="badge bg-primary">Envoyé</span>
+              {% elif cmd.statut == "CONFIRME" %}
+                <span class="badge bg-info">Confirmé</span>
+              {% elif cmd.statut == "RECU" %}
+                <span class="badge bg-success">Reçu</span>
+              {% else %}
+                <span class="badge bg-danger">Annulé</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'approvisionnement:commande-detail' cmd.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+              Aucune commande pour l'instant
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
 {% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Point de commande{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="mb-4">
+    <h1 class="h3">Méthode 1 — Point de commande (ROP)</h1>
+    <p class="text-muted">Commande déclenchée automatiquement quand stock ≤ PT. Quantité fixe (EOQ).</p>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-primary">
+        <div class="card-body text-center">
+          <h6 class="text-muted">EOQ (Wilson)</h6>
+          <p class="fw-bold font-monospace">EOQ = √(2·D·S / H)</p>
+          <small class="text-muted">Quantité économique de commande</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-danger">
+        <div class="card-body text-center">
+          <h6 class="text-muted">Point de commande</h6>
+          <p class="fw-bold font-monospace">PT = d·L + SS</p>
+          <small class="text-muted">d=conso/jour, L=délai, SS=stock sécurité</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-warning">
+        <div class="card-body text-center">
+          <h6 class="text-muted">Stock de sécurité</h6>
+          <p class="fw-bold font-monospace">SS = Z · σd · √L</p>
+          <small class="text-muted">Z95% = 1,65</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if matieres_en_alerte %}
+  <div class="alert alert-danger mb-4">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>{{ matieres_en_alerte|length }} produit(s) sous le point de commande !</strong>
+  </div>
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-semibold">Surveillance des produits — Point de commande</div>
+    <div class="card-body p-0">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Produit</th>
+            <th>Stock actuel</th>
+            <th>Point de commande (PT)</th>
+            <th>EOQ</th>
+            <th>Stock sécurité</th>
+            <th>Délai (j)</th>
+            <th>Statut</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in toutes_matieres %}
+          <tr class="{% if m.stock_actuel <= m.point_commande %}table-danger{% endif %}">
+            <td><strong>{{ m.nom }}</strong><br><small class="text-muted">{{ m.reference }}</small></td>
+            <td>{{ m.stock_actuel }} {{ m.unite }}</td>
+            <td>{{ m.point_commande }} {{ m.unite }}</td>
+            <td>{{ m.qec }} {{ m.unite }}</td>
+            <td>{{ m.stock_securite }} {{ m.unite }}</td>
+            <td>{{ m.delai_livraison_jours }} j</td>
+            <td>
+              {% if m.stock_actuel <= m.point_commande %}
+                <span class="badge bg-danger">Commande requise</span>
+              {% else %}
+                <span class="badge bg-success">OK</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if m.stock_actuel <= m.point_commande %}
+              <a href="{% url 'approvisionnement:commande-create' %}?matiere={{ m.pk }}" class="btn btn-sm btn-danger">
+                <i class="bi bi-cart-plus"></i> Commander
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">
+              <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+              Aucun produit configuré pour cette méthode
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
