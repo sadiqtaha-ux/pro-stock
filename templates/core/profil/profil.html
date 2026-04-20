@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% block title %}Mon profil{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Mon profil</li>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+    <!-- ── Colonne gauche — Carte identité ── -->
+    <div class="col-md-4">
+        <div class="panel text-center">
+            <div class="panel-body py-4">
+
+                <!-- Avatar -->
+                <div class="mb-3">
+                    {% if request.user.photo %}
+                    <img src="{{ request.user.photo.url }}"
+                         alt="{{ request.user.get_full_name }}"
+                         class="rounded-circle"
+                         style="width:80px;height:80px;object-fit:cover;">
+                    {% else %}
+                    <div class="rounded-circle bg-primary text-white fw-bold mx-auto d-flex align-items-center justify-content-center"
+                         style="width:80px;height:80px;font-size:1.8rem;">
+                        {{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <h5 class="fw-bold mb-1">{{ request.user.get_full_name }}</h5>
+                <p class="text-muted small mb-2">@{{ request.user.username }}</p>
+
+                <div class="d-flex gap-1 justify-content-center flex-wrap mb-3">
+                    <span class="badge bg-primary">{{ request.user.get_role_display }}</span>
+                    {% if request.user.est_actif %}
+                        <span class="badge bg-success">Actif</span>
+                    {% else %}
+                        <span class="badge bg-danger">Inactif</span>
+                    {% endif %}
+                </div>
+
+                <hr>
+
+                <ul class="list-group list-group-flush text-start small">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted"><i class="bi bi-envelope me-1"></i>Email</span>
+                        <span class="fw-medium text-truncate ms-2" style="max-width:160px;" title="{{ request.user.email }}">
+                            {{ request.user.email|default:"—" }}
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted"><i class="bi bi-calendar-plus me-1"></i>Membre depuis</span>
+                        <span>{{ request.user.date_joined|date:"d/m/Y" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted"><i class="bi bi-clock me-1"></i>Dernière connexion</span>
+                        <span>{{ request.user.date_derniere_connexion|date:"d/m/Y H:i"|default:"—" }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Colonne droite — Onglets ── -->
+    <div class="col-md-8">
+        <div class="panel">
+            <div class="panel-header pb-0 border-bottom-0">
+                <ul class="nav nav-tabs" id="profilTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab"
+                                data-bs-target="#tab-info" type="button">
+                            <i class="bi bi-person me-1"></i>Mes informations
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab"
+                                data-bs-target="#tab-mdp" type="button">
+                            <i class="bi bi-lock me-1"></i>Mot de passe
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab"
+                                data-bs-target="#tab-activite" type="button">
+                            <i class="bi bi-clock-history me-1"></i>Activité récente
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="tab-content p-3" id="profilTabsContent">
+
+                <!-- TAB 1 — Informations -->
+                <div class="tab-pane fade show active" id="tab-info">
+                    {% if form_profil.non_field_errors %}
+                    <div class="alert alert-danger py-2">
+                        {% for e in form_profil.non_field_errors %}{{ e }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="profil">
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="{{ form_profil.first_name.id_for_label }}">Prénom</label>
+                                {{ form_profil.first_name }}
+                                {% for e in form_profil.first_name.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="{{ form_profil.last_name.id_for_label }}">Nom</label>
+                                {{ form_profil.last_name }}
+                                {% for e in form_profil.last_name.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label" for="{{ form_profil.email.id_for_label }}">Email</label>
+                                {{ form_profil.email }}
+                                {% for e in form_profil.email.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="{{ form_profil.photo.id_for_label }}">Photo</label>
+                                {{ form_profil.photo }}
+                                {% for e in form_profil.photo.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i>Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- TAB 2 — Mot de passe -->
+                <div class="tab-pane fade" id="tab-mdp">
+                    {% if form_mdp.non_field_errors %}
+                    <div class="alert alert-danger py-2">
+                        {% for e in form_mdp.non_field_errors %}{{ e }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="mot_de_passe">
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form_mdp.old_password.id_for_label }}">Mot de passe actuel</label>
+                                {{ form_mdp.old_password }}
+                                {% for e in form_mdp.old_password.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form_mdp.new_password1.id_for_label }}">Nouveau mot de passe</label>
+                                {{ form_mdp.new_password1 }}
+                                {% for e in form_mdp.new_password1.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="{{ form_mdp.new_password2.id_for_label }}">Confirmation</label>
+                                {{ form_mdp.new_password2 }}
+                                {% for e in form_mdp.new_password2.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                            </div>
+                        </div>
+
+                        <p class="small text-muted mt-2 mb-3">
+                            <i class="bi bi-shield-lock me-1"></i>
+                            Min. 8 caractères, mélange lettres et chiffres recommandé.
+                        </p>
+
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-lock me-1"></i>Changer le mot de passe
+                        </button>
+                    </form>
+                </div>
+
+                <!-- TAB 3 — Activité récente -->
+                <div class="tab-pane fade" id="tab-activite">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 small table-stockpro">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th><th>Action</th><th>Objet</th><th>IP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activite in activites_recentes %}
+                                <tr>
+                                    <td class="text-muted">{{ activite.date_action|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if activite.action == 'CREATE' %}<span class="badge bg-success">Création</span>
+                                        {% elif activite.action == 'UPDATE' %}<span class="badge bg-warning text-dark">Modif.</span>
+                                        {% elif activite.action == 'DELETE' %}<span class="badge bg-danger">Suppression</span>
+                                        {% elif activite.action == 'LOGIN' %}<span class="badge bg-primary">Connexion</span>
+                                        {% elif activite.action == 'LOGOUT' %}<span class="badge bg-secondary">Déconnexion</span>
+                                        {% elif activite.action == 'EXPORT' %}<span class="badge bg-info text-dark">Export</span>
+                                        {% else %}<span class="badge bg-light text-dark border">{{ activite.action }}</span>{% endif %}
+                                    </td>
+                                    <td>{{ activite.modele }} — {{ activite.description|truncatechars:40 }}</td>
+                                    <td class="font-monospace">{{ activite.adresse_ip|default:"—" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="bi bi-clock-history fs-3 d-block mb-2"></i>
+                                        Aucune activité enregistrée
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>{# /tab-content #}
+        </div>{# /panel #}
+    </div>
+
+</div>
+{% endblock %}

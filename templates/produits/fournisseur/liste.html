@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}Fournisseurs{% endblock %}
+{% block active_fournisseurs %}active{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Fournisseurs</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- En-tête -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold">Fournisseurs</h4>
+        <p class="text-muted mb-0 fs-13">Gérez les fournisseurs de matières premières.</p>
+    </div>
+    {% if peut_administrer %}
+    <a href="{% url 'produits:fournisseur-create' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Nouveau fournisseur
+    </a>
+    {% endif %}
+</div>
+
+<!-- Barre de filtres -->
+<form method="get" class="row g-2 mb-3 align-items-end" id="filter-form">
+    <div class="col-md-5">
+        <input type="text" name="q" class="form-control form-control-sm"
+               placeholder="Nom, ville, email…" value="{{ request.GET.q }}">
+    </div>
+    <div class="col-auto">
+        {% if request.GET.actif == '0' %}
+            <a href="?actif=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+               class="btn btn-sm btn-outline-danger">Inactifs</a>
+        {% else %}
+            <a href="?actif=0{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+               class="btn btn-sm btn-outline-success">Actifs</a>
+        {% endif %}
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-search"></i>
+        </button>
+    </div>
+    {% if request.GET.q or request.GET.actif %}
+    <div class="col-auto">
+        <a href="{% url 'produits:fournisseur-liste' %}" class="btn btn-sm btn-outline-secondary" title="Réinitialiser">
+            <i class="bi bi-x-lg"></i>
+        </a>
+    </div>
+    {% endif %}
+</form>
+
+<!-- Table -->
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 table-stockpro">
+            <thead class="table-light">
+                <tr>
+                    <th>Nom</th>
+                    <th>Contact</th>
+                    <th>Email</th>
+                    <th>Téléphone</th>
+                    <th>Ville</th>
+                    <th>Statut</th>
+                    <th>Matières</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fournisseur in fournisseurs %}
+                <tr>
+                    <td class="fw-medium">{{ fournisseur.nom }}</td>
+                    <td class="small">{{ fournisseur.contact|default:"—" }}</td>
+                    <td class="small">
+                        {% if fournisseur.email %}
+                        <a href="mailto:{{ fournisseur.email }}" class="text-decoration-none">
+                            {{ fournisseur.email }}
+                        </a>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td class="small">{{ fournisseur.telephone|default:"—" }}</td>
+                    <td class="small">{{ fournisseur.ville|default:"—" }}</td>
+                    <td>
+                        {% if fournisseur.actif %}
+                            <span class="badge bg-success">Actif</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactif</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'produits:matiere-liste' %}?fournisseur={{ fournisseur.pk }}"
+                           class="badge bg-secondary text-decoration-none">
+                            {{ fournisseur.matieres.count }}
+                        </a>
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'produits:fournisseur-update' fournisseur.pk %}"
+                           class="btn btn-sm btn-outline-secondary" title="Modifier">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="bi bi-truck fs-1 d-block mb-2 text-muted"></i>
+                        Aucun fournisseur trouvé
+                        {% if request.GET.q %}
+                        pour "<strong>{{ request.GET.q }}</strong>"
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="d-flex justify-content-center py-3">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -60,6 +60,44 @@ body {
     width: var(--sidebar-collapsed-width);
 }
 
+/* --- Sidebar collapsed: hide text, show icons only --- */
+.sidebar.collapsed .nav-link span,
+.sidebar.collapsed .nav-section-title,
+.sidebar.collapsed .submenu-section,
+.sidebar.collapsed .brand-text,
+.sidebar.collapsed .badge,
+.sidebar.collapsed .submenu-arrow {
+    display: none !important;
+}
+
+.sidebar.collapsed .nav-link {
+    justify-content: center;
+    padding: 8px;
+}
+
+.sidebar.collapsed .submenu {
+    display: none !important;
+}
+
+.sidebar.collapsed .nav-link i {
+    font-size: 18px;
+    margin: 0;
+}
+
+.sidebar.collapsed .sidebar-brand {
+    justify-content: center;
+    padding: 20px 8px;
+}
+
+.sidebar.collapsed .user-details,
+.sidebar.collapsed .sidebar-footer .btn {
+    display: none !important;
+}
+
+.sidebar.collapsed .user-info {
+    justify-content: center;
+}
+
 /* Brand / Logo */
 .sidebar-brand {
     display: flex;

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Unités de mesure{% endblock %}
+{% block active_produits %}active{% endblock %}
+{% block show_produits %}show{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Unités de mesure</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- En-tête -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold">Unités de mesure</h4>
+        <p class="text-muted mb-0 fs-13">Référentiel des unités utilisées dans la gestion de stock.</p>
+    </div>
+    <a href="/admin/produits/unitesmesure/" target="_blank" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-gear me-1"></i>
+        Gérer via l'administration
+        <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+    </a>
+</div>
+
+<!-- Note d'information -->
+<div class="alert alert-info d-flex align-items-center gap-2 mb-3 py-2">
+    <i class="bi bi-info-circle-fill flex-shrink-0"></i>
+    <span>
+        Les unités de mesure sont gérées via
+        <a href="/admin/produits/unitesmesure/" target="_blank" class="alert-link">
+            l'interface d'administration Django
+        </a>.
+        Contactez un administrateur pour toute modification.
+    </span>
+</div>
+
+<!-- Table -->
+<div class="panel">
+    <div class="panel-header">
+        <h5 class="panel-title mb-0">
+            <i class="bi bi-rulers me-2"></i>Liste des unités
+            <span class="badge bg-secondary ms-2">{{ unites|length }}</span>
+        </h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 table-stockpro">
+            <thead class="table-light">
+                <tr>
+                    <th>Nom</th>
+                    <th>Symbole</th>
+                    <th>Nb matières liées</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for unite in unites %}
+                <tr>
+                    <td class="fw-medium">{{ unite.nom }}</td>
+                    <td>
+                        <span class="badge bg-light text-dark border fw-bold fs-13">
+                            {{ unite.symbole }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'produits:matiere-liste' %}?unite={{ unite.pk }}"
+                           class="badge bg-secondary text-decoration-none">
+                            {{ unite.matieres.count }}
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center py-5 text-muted">
+                        <i class="bi bi-rulers fs-1 d-block mb-2"></i>
+                        Aucune unité définie.
+                        <br>
+                        <a href="/admin/produits/unitesmesure/add/" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
+                            <i class="bi bi-plus-lg me-1"></i>Ajouter via l'administration
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

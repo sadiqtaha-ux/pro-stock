@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Modifier — {{ object.nom }}{% else %}Nouvelle matière première{% endif %}{% endblock %}
+{% block active_produits %}active{% endblock %}
+{% block show_produits %}show{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'produits:matiere-liste' %}">Matières Premières</a></li>
+<li class="breadcrumb-item active">{% if object %}{{ object.nom|truncatechars:25 }}{% else %}Nouvelle{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- En-tête -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold">
+            {% if object %}Modifier — {{ object.nom }}{% else %}Nouvelle matière première{% endif %}
+        </h4>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'produits:matiere-liste' %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Annuler
+        </a>
+        {% if object %}
+        <a href="{% url 'produits:matiere-detail' object.pk %}" class="btn btn-outline-info btn-sm">
+            <i class="bi bi-eye me-1"></i>Voir la fiche
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- CARTE 1 — Identification -->
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header fw-semibold bg-white border-bottom">
+            <i class="bi bi-tag me-2 text-muted"></i>Identification
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ form.reference.id_for_label }}">Référence <span class="text-danger">*</span></label>
+                    <input type="text" name="{{ form.reference.html_name }}"
+                           id="{{ form.reference.id_for_label }}"
+                           value="{{ form.reference.value|default:'' }}"
+                           class="form-control {% if form.reference.errors %}is-invalid{% endif %}"
+                           placeholder="EX-001">
+                    {% for e in form.reference.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-9">
+                    <label class="form-label" for="{{ form.nom.id_for_label }}">Nom <span class="text-danger">*</span></label>
+                    <input type="text" name="{{ form.nom.html_name }}"
+                           id="{{ form.nom.id_for_label }}"
+                           value="{{ form.nom.value|default:'' }}"
+                           class="form-control {% if form.nom.errors %}is-invalid{% endif %}"
+                           placeholder="Nom complet de la matière">
+                    {% for e in form.nom.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+                    <textarea name="{{ form.description.html_name }}"
+                              id="{{ form.description.id_for_label }}"
+                              rows="3"
+                              class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                              placeholder="Description optionnelle…">{{ form.description.value|default:'' }}</textarea>
+                    {% for e in form.description.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.categorie.id_for_label }}">Catégorie <span class="text-danger">*</span></label>
+                    <select name="{{ form.categorie.html_name }}" id="{{ form.categorie.id_for_label }}"
+                            class="form-select {% if form.categorie.errors %}is-invalid{% endif %}">
+                        {% for val, label in form.categorie.field.choices %}
+                        <option value="{{ val }}" {% if form.categorie.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% for e in form.categorie.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.unite.id_for_label }}">Unité de mesure <span class="text-danger">*</span></label>
+                    <select name="{{ form.unite.html_name }}" id="{{ form.unite.id_for_label }}"
+                            class="form-select {% if form.unite.errors %}is-invalid{% endif %}">
+                        {% for val, label in form.unite.field.choices %}
+                        <option value="{{ val }}" {% if form.unite.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% for e in form.unite.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.zone_stockage.id_for_label }}">Zone de stockage</label>
+                    <select name="{{ form.zone_stockage.html_name }}" id="{{ form.zone_stockage.id_for_label }}"
+                            class="form-select {% if form.zone_stockage.errors %}is-invalid{% endif %}">
+                        {% for val, label in form.zone_stockage.field.choices %}
+                        <option value="{{ val }}" {% if form.zone_stockage.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% for e in form.zone_stockage.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARTE 2 — Stock -->
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header fw-semibold bg-white border-bottom">
+            <i class="bi bi-boxes me-2 text-muted"></i>Stock
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ form.stock_actuel.id_for_label }}">Stock actuel</label>
+                    <input type="number" name="{{ form.stock_actuel.html_name }}"
+                           id="{{ form.stock_actuel.id_for_label }}"
+                           value="{{ form.stock_actuel.value|default:'0' }}"
+                           class="form-control {% if form.stock_actuel.errors %}is-invalid{% endif %}"
+                           step="0.001" min="0">
+                    {% for e in form.stock_actuel.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ form.stock_minimum.id_for_label }}">Stock minimum <span class="text-danger">*</span></label>
+                    <input type="number" name="{{ form.stock_minimum.html_name }}"
+                           id="{{ form.stock_minimum.id_for_label }}"
+                           value="{{ form.stock_minimum.value|default:'0' }}"
+                           class="form-control {% if form.stock_minimum.errors %}is-invalid{% endif %}"
+                           step="0.001" min="0">
+                    {% for e in form.stock_minimum.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ form.stock_maximum.id_for_label }}">Stock maximum</label>
+                    <input type="number" name="{{ form.stock_maximum.html_name }}"
+                           id="{{ form.stock_maximum.id_for_label }}"
+                           value="{{ form.stock_maximum.value|default:'0' }}"
+                           class="form-control {% if form.stock_maximum.errors %}is-invalid{% endif %}"
+                           step="0.001" min="0">
+                    {% for e in form.stock_maximum.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ form.stock_securite.id_for_label }}">Stock sécurité</label>
+                    <input type="number" name="{{ form.stock_securite.html_name }}"
+                           id="{{ form.stock_securite.id_for_label }}"
+                           value="{{ form.stock_securite.value|default:'0' }}"
+                           class="form-control {% if form.stock_securite.errors %}is-invalid{% endif %}"
+                           step="0.001" min="0">
+                    {% for e in form.stock_securite.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.prix_unitaire.id_for_label }}">Prix unitaire (DH)</label>
+                    <input type="number" name="{{ form.prix_unitaire.html_name }}"
+                           id="{{ form.prix_unitaire.id_for_label }}"
+                           value="{{ form.prix_unitaire.value|default:'0' }}"
+                           class="form-control {% if form.prix_unitaire.errors %}is-invalid{% endif %}"
+                           step="0.01" min="0">
+                    {% for e in form.prix_unitaire.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.fournisseur_principal.id_for_label }}">Fournisseur principal</label>
+                    <select name="{{ form.fournisseur_principal.html_name }}"
+                            id="{{ form.fournisseur_principal.id_for_label }}"
+                            class="form-select {% if form.fournisseur_principal.errors %}is-invalid{% endif %}">
+                        {% for val, label in form.fournisseur_principal.field.choices %}
+                        <option value="{{ val }}" {% if form.fournisseur_principal.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% for e in form.fournisseur_principal.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.emplacement.id_for_label }}">Emplacement</label>
+                    <input type="text" name="{{ form.emplacement.html_name }}"
+                           id="{{ form.emplacement.id_for_label }}"
+                           value="{{ form.emplacement.value|default:'' }}"
+                           class="form-control {% if form.emplacement.errors %}is-invalid{% endif %}"
+                           placeholder="ex. Rayon A-3">
+                    {% for e in form.emplacement.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARTE 3 — Approvisionnement -->
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header fw-semibold bg-white border-bottom">
+            <i class="bi bi-truck me-2 text-muted"></i>Approvisionnement
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.methode_approvisionnement.id_for_label }}">Méthode <span class="text-danger">*</span></label>
+                    <select name="{{ form.methode_approvisionnement.html_name }}"
+                            id="{{ form.methode_approvisionnement.id_for_label }}"
+                            class="form-select {% if form.methode_approvisionnement.errors %}is-invalid{% endif %}">
+                        {% for val, label in form.methode_approvisionnement.field.choices %}
+                        <option value="{{ val }}" {% if form.methode_approvisionnement.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% for e in form.methode_approvisionnement.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.point_commande.id_for_label }}">Point de commande</label>
+                    <input type="number" name="{{ form.point_commande.html_name }}"
+                           id="{{ form.point_commande.id_for_label }}"
+                           value="{{ form.point_commande.value|default:'0' }}"
+                           class="form-control {% if form.point_commande.errors %}is-invalid{% endif %}"
+                           step="0.001" min="0">
+                    <div class="form-text text-muted small">Seuil de déclenchement commande</div>
+                    {% for e in form.point_commande.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.qec.id_for_label }}">QEC (Qté éco. commande)</label>
+                    <input type="number" name="{{ form.qec.html_name }}"
+                           id="{{ form.qec.id_for_label }}"
+                           value="{{ form.qec.value|default:'0' }}"
+                           class="form-control {% if form.qec.errors %}is-invalid{% endif %}"
+                           step="0.001" min="0">
+                    {% for e in form.qec.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.delai_livraison_jours.id_for_label }}">Délai livraison (jours)</label>
+                    <input type="number" name="{{ form.delai_livraison_jours.html_name }}"
+                           id="{{ form.delai_livraison_jours.id_for_label }}"
+                           value="{{ form.delai_livraison_jours.value|default:'0' }}"
+                           class="form-control {% if form.delai_livraison_jours.errors %}is-invalid{% endif %}"
+                           min="0">
+                    {% for e in form.delai_livraison_jours.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.periode_reappro_jours.id_for_label }}">Période réappro (jours)</label>
+                    <input type="number" name="{{ form.periode_reappro_jours.html_name }}"
+                           id="{{ form.periode_reappro_jours.id_for_label }}"
+                           value="{{ form.periode_reappro_jours.value|default:'0' }}"
+                           class="form-control {% if form.periode_reappro_jours.errors %}is-invalid{% endif %}"
+                           min="0">
+                    {% for e in form.periode_reappro_jours.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.taux_rebut.id_for_label }}">Taux de rebut (%)</label>
+                    <input type="number" name="{{ form.taux_rebut.html_name }}"
+                           id="{{ form.taux_rebut.id_for_label }}"
+                           value="{{ form.taux_rebut.value|default:'0' }}"
+                           class="form-control {% if form.taux_rebut.errors %}is-invalid{% endif %}"
+                           step="0.01" min="0" max="100">
+                    <div class="form-text text-muted small">Pourcentage de pertes en production</div>
+                    {% for e in form.taux_rebut.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARTE 4 — Statut -->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header fw-semibold bg-white border-bottom">
+            <i class="bi bi-toggle-on me-2 text-muted"></i>Statut
+        </div>
+        <div class="card-body">
+            <div class="form-check">
+                <input type="checkbox" name="{{ form.actif.html_name }}"
+                       id="{{ form.actif.id_for_label }}"
+                       class="form-check-input"
+                       {% if form.actif.value %}checked{% endif %}>
+                <label class="form-check-label" for="{{ form.actif.id_for_label }}">
+                    Matière active en gestion de stock
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boutons de formulaire -->
+    <div class="d-flex gap-2 justify-content-end">
+        <a href="{% url 'produits:matiere-liste' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Annuler
+        </a>
+        {% if object %}
+        <a href="{% url 'produits:matiere-detail' object.pk %}" class="btn btn-outline-info">
+            <i class="bi bi-eye me-1"></i>Voir la fiche
+        </a>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Enregistrer
+        </button>
+    </div>
+
+</form>
+{% endblock %}

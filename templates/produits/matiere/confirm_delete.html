@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Supprimer {{ object.nom }}{% endblock %}
+{% block active_produits %}active{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'produits:matiere-liste' %}">Matières Premières</a></li>
+<li class="breadcrumb-item active">Supprimer</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-12 col-md-7" style="max-width:520px;">
+        <div class="panel border border-danger">
+            <!-- En-tête -->
+            <div class="panel-header bg-danger bg-opacity-10">
+                <h5 class="panel-title text-danger mb-0">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Confirmer la suppression
+                </h5>
+            </div>
+
+            <!-- Corps -->
+            <div class="panel-body">
+                <p class="mb-3">Vous êtes sur le point de supprimer la matière première :</p>
+
+                <div class="bg-light rounded p-3 mb-3">
+                    <div class="row g-2 small">
+                        <div class="col-5 text-muted">Référence</div>
+                        <div class="col-7 fw-bold">{{ object.reference }}</div>
+                        <div class="col-5 text-muted">Nom</div>
+                        <div class="col-7">{{ object.nom }}</div>
+                        <div class="col-5 text-muted">Catégorie</div>
+                        <div class="col-7">{{ object.get_categorie_display }}</div>
+                        <div class="col-5 text-muted">Stock actuel</div>
+                        <div class="col-7">{{ object.stock_actuel }} {{ object.unite.symbole }}</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-danger d-flex align-items-start gap-2 py-2">
+                    <i class="bi bi-exclamation-octagon-fill flex-shrink-0 mt-1"></i>
+                    <span>
+                        Cette action est <strong>irréversible</strong>.
+                        Toutes les données liées à cette matière seront perdues.
+                    </span>
+                </div>
+            </div>
+
+            <!-- Pied -->
+            <div class="panel-header border-top d-flex justify-content-between align-items-center">
+                <a href="{% url 'produits:matiere-liste' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Annuler
+                </a>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Supprimer définitivement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

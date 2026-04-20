@@ -1,6 +1,6 @@
 """
 approvisionnement/models.py
-MediCare Industries — Modèles : BonCommande, PlanMRP
+MediCare Industries — Modèles : BonCommande, PlanMRP, PropositionCommande
 """
 
 from django.db import models
@@ -194,3 +194,83 @@ class PlanMRP(models.Model):
 
     def __str__(self):
         return f"MRP — {self.matiere} — {self.periode:%Y-%m}"
+
+
+# ============================================================
+# PROPOSITION DE COMMANDE (Planificateur)
+# ============================================================
+
+class PropositionCommande(models.Model):
+    """
+    Proposition de commande générée automatiquement par le planificateur.
+    L'acheteur la valide, modifie ou rejette avant qu'elle devienne un BonCommande.
+    La méthode est héritée directement depuis matiere.methode_approvisionnement.
+    """
+
+    class Statut(models.TextChoices):
+        PROPOSEE  = "PROPOSEE",  _("Proposée")
+        VALIDEE   = "VALIDEE",   _("Validée")
+        REJETEE   = "REJETEE",   _("Rejetée")
+        CONVERTIE = "CONVERTIE", _("Convertie en BC")
+
+    matiere = models.ForeignKey(
+        "produits.MatierePremiere",
+        on_delete=models.CASCADE,
+        related_name="propositions",
+        verbose_name=_("Matière première"),
+    )
+    methode = models.CharField(
+        _("Méthode (héritée)"), max_length=20,
+        help_text=_("Copie de matiere.methode_approvisionnement au moment du calcul")
+    )
+    quantite_proposee = models.DecimalField(
+        _("Quantité proposée"), max_digits=14, decimal_places=4,
+        validators=[MinValueValidator(0)]
+    )
+    quantite_validee = models.DecimalField(
+        _("Quantité validée"), max_digits=14, decimal_places=4,
+        validators=[MinValueValidator(0)], null=True, blank=True,
+        help_text=_("Modifiable par l'acheteur avant conversion en BC")
+    )
+    detail_calcul = models.JSONField(
+        _("Détail du calcul"), default=dict,
+        help_text=_("Stocke les paramètres utilisés: stock, ROP, QEC, période...")
+    )
+    urgence = models.BooleanField(
+        _("Urgente"), default=False,
+        help_text=_("True si stock en rupture ou sous stock de sécurité")
+    )
+    date_generation = models.DateTimeField(_("Date de génération"), auto_now_add=True)
+    date_besoin = models.DateField(
+        _("Date de besoin"), null=True, blank=True,
+        help_text=_("Date limite avant rupture estimée")
+    )
+    statut = models.CharField(
+        _("Statut"), max_length=15,
+        choices=Statut.choices, default=Statut.PROPOSEE
+    )
+    bon_commande = models.OneToOneField(
+        BonCommande, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="proposition_origine",
+        verbose_name=_("Bon de commande généré"),
+    )
+    note_acheteur = models.TextField(_("Note acheteur"), blank=True)
+
+    class Meta:
+        verbose_name        = _("Proposition de commande")
+        verbose_name_plural = _("Propositions de commande")
+        ordering            = ["-urgence", "date_besoin"]
+        indexes = [
+            models.Index(fields=["statut"]),
+            models.Index(fields=["matiere", "statut"]),
+        ]
+
+    def __str__(self):
+        return f"Prop. {self.methode} — {self.matiere} — {self.quantite_proposee}"
+
+    @property
+    def quantite_finale(self):
+        """Quantité à commander : validée si modifiée, sinon proposée."""
+        return self.quantite_validee if self.quantite_validee is not None \
+               else self.quantite_proposee

@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% block title %}Nouvelle matière première{% endblock %}
+{% block active_produits %}active{% endblock %}
+{% block show_produits %}show{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'produits:matiere-liste' %}">Matières Premières</a></li>
+<li class="breadcrumb-item active">Nouvelle — Méthode</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <h4 class="mb-1 fw-bold">Nouvelle matière première</h4>
+    <p class="text-muted mb-0 fs-13">Étape préliminaire : choisissez la méthode d'approvisionnement.</p>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="row g-3 mb-4">
+
+        <!-- CARD 1 — Point de commande -->
+        <div class="col-md-6">
+            <label class="card h-100 border-2 p-0 method-card" style="cursor:pointer;" for="m-pc">
+                <input type="radio" name="methode" value="POINT_COMMANDE"
+                       id="m-pc" class="d-none method-radio">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-2 p-2 bg-primary bg-opacity-10">
+                            <i class="bi bi-graph-down-arrow fs-3 text-primary"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Point de commande (ROP)</h6>
+                            <small class="text-muted">Déclenchement automatique par seuil</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-3">
+                        Commande déclenchée automatiquement quand le stock descend
+                        sous le seuil ROP. Idéal pour les consommations régulières.
+                    </p>
+                    <div class="small">
+                        <strong>Paramètres requis :</strong>
+                        <ul class="mb-0 ps-3 text-muted">
+                            <li>Point de commande (ROP)</li>
+                            <li>Quantité économique (QEC)</li>
+                            <li>Délai de livraison</li>
+                        </ul>
+                    </div>
+                </div>
+            </label>
+        </div>
+
+        <!-- CARD 2 — Réappro fixe -->
+        <div class="col-md-6">
+            <label class="card h-100 border-2 p-0 method-card" style="cursor:pointer;" for="m-rf">
+                <input type="radio" name="methode" value="REAPPRO_FIXE"
+                       id="m-rf" class="d-none method-radio">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-2 p-2 bg-success bg-opacity-10">
+                            <i class="bi bi-calendar-check fs-3 text-success"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Réapprovisionnement fixe (Q, T)</h6>
+                            <small class="text-muted">Quantité fixe à intervalles réguliers</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-3">
+                        Commande d'une quantité fixe à intervalles réguliers.
+                        Adapté aux matières à délai de livraison stable.
+                    </p>
+                    <div class="small">
+                        <strong>Paramètres requis :</strong>
+                        <ul class="mb-0 ps-3 text-muted">
+                            <li>Quantité fixe (QEC)</li>
+                            <li>Période de réappro (T)</li>
+                            <li>Délai de livraison</li>
+                        </ul>
+                    </div>
+                </div>
+            </label>
+        </div>
+
+        <!-- CARD 3 — Recomplètement -->
+        <div class="col-md-6">
+            <label class="card h-100 border-2 p-0 method-card" style="cursor:pointer;" for="m-rec">
+                <input type="radio" name="methode" value="RECOMPLETEMENT"
+                       id="m-rec" class="d-none method-radio">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-2 p-2 bg-info bg-opacity-10">
+                            <i class="bi bi-arrow-repeat fs-3 text-info"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Recomplètement (S, T)</h6>
+                            <small class="text-muted">Révision périodique jusqu'au niveau cible</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-3">
+                        À chaque révision périodique, on commande la différence
+                        entre le niveau cible S et le stock actuel.
+                    </p>
+                    <div class="small">
+                        <strong>Paramètres requis :</strong>
+                        <ul class="mb-0 ps-3 text-muted">
+                            <li>Niveau cible (S = stock max)</li>
+                            <li>Période de révision (T)</li>
+                            <li>Délai de livraison</li>
+                        </ul>
+                    </div>
+                </div>
+            </label>
+        </div>
+
+        <!-- CARD 4 — MRP -->
+        <div class="col-md-6">
+            <label class="card h-100 border-2 p-0 method-card" style="cursor:pointer;" for="m-mrp">
+                <input type="radio" name="methode" value="MRP"
+                       id="m-mrp" class="d-none method-radio">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-2 p-2 bg-warning bg-opacity-10">
+                            <i class="bi bi-diagram-3 fs-3 text-warning"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Plan MRP</h6>
+                            <small class="text-muted">Calcul par décomposition du plan de production</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-3">
+                        Les besoins sont calculés par décomposition du plan
+                        de production (MRP). Adapté aux composants de fabrication.
+                    </p>
+                    <div class="small">
+                        <strong>Paramètres requis :</strong>
+                        <ul class="mb-0 ps-3 text-muted">
+                            <li>Taux de rebut</li>
+                            <li>Délai de livraison</li>
+                            <li>Plan MRP actif</li>
+                        </ul>
+                    </div>
+                </div>
+            </label>
+        </div>
+
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <a href="{% url 'produits:matiere-liste' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Annuler
+        </a>
+        <button type="submit" class="btn btn-primary" id="btn-continuer" disabled>
+            Continuer <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.method-card { transition: all 0.15s ease; border-color: #dee2e6 !important; }
+.method-card:hover { border-color: #0d6efd !important; background: #f8f9fa; }
+.method-card.selected { border-color: #0d6efd !important; background: #eef4ff !important; }
+</style>
+<script>
+document.querySelectorAll('.method-radio').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+        this.closest('.method-card').classList.add('selected');
+        document.getElementById('btn-continuer').disabled = false;
+    });
+});
+document.querySelectorAll('.method-card').forEach(card => {
+    card.addEventListener('click', function() {
+        const radio = this.querySelector('.method-radio');
+        radio.checked = true;
+        radio.dispatchEvent(new Event('change'));
+    });
+});
+</script>
+{% endblock %}

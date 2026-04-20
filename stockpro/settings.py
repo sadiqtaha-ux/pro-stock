@@ -290,7 +290,7 @@ LOGGING = {
 # ============================================================
 COMPANY_INFO = {
     'nom': config('COMPANY_NAME', default='MediCare Industries'),
-    'adresse': config('COMPANY_ADDRESS', default='Zone Industrielle, Meknès, Maroc'),
+    'adresse': config('COMPANY_ADDRESS', default='Zone Industrielle'),
     'telephone': config('COMPANY_PHONE', default='+212 535-XXXXXX'),
     'email': config('COMPANY_EMAIL', default='contact@medicare-industries.ma'),
     'ice': config('COMPANY_ICE', default='000000000000000'),

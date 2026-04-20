@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block title %}{{ object.nom }} — Paramètres {{ methode_label }}{% endblock %}
+{% block active_produits %}active{% endblock %}
+{% block show_produits %}show{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'produits:matiere-liste' %}">Matières Premières</a></li>
+<li class="breadcrumb-item"><a href="{% url 'produits:matiere-detail' object.pk %}">{{ object.nom|truncatechars:20 }}</a></li>
+<li class="breadcrumb-item active">Paramètres</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+    <h4 class="mb-1 fw-bold">{{ object.nom }} — Paramètres {{ methode_label }}</h4>
+</div>
+
+{% include 'components/step_progress.html' %}
+
+<!-- Résumé matière -->
+<div class="bg-light p-3 rounded mb-4 d-flex gap-4 flex-wrap align-items-center border">
+    <div>
+        <span class="text-muted small">Référence</span>
+        <div class="fw-bold">{{ object.reference }}</div>
+    </div>
+    <div>
+        <span class="text-muted small">Nom</span>
+        <div class="fw-medium">{{ object.nom }}</div>
+    </div>
+    <div>
+        <span class="text-muted small">Stock actuel</span>
+        <div class="fw-bold">{{ object.stock_actuel }} {{ object.unite.symbole }}</div>
+    </div>
+    <div>
+        {% if object.est_en_rupture %}
+            <span class="badge bg-danger fs-13">Rupture</span>
+        {% elif object.est_en_alerte %}
+            <span class="badge bg-warning text-dark fs-13">Alerte</span>
+        {% else %}
+            <span class="badge bg-success fs-13">Normal</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if form.non_field_errors %}
+<div class="alert alert-danger">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+{% endif %}
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header fw-semibold bg-white border-bottom">
+            <i class="bi {{ methode_config.icon|default:'bi-gear' }} me-2 text-muted"></i>
+            Paramètres — {{ methode_label }}
+        </div>
+        <div class="card-body">
+
+            <!-- Description de la méthode -->
+            <div class="alert alert-light border mb-4">
+                <i class="bi {{ methode_config.icon|default:'bi-gear' }} me-2"></i>
+                {{ methode_config.description }}
+            </div>
+
+            {% if object.methode_approvisionnement == 'MRP' %}
+            <div class="alert alert-warning small mb-4">
+                <i class="bi bi-diagram-3 me-2"></i>
+                La quantité à commander sera calculée automatiquement par le plan MRP.
+                Configurez ici uniquement le taux de rebut et les délais.
+            </div>
+            {% endif %}
+
+            <div class="row g-4">
+                {% for field in form %}
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                        {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                    </label>
+                    <input type="number"
+                           name="{{ field.html_name }}"
+                           id="{{ field.id_for_label }}"
+                           value="{{ field.value|default:'0' }}"
+                           class="form-control {% if field.errors %}is-invalid{% endif %}"
+                           step="0.001" min="0">
+                    {% for e in field.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+
+                    {% if field.name in methode_config.formulas %}
+                    <div class="form-text font-monospace text-primary small mt-1">
+                        <i class="bi bi-calculator me-1"></i>
+                        {{ methode_config.formulas|get_item:field.name }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="d-flex justify-content-between">
+        <a href="{% url 'produits:matiere-update' object.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Retour
+        </a>
+        <div class="d-flex gap-2">
+            <a href="{% url 'produits:matiere-detail' object.pk %}" class="btn btn-outline-info">
+                <i class="bi bi-eye me-1"></i>Voir la fiche
+            </a>
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-lg me-1"></i>Terminer la configuration
+            </button>
+        </div>
+    </div>
+
+</form>
+{% endblock %}

@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}{{ matiere.reference }} — {{ matiere.nom }}{% endblock %}
+{% block active_produits %}active{% endblock %}
+{% block show_produits %}show{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'produits:matiere-liste' %}">Matières Premières</a></li>
+<li class="breadcrumb-item active">{{ matiere.nom|truncatechars:30 }}</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── En-tête ─────────────────────────────────────────────── -->
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <span class="text-muted small fw-medium">{{ matiere.reference }}</span>
+        <h4 class="mb-0 fw-bold">{{ matiere.nom }}</h4>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'produits:matiere-update' matiere.pk %}" class="btn btn-warning btn-sm">
+            <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+        <a href="{% url 'approvisionnement:commande-create' %}?matiere={{ matiere.pk }}"
+           class="btn btn-primary btn-sm">
+            <i class="bi bi-cart-plus me-1"></i>Commander
+        </a>
+        {% if peut_administrer %}
+        <a href="{% url 'produits:matiere-delete' matiere.pk %}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash me-1"></i>Supprimer
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <!-- ── Colonne gauche ── -->
+    <div class="col-md-4">
+        <div class="panel mb-3">
+            <div class="panel-body">
+                <!-- Badges -->
+                <div class="d-flex flex-wrap gap-1 mb-3">
+                    <span class="badge bg-secondary">{{ matiere.get_categorie_display }}</span>
+                    <span class="badge bg-primary">{{ matiere.get_methode_approvisionnement_display }}</span>
+                    <span class="badge bg-info text-dark">{{ matiere.get_zone_stockage_display }}</span>
+                    {% if matiere.actif %}
+                        <span class="badge bg-success">Actif</span>
+                    {% else %}
+                        <span class="badge bg-danger">Inactif</span>
+                    {% endif %}
+                </div>
+
+                <!-- Liste d'infos -->
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Référence</span>
+                        <span class="fw-medium">{{ matiere.reference }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Unité</span>
+                        <span>{{ matiere.unite }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Fournisseur principal</span>
+                        <span>{{ matiere.fournisseur_principal|default:"—" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Prix unitaire</span>
+                        <span>{{ matiere.prix_unitaire }} DH/{{ matiere.unite.symbole }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Emplacement</span>
+                        <span>{{ matiere.emplacement|default:"—" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Délai livraison</span>
+                        <span>{{ matiere.delai_livraison_jours }} j</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Période réappro</span>
+                        <span>{{ matiere.periode_reappro_jours }} j</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">QEC</span>
+                        <span>{{ matiere.qec }} {{ matiere.unite.symbole }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Point de commande</span>
+                        <span>{{ matiere.point_commande }} {{ matiere.unite.symbole }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Taux de rebut</span>
+                        <span>{{ matiere.taux_rebut|floatformat:2 }} %</span>
+                    </li>
+                </ul>
+
+                {% if matiere.description %}
+                <hr class="my-3">
+                <p class="text-muted small mb-0">{{ matiere.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Colonne droite ── -->
+    <div class="col-md-8">
+
+        <!-- SECTION A — Stock actuel -->
+        <div class="panel mb-3">
+            <div class="panel-header">
+                <h5 class="panel-title mb-0"><i class="bi bi-boxes me-2"></i>Stock actuel</h5>
+            </div>
+            <div class="panel-body">
+                <div class="text-center mb-3">
+                    <div class="display-5 fw-bold
+                        {% if matiere.est_en_rupture %}text-danger
+                        {% elif matiere.est_en_alerte %}text-warning
+                        {% else %}text-success{% endif %}">
+                        {{ matiere.stock_actuel }}
+                        <small class="fs-5 text-muted">{{ matiere.unite.symbole }}</small>
+                    </div>
+                    <div class="mt-2">
+                        {% if matiere.est_en_rupture %}
+                            <span class="badge bg-danger fs-13">Rupture de stock</span>
+                        {% elif matiere.est_en_alerte %}
+                            <span class="badge bg-warning text-dark fs-13">Niveau d'alerte</span>
+                        {% else %}
+                            <span class="badge bg-success fs-13">Niveau normal</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Barre de progression -->
+                <div class="mb-1">
+                    <div class="progress" style="height:10px;">
+                        <div class="progress-bar
+                            {% if matiere.est_en_rupture %}bg-danger
+                            {% elif matiere.est_en_alerte %}bg-warning
+                            {% else %}bg-success{% endif %}"
+                            style="width:{{ matiere.taux_remplissage }}%">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted mt-1">
+                        <span>0</span>
+                        <span>{{ matiere.taux_remplissage }}%</span>
+                        <span>{{ matiere.stock_maximum }} {{ matiere.unite.symbole }}</span>
+                    </div>
+                </div>
+
+                <!-- Mini stats -->
+                <div class="row g-2 text-center mt-2">
+                    <div class="col-3">
+                        <div class="bg-light rounded p-2">
+                            <div class="small text-muted">Seuil min</div>
+                            <div class="fw-bold">{{ matiere.stock_minimum }}</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="bg-light rounded p-2">
+                            <div class="small text-muted">Stock sécu</div>
+                            <div class="fw-bold">{{ matiere.stock_securite }}</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="bg-light rounded p-2">
+                            <div class="small text-muted">Stock max</div>
+                            <div class="fw-bold">{{ matiere.stock_maximum }}</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="bg-light rounded p-2">
+                            <div class="small text-muted">Valeur</div>
+                            <div class="fw-bold">{{ matiere.valeur_stock|floatformat:2 }} DH</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION B — Mouvements récents -->
+        <div class="panel mb-3">
+            <div class="panel-header d-flex justify-content-between align-items-center">
+                <h5 class="panel-title mb-0"><i class="bi bi-arrow-left-right me-2"></i>Derniers mouvements</h5>
+                <a href="{% url 'mouvements:liste' %}?matiere={{ matiere.pk }}"
+                   class="btn btn-sm btn-outline-secondary">Voir tout</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 table-stockpro">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th><th>Type</th><th>Quantité</th><th>Opérateur</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mvt in mouvements_recents %}
+                        <tr>
+                            <td class="small text-muted">{{ mvt.date_mouvement|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if mvt.type_mouvement == 'ENTREE' %}
+                                    <span class="badge bg-success">Entrée</span>
+                                {% elif mvt.type_mouvement == 'SORTIE' %}
+                                    <span class="badge bg-danger">Sortie</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Ajust.</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-medium">{{ mvt.quantite }} {{ matiere.unite.symbole }}</td>
+                            <td class="small">{{ mvt.operateur.get_full_name|default:mvt.operateur.username }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-3 text-muted">
+                                Aucun mouvement enregistré
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECTION C — Commandes récentes -->
+        <div class="panel">
+            <div class="panel-header">
+                <h5 class="panel-title mb-0"><i class="bi bi-file-earmark-text me-2"></i>Commandes fournisseur</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 table-stockpro">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Référence</th><th>Fournisseur</th><th>Qté</th>
+                            <th>Statut</th><th>Date</th><th class="text-end">Lien</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bc in bons_commande %}
+                        <tr>
+                            <td class="fw-medium small">{{ bc.reference|default:"—" }}</td>
+                            <td class="small">{{ bc.fournisseur.nom|default:"—" }}</td>
+                            <td>{{ bc.quantite_commandee }}</td>
+                            <td>
+                                {% if bc.statut == 'BROUILLON' %}<span class="badge bg-secondary">Brouillon</span>
+                                {% elif bc.statut == 'ENVOYE' %}<span class="badge bg-primary">Envoyé</span>
+                                {% elif bc.statut == 'CONFIRME' %}<span class="badge bg-info text-dark">Confirmé</span>
+                                {% elif bc.statut == 'RECU' %}<span class="badge bg-success">Reçu</span>
+                                {% else %}<span class="badge bg-danger">Annulé</span>{% endif %}
+                            </td>
+                            <td class="small text-muted">{{ bc.date_creation|date:"d/m/Y" }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'approvisionnement:commande-detail' bc.pk %}"
+                                   class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-3 text-muted">Aucune commande</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>{# /col-md-8 #}
+</div>{# /row #}
+{% endblock %}

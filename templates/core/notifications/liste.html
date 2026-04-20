@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Notifications{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Notifications</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- En-tête -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-1 fw-bold">Notifications</h4>
+        <p class="text-muted mb-0 fs-13">Vos alertes et messages systèmes.</p>
+    </div>
+    {% for n in notifications %}{% if not n.lue %}
+    <a href="{% url 'core:notifications-tout-lire' %}"
+       class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-check-all me-1"></i>Tout marquer comme lu
+    </a>
+    {% if forloop.first %}{% endif %}{% endif %}{% endfor %}
+</div>
+
+<!-- Filtres pills -->
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'core:notifications-liste' %}"
+       class="btn btn-sm {% if not request.GET.lue %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        Toutes
+    </a>
+    <a href="?lue=0"
+       class="btn btn-sm {% if request.GET.lue == '0' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        Non lues
+    </a>
+    <a href="?lue=1"
+       class="btn btn-sm {% if request.GET.lue == '1' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        Lues
+    </a>
+</div>
+
+<!-- Liste -->
+<div class="panel">
+    <div class="list-group list-group-flush">
+        {% for notification in notifications %}
+        <div class="list-group-item list-group-item-action
+                    {% if not notification.lue %}list-group-item-light border-start border-4 border-primary{% endif %}
+                    py-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Icône type -->
+                    {% if notification.type == 'STOCK' %}
+                        <i class="bi bi-exclamation-triangle text-danger fs-5"></i>
+                    {% elif notification.type == 'PEREMPTION' %}
+                        <i class="bi bi-clock text-warning fs-5"></i>
+                    {% elif notification.type == 'COMMANDE' %}
+                        <i class="bi bi-cart text-primary fs-5"></i>
+                    {% elif notification.type == 'SYSTEME' %}
+                        <i class="bi bi-gear text-secondary fs-5"></i>
+                    {% else %}
+                        <i class="bi bi-info-circle text-info fs-5"></i>
+                    {% endif %}
+                    <span class="fw-semibold">{{ notification.titre }}</span>
+                    {% if not notification.lue %}
+                    <span class="badge bg-primary">Nouveau</span>
+                    {% endif %}
+                </div>
+                <small class="text-muted flex-shrink-0 ms-2">
+                    {{ notification.date_envoi|timesince }} ago
+                </small>
+            </div>
+
+            <p class="mb-1 text-muted small mt-1 ms-4">{{ notification.message }}</p>
+
+            <div class="d-flex justify-content-between align-items-center ms-4">
+                <small class="text-muted">
+                    Priorité :
+                    {% if notification.priorite == 'HAUTE' %}
+                        <span class="text-danger fw-medium">Haute</span>
+                    {% elif notification.priorite == 'BASSE' %}
+                        <span class="text-muted">Basse</span>
+                    {% else %}
+                        <span>Normale</span>
+                    {% endif %}
+                    {% if notification.expediteur %}
+                    · De : {{ notification.expediteur.get_full_name|default:notification.expediteur.username }}
+                    {% endif %}
+                </small>
+                {% if not notification.lue %}
+                <a href="{% url 'core:notification-lire' notification.pk %}"
+                   class="btn btn-sm btn-outline-primary py-0 px-2">
+                    Marquer comme lu
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-bell-slash fs-1 d-block mb-2"></i>
+            Aucune notification
+            {% if request.GET.lue == '0' %}non lue{% elif request.GET.lue == '1' %}lue{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="d-flex justify-content-center mt-3">
+    <nav><ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?{% if request.GET.lue %}lue={{ request.GET.lue }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% endif %}
+        <li class="page-item disabled">
+            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?{% if request.GET.lue %}lue={{ request.GET.lue }}&{% endif %}page={{ page_obj.next_page_number }}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul></nav>
+</div>
+{% endif %}
+
+{% endblock %}

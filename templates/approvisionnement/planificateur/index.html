@@ -1,0 +1,429 @@
+{% extends 'base.html' %}
+{% block title %}Planificateur d'approvisionnement{% endblock %}
+{% block active_appro %}active{% endblock %}
+{% block show_appro %}show{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 py-3">
+
+<!-- ── En-tête ───────────────────────────────────────────── -->
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+    <div>
+        <h4 class="fw-bold mb-1">
+            <i class="bi bi-cpu me-2 text-primary"></i>
+            Planificateur d'approvisionnement
+        </h4>
+        <p class="text-muted small mb-0">
+            Calcul automatique des besoins selon la méthode de chaque matière.
+            Validez ou ajustez les propositions avant conversion en bon de commande.
+        </p>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="force" value="0">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-play-circle me-1"></i>Lancer le calcul
+            </button>
+        </form>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="force" value="1">
+            <button type="submit" class="btn btn-outline-secondary btn-sm"
+                    data-bs-toggle="tooltip"
+                    title="Recalcule même si des propositions PROPOSÉES existent déjà">
+                <i class="bi bi-arrow-clockwise me-1"></i>Recalculer tout
+            </button>
+        </form>
+        <a href="{% url 'approvisionnement:commande-liste' %}" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-file-earmark-text me-1"></i>Bons de commande
+        </a>
+    </div>
+</div>
+
+<!-- ── KPIs ──────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-2 fw-bold text-primary">{{ propositions|length }}</div>
+                <div class="text-muted small">En attente</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100" style="background:rgba(220,53,69,.05);">
+            <div class="card-body text-center py-3">
+                <div class="fs-2 fw-bold text-danger">{{ nb_urgentes }}</div>
+                <div class="text-muted small">Urgentes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-2 fw-bold text-success">{{ nb_normales }}</div>
+                <div class="text-muted small">Normales</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-2 fw-bold text-secondary">{{ nb_converties }}</div>
+                <div class="text-muted small">Converties en BC</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Explainer (collapse) ──────────────────────────────── -->
+<a class="small text-muted mb-2 d-inline-block" data-bs-toggle="collapse" href="#explainer">
+    <i class="bi bi-info-circle me-1"></i>Comment fonctionne le planificateur ?
+</a>
+<div class="collapse mb-3" id="explainer">
+    <div class="card border-0 bg-light">
+        <div class="card-body py-3">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-primary mt-1" style="height:fit-content;">ROP</span>
+                        <div>
+                            <div class="fw-semibold small">Point de commande</div>
+                            <div class="text-muted" style="font-size:11px;">
+                                Déclenché si <strong>stock ≤ ROP</strong>.<br>
+                                Quantité = QEC (formule de Wilson).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-success mt-1" style="height:fit-content;">FIXE</span>
+                        <div>
+                            <div class="fw-semibold small">Réappro fixe (Q, T)</div>
+                            <div class="text-muted" style="font-size:11px;">
+                                Déclenché si aucune commande dans la période T.<br>
+                                Quantité = Q fixe (QEC).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-info text-dark mt-1" style="height:fit-content;">REC.</span>
+                        <div>
+                            <div class="fw-semibold small">Recomplètement (S, T)</div>
+                            <div class="text-muted" style="font-size:11px;">
+                                Déclenché si <strong>stock &lt; niveau cible S</strong>.<br>
+                                Quantité = S − stock actuel.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-warning text-dark mt-1" style="height:fit-content;">MRP</span>
+                        <div>
+                            <div class="fw-semibold small">MRP</div>
+                            <div class="text-muted" style="font-size:11px;">
+                                Déclenché si le plan MRP a un <strong>besoin net &gt; 0</strong>.<br>
+                                Quantité = celle du plan MRP.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Table des propositions ────────────────────────────── -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-2">
+        <span class="fw-semibold">
+            Propositions en attente de validation
+            <span class="badge bg-primary ms-1">{{ propositions|length }}</span>
+        </span>
+        {% if nb_rejetees %}
+        <span class="text-muted small">{{ nb_rejetees }} rejetée(s) ce mois</span>
+        {% endif %}
+    </div>
+
+    {% if not propositions %}
+    <div class="card-body text-center py-5">
+        <i class="bi bi-check-circle fs-1 text-success opacity-50 d-block mb-3"></i>
+        <h5 class="text-muted">Aucune proposition en attente</h5>
+        <p class="text-muted small mb-3">
+            Lancez le calcul pour que le planificateur analyse les besoins de vos matières.
+        </p>
+        <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="force" value="0">
+            <button class="btn btn-primary">
+                <i class="bi bi-play-circle me-1"></i>Lancer le calcul maintenant
+            </button>
+        </form>
+    </div>
+
+    {% else %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;">
+                <tr>
+                    <th style="width:80px;">Urgence</th>
+                    <th>Matière</th>
+                    <th style="width:80px;">Méthode</th>
+                    <th style="width:110px;">Stock actuel</th>
+                    <th style="width:120px;">Qté proposée</th>
+                    <th style="width:100px;">Date besoin</th>
+                    <th style="width:50px;" class="text-center">Calcul</th>
+                    <th style="width:130px;" class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for prop in propositions %}
+                <!-- ── Ligne principale ── -->
+                <tr class="{% if prop.urgence %}table-danger{% endif %}">
+
+                    <!-- Urgence -->
+                    <td>
+                        {% if prop.urgence %}
+                            <span class="badge bg-danger">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Urgent
+                            </span>
+                        {% else %}
+                            <span class="badge bg-light text-muted border">Normal</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Matière -->
+                    <td>
+                        <div class="fw-medium">{{ prop.matiere.nom }}</div>
+                        <code class="small text-muted">{{ prop.matiere.reference }}</code>
+                        {% if prop.matiere.fournisseur_principal %}
+                        <div style="font-size:10px;" class="text-muted">
+                            <i class="bi bi-truck me-1"></i>{{ prop.matiere.fournisseur_principal.nom }}
+                        </div>
+                        {% else %}
+                        <div style="font-size:10px;" class="text-warning">
+                            <i class="bi bi-exclamation-triangle me-1"></i>Aucun fournisseur défini
+                        </div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Méthode -->
+                    <td>
+                        {% if prop.methode == "POINT_COMMANDE" %}
+                            <span class="badge bg-primary">ROP</span>
+                        {% elif prop.methode == "REAPPRO_FIXE" %}
+                            <span class="badge bg-success">Fixe</span>
+                        {% elif prop.methode == "RECOMPLETEMENT" %}
+                            <span class="badge bg-info text-dark">Rec.</span>
+                        {% elif prop.methode == "MRP" %}
+                            <span class="badge bg-warning text-dark">MRP</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ prop.methode }}</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Stock actuel -->
+                    <td>
+                        <span class="fw-bold
+                            {% if prop.matiere.est_en_rupture %}text-danger
+                            {% elif prop.matiere.est_en_alerte %}text-warning
+                            {% else %}text-success{% endif %}">
+                            {{ prop.matiere.stock_actuel|floatformat:2 }}
+                        </span>
+                        <span class="text-muted small"> {{ prop.matiere.unite.symbole }}</span>
+                    </td>
+
+                    <!-- Quantité proposée -->
+                    <td>
+                        <span class="fw-bold text-primary">
+                            {{ prop.quantite_proposee|floatformat:2 }}
+                        </span>
+                        <span class="text-muted small"> {{ prop.matiere.unite.symbole }}</span>
+                    </td>
+
+                    <!-- Date besoin -->
+                    <td class="small {% if prop.urgence %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                        {{ prop.date_besoin|date:"d/m/Y"|default:"—" }}
+                    </td>
+
+                    <!-- Bouton calcul -->
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-link p-0 text-muted"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#detail-{{ prop.pk }}"
+                                title="Voir le détail du calcul">
+                            <i class="bi bi-calculator fs-6"></i>
+                        </button>
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-success me-1"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modal-valider-{{ prop.pk }}"
+                                {% if not prop.matiere.fournisseur_principal %}
+                                title="Aucun fournisseur — définissez-en un sur la fiche matière"{% endif %}>
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modal-rejeter-{{ prop.pk }}"
+                                title="Rejeter">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </td>
+                </tr>
+
+                <!-- ── Ligne de détail (collapse) ── -->
+                <tr class="collapse" id="detail-{{ prop.pk }}">
+                    <td colspan="8" class="py-2 px-4 bg-light" style="font-size:11px;">
+                        <strong class="text-secondary">Règle appliquée :</strong>
+                        <span class="text-muted ms-1">{{ prop.detail_calcul.regle }}</span>
+                        <div class="mt-1 font-monospace text-muted" style="font-size:10px;">
+                            {% for key, val in prop.detail_calcul.items %}
+                                {% if key != "regle" and key != "methode" %}
+                                    <span class="me-3">
+                                        <span class="text-secondary">{{ key }}</span> = {{ val }}
+                                    </span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- ══ MODAL VALIDATION ══ -->
+                <div class="modal fade" id="modal-valider-{{ prop.pk }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    Valider la proposition
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form method="post"
+                                  action="{% url 'approvisionnement:proposition-valider' prop.pk %}">
+                                {% csrf_token %}
+                                <div class="modal-body pt-2">
+
+                                    <!-- Résumé matière -->
+                                    <div class="bg-light rounded p-3 mb-3" style="font-size:12px;">
+                                        <strong>[{{ prop.matiere.reference }}] {{ prop.matiere.nom }}</strong><br>
+                                        Méthode : <span class="badge bg-secondary">{{ prop.methode }}</span>
+                                        <div class="text-muted mt-1">{{ prop.detail_calcul.regle }}</div>
+                                    </div>
+
+                                    <!-- Quantité -->
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">
+                                            Quantité à commander
+                                            <span class="text-muted fw-normal">
+                                                (proposée : {{ prop.quantite_proposee }} {{ prop.matiere.unite.symbole }})
+                                            </span>
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="number" name="quantite_validee"
+                                                   class="form-control"
+                                                   value="{{ prop.quantite_proposee }}"
+                                                   step="0.0001" min="0" required>
+                                            <span class="input-group-text">{{ prop.matiere.unite.symbole }}</span>
+                                        </div>
+                                        <div class="form-text">Modifiez si nécessaire avant création du BC.</div>
+                                    </div>
+
+                                    <!-- Fournisseur -->
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Fournisseur</label>
+                                        <select name="fournisseur" class="form-select" required>
+                                            {% for f in fournisseurs_actifs %}
+                                            <option value="{{ f.pk }}"
+                                                {% if prop.matiere.fournisseur_principal and prop.matiere.fournisseur_principal.pk == f.pk %}selected{% endif %}>
+                                                {{ f.nom }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!-- Date réception prévue -->
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Date de réception prévue</label>
+                                        <input type="date" name="date_reception_prevue" class="form-control">
+                                        <div class="form-text">
+                                            Délai habituel : {{ prop.matiere.delai_livraison_jours }} jours.
+                                        </div>
+                                    </div>
+
+                                    <!-- Note acheteur -->
+                                    <div class="mb-0">
+                                        <label class="form-label fw-semibold">Note (optionnel)</label>
+                                        <textarea name="note_acheteur" class="form-control" rows="2"
+                                                  placeholder="Raison d'un ajustement, accord particulier..."></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-0 pt-0">
+                                    <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">Annuler</button>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-check-lg me-1"></i>Créer le bon de commande
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ MODAL REJET ══ -->
+                <div class="modal fade" id="modal-rejeter-{{ prop.pk }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-sm">
+                        <div class="modal-content">
+                            <div class="modal-header border-0 pb-0">
+                                <h6 class="modal-title text-danger">
+                                    <i class="bi bi-x-circle me-1"></i>Rejeter la proposition
+                                </h6>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form method="post"
+                                  action="{% url 'approvisionnement:proposition-rejeter' prop.pk %}">
+                                {% csrf_token %}
+                                <div class="modal-body pt-1">
+                                    <p class="small text-muted mb-2">
+                                        <strong>[{{ prop.matiere.reference }}]</strong> {{ prop.matiere.nom }}<br>
+                                        Qté : {{ prop.quantite_proposee }} {{ prop.matiere.unite.symbole }}
+                                    </p>
+                                    <textarea name="note_rejet" class="form-control form-control-sm"
+                                              rows="2" placeholder="Raison du rejet..." required></textarea>
+                                </div>
+                                <div class="modal-footer border-0 py-2">
+                                    <button class="btn btn-sm btn-secondary"
+                                            data-bs-dismiss="modal">Annuler</button>
+                                    <button class="btn btn-sm btn-danger" type="submit">Rejeter</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialiser les tooltips Bootstrap
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    new bootstrap.Tooltip(el);
+});
+</script>
+{% endblock %}

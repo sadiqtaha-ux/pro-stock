@@ -1,7 +1,9 @@
 """produits/views.py"""
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
-from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views import View
+from django.shortcuts import redirect
+from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
 from django.db.models import Q
 from django.contrib import messages
@@ -54,22 +56,141 @@ class MatiereDetailView(LoginRequiredMixin, DetailView):
         return ctx
 
 
+class MatiereChoisirMethodeView(LoginRequiredMixin, View):
+    """Étape 0 : choix de la méthode avant création."""
+    template_name = "produits/matiere/choisir_methode.html"
+
+    def get(self, request):
+        from django.shortcuts import render
+        return render(request, self.template_name)
+
+    def post(self, request):
+        from django.shortcuts import render, redirect
+        from django.urls import reverse
+        methode = request.POST.get("methode")
+        if methode not in MatierePremiere.MethodeApprovisionnement.values:
+            messages.error(request, "Méthode invalide.")
+            return redirect("produits:matiere-choisir-methode")
+        return redirect(reverse("produits:matiere-create") + f"?methode={methode}")
+
+
 class MatiereCreerView(LoginRequiredMixin, CreateView):
     model         = MatierePremiere
-    template_name = "produits/matiere/form.html"
+    template_name = "produits/matiere/form_step1.html"
     fields        = [
         "reference", "nom", "description", "categorie",
         "unite", "fournisseur_principal", "prix_unitaire",
-        "stock_actuel", "stock_minimum", "stock_maximum", "stock_securite",
-        "methode_approvisionnement", "point_commande", "qec",
-        "delai_livraison_jours", "periode_reappro_jours", "taux_rebut",
-        "zone_stockage", "emplacement", "actif"
+        "stock_actuel", "stock_minimum", "stock_maximum",
+        "stock_securite", "zone_stockage", "emplacement", "actif"
     ]
-    success_url = reverse_lazy("produits:matiere-liste")
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial["methode_approvisionnement"] = self.request.GET.get("methode", "POINT_COMMANDE")
+        return initial
+
+    def get_context_data(self, **kwargs):
+        from django.urls import reverse
+        ctx = super().get_context_data(**kwargs)
+        ctx["methode_choisie"] = self.request.GET.get("methode", "POINT_COMMANDE")
+        ctx["methode_label"] = dict(
+            MatierePremiere.MethodeApprovisionnement.choices
+        ).get(ctx["methode_choisie"], "")
+        ctx["step"]       = 1
+        ctx["step_total"] = 2
+        ctx["step_range"] = range(1, 3)
+        return ctx
 
     def form_valid(self, form):
-        messages.success(self.request, _("Matière première créée avec succès."))
-        return super().form_valid(form)
+        from django.urls import reverse
+        methode = self.request.GET.get("methode", "POINT_COMMANDE")
+        form.instance.methode_approvisionnement = methode
+        self.object = form.save()
+        messages.info(
+            self.request,
+            f"Étape 1 complète. Configurez maintenant les paramètres "
+            f"d'approvisionnement pour « {self.object.nom} »."
+        )
+        return redirect(reverse("produits:matiere-parametres", kwargs={"pk": self.object.pk}))
+
+
+# ============================================================
+# PARAMÈTRES PAR MÉTHODE (step 2)
+# ============================================================
+
+PARAMS_PAR_METHODE = {
+    "POINT_COMMANDE": {
+        "fields":      ["point_commande", "qec", "delai_livraison_jours"],
+        "description": "Définissez le seuil de déclenchement (ROP), la quantité économique de commande (QEC) et le délai fournisseur.",
+        "icon":        "bi-graph-down-arrow",
+        "formulas": {
+            "point_commande": "ROP = Consommation journalière × Délai livraison + Stock sécurité",
+            "qec":            "QEC = √(2 × D × K / (h × Pu))  — Formule de Wilson",
+        },
+    },
+    "REAPPRO_FIXE": {
+        "fields":      ["qec", "periode_reappro_jours", "delai_livraison_jours"],
+        "description": "Définissez la quantité fixe commandée (Q), la période de réapprovisionnement (T) et le délai fournisseur.",
+        "icon":        "bi-calendar-check",
+        "formulas": {
+            "qec": "Q fixe commandée à chaque déclenchement",
+        },
+    },
+    "RECOMPLETEMENT": {
+        "fields":      ["stock_maximum", "periode_reappro_jours", "delai_livraison_jours"],
+        "description": "Définissez le niveau cible (S = stock maximum), la période de révision (T) et le délai fournisseur. À chaque révision on commande S − stock actuel.",
+        "icon":        "bi-arrow-repeat",
+        "formulas": {
+            "stock_maximum": "S = Niveau de recomplètement cible",
+        },
+    },
+    "MRP": {
+        "fields":      ["taux_rebut", "delai_livraison_jours", "periode_reappro_jours"],
+        "description": "Configurez le taux de rebut de production et le délai fournisseur. Les quantités seront calculées par le plan MRP.",
+        "icon":        "bi-diagram-3",
+        "formulas": {
+            "taux_rebut": "Besoin brut ajusté = Besoin net / (1 − taux_rebut)",
+        },
+    },
+}
+
+
+class MatiereParametresMethodeView(LoginRequiredMixin, UpdateView):
+    """Étape 2 : paramètres spécifiques à la méthode d'approvisionnement."""
+    model         = MatierePremiere
+    template_name = "produits/matiere/form_step2.html"
+
+    def get_object(self, queryset=None):
+        if not hasattr(self, "_object"):
+            self._object = super().get_object(queryset)
+        return self._object
+
+    def get_fields_for_method(self):
+        methode = self.get_object().methode_approvisionnement
+        return PARAMS_PAR_METHODE.get(methode, {}).get("fields", [])
+
+    def get_form_class(self):
+        from django.forms import modelform_factory
+        return modelform_factory(MatierePremiere, fields=self.get_fields_for_method())
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        methode = self.object.methode_approvisionnement
+        ctx["methode_config"] = PARAMS_PAR_METHODE.get(methode, {})
+        ctx["methode_label"]  = self.object.get_methode_approvisionnement_display()
+        ctx["step"]           = 2
+        ctx["step_total"]     = 2
+        ctx["step_range"]     = range(1, 3)
+        return ctx
+
+    def form_valid(self, form):
+        from django.urls import reverse
+        form.save()
+        messages.success(
+            self.request,
+            f"Matière « {self.object.nom} » créée et configurée avec succès."
+        )
+        return redirect(reverse("produits:matiere-detail", kwargs={"pk": self.object.pk}))
 
 
 class MatiereModifierView(LoginRequiredMixin, UpdateView):
@@ -167,3 +288,20 @@ def matiere_search_api(request):
         for m in matieres
     ]
     return JsonResponse({"results": data})
+
+
+# ============================================================
+# SUPPRESSION MATIÈRE PREMIÈRE (admin uniquement)
+# ============================================================
+
+class MatiereSuppressionView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model         = MatierePremiere
+    template_name = "produits/matiere/confirm_delete.html"
+    success_url   = reverse_lazy("produits:matiere-liste")
+
+    def test_func(self):
+        return self.request.user.est_admin
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Matière « {self.object.nom} » supprimée.")
+        return super().form_valid(form)

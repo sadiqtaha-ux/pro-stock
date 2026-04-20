@@ -10,8 +10,10 @@ app_name = 'magasin'
 urlpatterns = [
     # Plan 2D interactif
     path('', views.PlanMagasinView.as_view(), name='plan'),
-    path('api/plan/', views.api_plan_data, name='api-plan'),
-    path('api/emplacements/<int:pk>/', views.api_emplacement_detail, name='api-emplacement'),
+
+    # API temps réel pour la vue 2D
+    path('api/plan/', views.api_plan_temps_reel, name='api-plan'),
+    path('api/detail/<str:ref>/', views.api_emplacement_detail, name='api-detail'),
 
     # Zones
     path('zones/', views.ZoneListeView.as_view(), name='zone-liste'),

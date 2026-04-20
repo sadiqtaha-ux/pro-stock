@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block title %}Rapports{% endblock %}
+{% block active_dashboard %}active{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Rapports</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── En-tête ─────────────────────────────────────────────── -->
+<div class="mb-4">
+    <h4 class="mb-1 fw-bold">Rapports</h4>
+    <p class="text-muted mb-0 fs-13">Génération et historique des rapports exportables.</p>
+</div>
+
+<!-- ── SECTION 1 — Cartes de génération ──────────────────── -->
+<div class="row g-3 mb-4">
+
+    <!-- CARD 1 — État du stock -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                <i class="bi bi-box-seam fs-1 text-primary mb-3"></i>
+                <h5 class="fw-bold mb-2">État du stock</h5>
+                <p class="text-muted small mb-4">
+                    Rapport complet de toutes les matières premières avec
+                    valorisation, niveaux et alertes.
+                </p>
+                <form method="get" action="{% url 'dashboard:rapport-stock' %}" class="w-100 mt-auto">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-download me-2"></i>Générer PDF
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 2 — Mouvements -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                <i class="bi bi-arrow-left-right fs-1 text-success mb-3"></i>
+                <h5 class="fw-bold mb-2">Mouvements du mois</h5>
+                <p class="text-muted small mb-3">
+                    Historique des entrées et sorties sur la période sélectionnée.
+                </p>
+                <form method="get" action="#" class="w-100 mt-auto">
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="date" name="date_from" class="form-control">
+                        <span class="input-group-text">→</span>
+                        <input type="date" name="date_to" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-success w-100" disabled>
+                        <i class="bi bi-download me-2"></i>Générer <span class="text-white-50 small">(bientôt)</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 3 — Approvisionnements -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                <i class="bi bi-cart-check fs-1 text-warning mb-3"></i>
+                <h5 class="fw-bold mb-2">Approvisionnements</h5>
+                <p class="text-muted small mb-4">
+                    Commandes fournisseurs et statuts MRP sur la période.
+                </p>
+                <div class="w-100 mt-auto">
+                    <button class="btn btn-warning w-100" disabled>
+                        <i class="bi bi-download me-2"></i>Générer <span class="text-dark opacity-50 small">(bientôt)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── SECTION 2 — Historique ─────────────────────────────── -->
+<div class="panel">
+    <div class="panel-header d-flex justify-content-between align-items-center">
+        <h5 class="panel-title mb-0">
+            <i class="bi bi-clock-history me-2 text-muted"></i>Rapports récents
+        </h5>
+        <span class="badge bg-secondary">{{ rapports_recents|length }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 table-stockpro">
+            <thead class="table-light">
+                <tr>
+                    <th>Rapport</th>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th>Statut</th>
+                    <th class="text-end">Télécharger</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rapport in rapports_recents %}
+                <tr>
+                    <!-- Nom -->
+                    <td class="fw-medium">{{ rapport.nom }}</td>
+
+                    <!-- Type -->
+                    <td>
+                        <span class="badge bg-light text-dark border">
+                            {{ rapport.type_rapport }}
+                        </span>
+                    </td>
+
+                    <!-- Date -->
+                    <td class="small text-muted">
+                        {{ rapport.date_creation|date:"d/m/Y H:i" }}
+                    </td>
+
+                    <!-- Statut -->
+                    <td>
+                        {% if rapport.statut == 'GENERE' %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle me-1"></i>Généré
+                            </span>
+                        {% elif rapport.statut == 'EN_COURS' %}
+                            <span class="badge bg-warning text-dark">
+                                <span class="spinner-border spinner-border-sm me-1"
+                                      style="width:.65rem;height:.65rem;" role="status"></span>
+                                En cours
+                            </span>
+                        {% elif rapport.statut == 'ERREUR' %}
+                            <span class="badge bg-danger">
+                                <i class="bi bi-x-circle me-1"></i>Erreur
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ rapport.statut }}</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Télécharger -->
+                    <td class="text-end">
+                        {% if rapport.fichier %}
+                        <a href="{{ rapport.fichier.url }}"
+                           class="btn btn-sm btn-outline-primary"
+                           title="Télécharger {{ rapport.nom }}"
+                           download>
+                            <i class="bi bi-download"></i>
+                        </a>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5 text-muted">
+                        <i class="bi bi-file-earmark-x fs-1 d-block mb-3 text-muted"></i>
+                        <p class="mb-2 fw-medium">Aucun rapport généré</p>
+                        <p class="small text-muted mb-0">
+                            Utilisez les boutons ci-dessus pour créer votre premier rapport.
+                        </p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

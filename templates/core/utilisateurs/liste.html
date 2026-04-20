@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Gestion des utilisateurs{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Utilisateurs</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- En-tête -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold">Gestion des utilisateurs</h4>
+        <p class="text-muted mb-0 fs-13">Administration des comptes et des droits d'accès.</p>
+    </div>
+    <a href="{% url 'core:utilisateur-creer' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-person-plus me-1"></i>Nouvel utilisateur
+    </a>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-primary-soft"><i class="bi bi-people"></i></div>
+            <div>
+                <div class="kpi-value text-primary">{{ total }}</div>
+                <div class="kpi-label">Total utilisateurs</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-success-soft"><i class="bi bi-person-check"></i></div>
+            <div>
+                <div class="kpi-value text-success">{{ actifs }}</div>
+                <div class="kpi-label">Actifs</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-danger-soft"><i class="bi bi-person-x"></i></div>
+            <div>
+                <div class="kpi-value text-danger">{{ total|add:"-0" }}</div>
+                <div class="kpi-label">Inactifs</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres -->
+<form method="get" class="row g-2 mb-3 align-items-end" id="filter-form">
+    <div class="col-md-5">
+        <input type="text" name="q" class="form-control form-control-sm"
+               placeholder="Nom, prénom, email, identifiant…" value="{{ request.GET.q }}">
+    </div>
+    <div class="col-md-3">
+        <select name="role" class="form-select form-select-sm">
+            <option value="">Tous les rôles</option>
+            {% for val, label in roles %}
+            <option value="{{ val }}" {% if request.GET.role == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-search"></i>
+        </button>
+    </div>
+    {% if request.GET.q or request.GET.role %}
+    <div class="col-auto">
+        <a href="{% url 'core:utilisateurs-liste' %}" class="btn btn-sm btn-outline-secondary" title="Réinitialiser">
+            <i class="bi bi-x-lg"></i>
+        </a>
+    </div>
+    {% endif %}
+</form>
+
+<!-- Table -->
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 table-stockpro">
+            <thead class="table-light">
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Rôle</th>
+                    <th>Email</th>
+                    <th>Statut</th>
+                    <th>Dernière connexion</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for utilisateur in utilisateurs %}
+                <tr>
+                    <!-- Utilisateur -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0"
+                                 style="width:32px;height:32px;font-size:.75rem;">
+                                {{ utilisateur.first_name|first|upper }}{{ utilisateur.last_name|first|upper }}
+                            </div>
+                            <div>
+                                <div class="fw-medium">{{ utilisateur.get_full_name|default:utilisateur.username }}</div>
+                                <div class="small text-muted">@{{ utilisateur.username }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <!-- Rôle -->
+                    <td>
+                        {% if utilisateur.role == 'ADMIN' %}
+                            <span class="badge bg-danger">Administrateur</span>
+                        {% elif utilisateur.role == 'RESPONSABLE_STOCK' %}
+                            <span class="badge bg-warning text-dark">Resp. Stock</span>
+                        {% elif utilisateur.role == 'MAGASINIER' %}
+                            <span class="badge bg-primary">Magasinier</span>
+                        {% elif utilisateur.role == 'ACHETEUR' %}
+                            <span class="badge bg-info text-dark">Acheteur</span>
+                        {% elif utilisateur.role == 'CONSULTANT' %}
+                            <span class="badge bg-secondary">Consultant</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border">{{ utilisateur.get_role_display }}</span>
+                        {% endif %}
+                    </td>
+                    <!-- Email -->
+                    <td class="small">
+                        {% if utilisateur.email %}
+                        <a href="mailto:{{ utilisateur.email }}" class="text-decoration-none text-muted">
+                            {{ utilisateur.email }}
+                        </a>
+                        {% else %}—{% endif %}
+                    </td>
+                    <!-- Statut -->
+                    <td>
+                        {% if utilisateur.est_actif %}
+                            <span class="badge bg-success">Actif</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactif</span>
+                        {% endif %}
+                    </td>
+                    <!-- Dernière connexion -->
+                    <td class="small text-muted">
+                        {{ utilisateur.date_derniere_connexion|date:"d/m/Y H:i"|default:"Jamais" }}
+                    </td>
+                    <!-- Actions -->
+                    <td class="text-end">
+                        <a href="{% url 'core:utilisateur-modifier' utilisateur.pk %}"
+                           class="btn btn-sm btn-outline-secondary" title="Modifier">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-people fs-1 d-block mb-2"></i>
+                        Aucun utilisateur trouvé
+                        {% if request.GET.q %} pour "<strong>{{ request.GET.q }}</strong>"{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="d-flex justify-content-center py-3">
+        <nav><ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            <li class="page-item disabled">
+                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            </li>
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul></nav>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

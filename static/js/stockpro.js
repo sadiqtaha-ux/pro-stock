@@ -27,6 +27,12 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 sidebar.classList.toggle('collapsed');
                 localStorage.setItem(SIDEBAR_KEY, sidebar.classList.contains('collapsed') ? '1' : '0');
+                // Fermer tous les sous-menus ouverts lors du collapse
+                if (sidebar.classList.contains('collapsed')) {
+                    sidebar.querySelectorAll('.collapse.show').forEach(el => {
+                        bootstrap.Collapse.getOrCreateInstance(el).hide();
+                    });
+                }
             }
         });
     }

@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}Journal d'activité{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Journal</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- En-tête -->
+<div class="mb-4">
+    <h4 class="mb-1 fw-bold">Journal d'activité</h4>
+    <p class="text-muted mb-0 fs-13">Audit trail complet de toutes les actions utilisateurs.</p>
+</div>
+
+<!-- Filtres -->
+<form method="get" class="row g-2 mb-3 align-items-end" id="filter-form">
+    <div class="col-md-3">
+        <select name="utilisateur" class="form-select form-select-sm">
+            <option value="">Tous les utilisateurs</option>
+            {% for u in utilisateurs %}
+            <option value="{{ u.pk }}" {% if request.GET.utilisateur == u.pk|stringformat:"s" %}selected{% endif %}>
+                {{ u.get_full_name|default:u.username }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="action" class="form-select form-select-sm">
+            <option value="">Toutes les actions</option>
+            {% for val, label in actions %}
+            <option value="{{ val }}" {% if request.GET.action == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <input type="date" name="date_from" class="form-control form-control-sm"
+               value="{{ request.GET.date_from }}" placeholder="Du">
+    </div>
+    <div class="col-md-2">
+        <input type="date" name="date_to" class="form-control form-control-sm"
+               value="{{ request.GET.date_to }}" placeholder="Au">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-primary">
+            <i class="bi bi-funnel"></i>
+        </button>
+    </div>
+    {% if request.GET.utilisateur or request.GET.action or request.GET.date_from or request.GET.date_to %}
+    <div class="col-auto">
+        <a href="{% url 'core:journal-liste' %}" class="btn btn-sm btn-outline-secondary" title="Réinitialiser">
+            <i class="bi bi-x-lg"></i>
+        </a>
+    </div>
+    {% endif %}
+</form>
+
+<!-- Table (dense) -->
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small table-stockpro">
+            <thead class="table-light">
+                <tr>
+                    <th>Date / Heure</th>
+                    <th>Utilisateur</th>
+                    <th>Action</th>
+                    <th>Objet</th>
+                    <th>Description</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activite in activites %}
+                <tr>
+                    <!-- Date -->
+                    <td class="text-muted font-monospace" style="font-size:11px;white-space:nowrap;">
+                        {{ activite.date_action|date:"d/m/Y H:i:s" }}
+                    </td>
+                    <!-- Utilisateur -->
+                    <td>
+                        <div class="d-flex align-items-center gap-1">
+                            <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0"
+                                 style="width:20px;height:20px;font-size:9px;">
+                                {{ activite.utilisateur.first_name|first|upper }}{{ activite.utilisateur.last_name|first|upper }}
+                            </div>
+                            <span>{{ activite.utilisateur.get_full_name|default:activite.utilisateur.username }}</span>
+                        </div>
+                    </td>
+                    <!-- Action -->
+                    <td>
+                        {% if activite.action == 'CREATE' %}<span class="badge bg-success">Création</span>
+                        {% elif activite.action == 'UPDATE' %}<span class="badge bg-warning text-dark">Modif.</span>
+                        {% elif activite.action == 'DELETE' %}<span class="badge bg-danger">Suppression</span>
+                        {% elif activite.action == 'LOGIN' %}<span class="badge bg-primary">Connexion</span>
+                        {% elif activite.action == 'LOGOUT' %}<span class="badge bg-secondary">Déconnexion</span>
+                        {% elif activite.action == 'EXPORT' %}<span class="badge bg-info text-dark">Export</span>
+                        {% elif activite.action == 'PRINT' %}<span class="badge bg-light text-dark border">Impression</span>
+                        {% else %}<span class="badge bg-light text-dark border">{{ activite.action }}</span>{% endif %}
+                    </td>
+                    <!-- Objet -->
+                    <td class="text-muted" style="font-size:11px;">
+                        {{ activite.modele }} #{{ activite.objet_id|default:"—" }}
+                    </td>
+                    <!-- Description -->
+                    <td style="max-width:300px;">
+                        <span class="d-inline-block text-truncate" style="max-width:280px;"
+                              title="{{ activite.description }}">
+                            {{ activite.description }}
+                        </span>
+                    </td>
+                    <!-- IP -->
+                    <td class="font-monospace text-muted" style="font-size:11px;">
+                        {{ activite.adresse_ip|default:"—" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
+                        Aucune activité enregistrée
+                        {% if request.GET.action or request.GET.utilisateur %}pour ces critères{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="d-flex justify-content-center py-3">
+        <nav><ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            <li class="page-item disabled">
+                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            </li>
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul></nav>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

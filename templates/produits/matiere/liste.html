@@ -14,12 +14,21 @@
             <p class="text-muted mb-0 fs-13">Gérez vos API, excipients et conditionnements.</p>
         </div>
         <div>
-            <a href="{% url 'produits:matiere-create' %}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-2"></i>Nouvelle matière
+            {% if peut_administrer or peut_saisir %}
+            <a href="{% url 'produits:matiere-choisir-methode' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Nouvelle matière
             </a>
+            {% endif %}
         </div>
     </div>
 </div>
+
+{% if not peut_administrer %}
+<div class="alert alert-info alert-sm py-2 px-3 mb-3">
+    <i class="bi bi-info-circle me-1"></i>
+    Ajout et suppression de matières réservés à l'administrateur.
+</div>
+{% endif %}
 
 <div class="panel">
     <div class="panel-header d-flex justify-content-between align-items-center">
@@ -84,6 +93,13 @@
                         <a href="{% url 'produits:matiere-update' matiere.pk %}" class="btn btn-sm btn-outline-primary" title="Modifier">
                             <i class="bi bi-pencil"></i>
                         </a>
+                        {% if peut_administrer %}
+                        <a href="{% url 'produits:matiere-delete' matiere.pk %}"
+                           class="btn btn-sm btn-outline-danger ms-1"
+                           title="Supprimer">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}

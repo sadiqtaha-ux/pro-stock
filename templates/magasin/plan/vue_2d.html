@@ -1,0 +1,580 @@
+{% extends 'base.html' %}
+{% block title %}Plan 2D du Magasin{% endblock %}
+{% block active_magasin %}active{% endblock %}
+{% block show_magasin %}show{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Plan 2D</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Topbar ─────────────────────────────────────────── -->
+<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-3">
+        <h4 class="mb-0 fw-bold">Plan 2D du Magasin</h4>
+        <span class="d-flex align-items-center gap-1 badge bg-success bg-opacity-15 text-success border border-success px-2 py-1" style="font-size:11px;">
+            <span id="dot-live" style="width:8px;height:8px;border-radius:50%;background:#198754;display:inline-block;transition:opacity .3s;"></span>
+            Temps réel
+        </span>
+        <span id="alert-count" class="badge bg-danger" style="display:none;font-size:11px;"></span>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <button class="btn btn-sm btn-dark btn-filter" data-filter="all">Tout</button>
+        <button class="btn btn-sm btn-outline-danger btn-filter" data-filter="RUPTURE">
+            <span style="width:7px;height:7px;border-radius:50%;background:#dc3545;display:inline-block;margin-right:3px;"></span>Rupture
+        </button>
+        <button class="btn btn-sm btn-outline-warning btn-filter" data-filter="CRITIQUE">
+            <span style="width:7px;height:7px;border-radius:50%;background:#fd7e14;display:inline-block;margin-right:3px;"></span>Critique
+        </button>
+        <button class="btn btn-sm btn-outline-secondary btn-filter" data-filter="ALERTE">
+            <span style="width:7px;height:7px;border-radius:50%;background:#ffc107;display:inline-block;margin-right:3px;"></span>Alerte
+        </button>
+        <button class="btn btn-sm btn-outline-success btn-filter" data-filter="NORMAL">
+            <span style="width:7px;height:7px;border-radius:50%;background:#198754;display:inline-block;margin-right:3px;"></span>Normal
+        </button>
+    </div>
+</div>
+
+<!-- ── Légende ────────────────────────────────────────── -->
+<div class="d-flex gap-3 mb-2 flex-wrap align-items-center" style="font-size:11px;">
+    <span class="text-muted fw-semibold">Statut :</span>
+    <span class="d-flex align-items-center gap-1"><span style="width:10px;height:10px;border-radius:2px;background:#dc3545;display:inline-block;"></span>Rupture</span>
+    <span class="d-flex align-items-center gap-1"><span style="width:10px;height:10px;border-radius:2px;background:#fd7e14;display:inline-block;"></span>Critique</span>
+    <span class="d-flex align-items-center gap-1"><span style="width:10px;height:10px;border-radius:2px;background:#ffc107;display:inline-block;"></span>Alerte</span>
+    <span class="d-flex align-items-center gap-1"><span style="width:10px;height:10px;border-radius:2px;background:#198754;display:inline-block;"></span>Normal</span>
+    <span class="text-muted ms-2">|</span>
+    <span class="text-muted fw-semibold">Zones :</span>
+    <span class="d-flex align-items-center gap-1"><span style="width:10px;height:10px;border-radius:2px;background:#bfdbfe;border:1px solid #93c5fd;display:inline-block;"></span>Froide</span>
+    <span class="d-flex align-items-center gap-1"><span style="width:10px;height:10px;border-radius:2px;background:#bbf7d0;border:1px solid #86efac;display:inline-block;"></span>Tempérée</span>
+    <span class="d-flex align-items-center gap-1"><span style="width:10px;height:10px;border-radius:2px;background:#fef08a;border:1px solid #fde047;display:inline-block;"></span>Sèche</span>
+</div>
+
+<!-- ── Canvas (responsive) ────────────────────────────── -->
+<div class="card border-0 shadow-sm mb-3" id="canvas-wrapper" style="overflow:hidden;position:relative;">
+    <canvas id="warehouseCanvas" style="width:100%;display:block;cursor:pointer;image-rendering:crisp-edges;"></canvas>
+    <div class="px-3 py-1 d-flex justify-content-between align-items-center"
+         style="font-size:10px;background:#f1f3f5;border-top:1px solid #dee2e6;">
+        <span class="text-muted">Cliquez sur un emplacement pour voir le détail</span>
+        <span id="last-update" class="text-muted"></span>
+    </div>
+</div>
+
+<!-- ── Panels info ────────────────────────────────────── -->
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header fw-semibold bg-white border-bottom py-2 d-flex align-items-center gap-2" style="font-size:13px;">
+                <i class="bi bi-box-seam text-muted"></i>
+                Détail produit
+                <span id="detail-ref" class="badge bg-primary ms-1" style="display:none;font-size:10px;"></span>
+            </div>
+            <div class="card-body p-3" id="detailPanel">
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-hand-index fs-1 d-block mb-2 opacity-25"></i>
+                    <p class="mb-0 small">Cliquez sur un produit pour afficher ses détails</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header fw-semibold bg-white border-bottom py-2 d-flex align-items-center gap-2" style="font-size:13px;">
+                <i class="bi bi-columns-gap text-muted"></i>Vue rayon
+            </div>
+            <div class="card-body p-3" id="rayonPanel">
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-layout-three-columns fs-1 d-block mb-2 opacity-25"></i>
+                    <p class="mb-0 small">Sélectionnez un produit pour visualiser son rayon</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ══════════════════════════════════════════════════
+   PLAN 2D MAGASIN — HiDPI + Responsive
+   ══════════════════════════════════════════════════ */
+
+const canvas  = document.getElementById('warehouseCanvas');
+const ctx     = canvas.getContext('2d');
+
+// ── Constantes logiques (en "unités" indépendantes du DPR)
+const LW      = 860;   // largeur logique
+const LH      = 540;   // hauteur logique
+const SIDE_W  = 90;
+const GRID_W  = LW - SIDE_W - 20;
+const COLS    = 6;
+const SLOT_W  = GRID_W / COLS;
+const SLOT_H  = 148;
+
+const ROWS = [
+    { zone: 'FROIDE',   y: 15,  label: 'Zone Froide (2–8°C)',     bg: '#dbeafe', border: '#93c5fd' },
+    { zone: 'TEMPEREE', y: 180, label: 'Zone Tempérée (15–25°C)', bg: '#dcfce7', border: '#86efac' },
+    { zone: 'SECHE',    y: 345, label: 'Zone Sèche / Ambiante',   bg: '#fef9c3', border: '#fde047' },
+];
+
+const STATUS_COLORS = {
+    RUPTURE:  { fill:'#fee2e2', border:'#dc3545', text:'#dc3545', bar:'#dc3545' },
+    CRITIQUE: { fill:'#ffedd5', border:'#fd7e14', text:'#ea580c', bar:'#fd7e14' },
+    ALERTE:   { fill:'#fefce8', border:'#eab308', text:'#a16207', bar:'#eab308' },
+    NORMAL:   { fill:'#f0fdf4', border:'#22c55e', text:'#15803d', bar:'#22c55e' },
+};
+const CAT_COLORS = {
+    PRINCIPE_ACTIF:  { bg:'#818cf8', label:'PA'   },
+    EXCIPIENT:       { bg:'#34d399', label:'EXC'  },
+    CONDITIONNEMENT: { bg:'#f472b6', label:'COND' },
+};
+const METHODE_LABELS = {
+    POINT_COMMANDE:'ROP', REAPPRO_FIXE:'FIXE',
+    RECOMPLETEMENT:'RECOMP', MRP:'MRP', MANUEL:'MANUEL',
+};
+
+let currentFilter   = 'all';
+let selectedRef     = null;
+let hitBoxes        = [];
+let window_PRODUITS = { matieres: [] };
+let dpr             = 1;  // device pixel ratio
+
+/* ── Setup canvas HiDPI + responsive ─────────────── */
+function setupCanvas() {
+    const wrapper = document.getElementById('canvas-wrapper');
+    const cssW    = wrapper.clientWidth;
+    dpr           = window.devicePixelRatio || 1;
+
+    // Ratio canvas logique
+    const scale = cssW / LW;
+    const cssH  = LH * scale;
+
+    // Taille physique du canvas (haute résolution)
+    canvas.width  = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+
+    // Taille CSS affichée
+    canvas.style.width  = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+
+    // Transformation : 1 unité logique = scale*dpr pixels physiques
+    ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+
+/* ── Utilitaires texte ───────────────────────────── */
+function truncate(s, n) { return s && s.length > n ? s.slice(0,n-1)+'…' : (s||''); }
+
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.quadraticCurveTo(x+w,y,x+w,y+r);
+    c.lineTo(x+w,y+h-r); c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    c.lineTo(x+r,y+h); c.quadraticCurveTo(x,y+h,x,y+h-r);
+    c.lineTo(x,y+r); c.quadraticCurveTo(x,y,x+r,y);
+    c.closePath();
+}
+
+/* ── Dessin carte produit ────────────────────────── */
+function drawCard(p, x, y, highlight) {
+    const sc = STATUS_COLORS[p.statut] || STATUS_COLORS.NORMAL;
+    const cw = SLOT_W - 8, ch = SLOT_H - 8;
+    const cx = x + 4,      cy = y + 4;
+
+    // Ombre
+    ctx.shadowColor   = 'rgba(0,0,0,0.08)';
+    ctx.shadowBlur    = 4;
+    ctx.shadowOffsetY = 2;
+
+    // Fond
+    roundRect(ctx, cx, cy, cw, ch, 7);
+    ctx.fillStyle = sc.fill;
+    ctx.fill();
+    ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = highlight ? '#0d6efd' : sc.border;
+    ctx.lineWidth   = highlight ? 2 : 1.5;
+    ctx.stroke();
+
+    // Badge catégorie
+    const cat = CAT_COLORS[p.cat] || { bg:'#94a3b8', label:'?' };
+    roundRect(ctx, cx+4, cy+4, 26, 12, 3);
+    ctx.fillStyle = cat.bg; ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 6.5px "Inter",system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(cat.label, cx+17, cy+12.5);
+
+    // Référence
+    ctx.fillStyle = '#64748b';
+    ctx.font = '6.5px "Inter",system-ui,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(p.ref, cx+cw-4, cy+12);
+
+    // Nom
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 8px "Inter",system-ui,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(truncate(p.nom, 19), cx+4, cy+30);
+
+    // Fournisseur
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '6.5px "Inter",system-ui,sans-serif';
+    ctx.fillText(truncate(p.fournisseur, 22), cx+4, cy+40);
+
+    // Quantité
+    ctx.fillStyle = sc.text;
+    ctx.font = 'bold 11px "Inter",system-ui,sans-serif';
+    ctx.fillText(`${p.qty.toFixed(1)} ${p.unit}`, cx+4, cy+56);
+
+    // Pourcentage
+    const pctLabel = p.statut==='RUPTURE' ? 'RUPTURE' : `${p.pct}%`;
+    ctx.font = 'bold 7.5px "Inter",system-ui,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(pctLabel, cx+cw-4, cy+56);
+
+    // Barre de progression
+    const bx = cx+4, by = cy+61, bw = cw-8, bh = 7;
+    roundRect(ctx, bx, by, bw, bh, 3);
+    ctx.fillStyle = '#e2e8f0'; ctx.fill();
+    const fill = Math.max(0, Math.min(p.pct,100)) / 100 * bw;
+    if (fill > 0) {
+        roundRect(ctx, bx, by, fill, bh, 3);
+        ctx.fillStyle = sc.bar; ctx.fill();
+    }
+
+    // Niveaux rayon
+    const niv  = Math.min(p.niveaux||5, 5);
+    const ny   = by + 10;
+    const nvW  = (cw-8) / niv - 2;
+    for (let i=0; i<niv; i++) {
+        const nx = bx + i*(nvW+2);
+        const occ = p.row ? i < p.row : (i===0 && p.qty>0);
+        roundRect(ctx, nx, ny, nvW, 5, 1);
+        ctx.fillStyle = occ ? sc.bar+'99' : '#e2e8f0'; ctx.fill();
+        ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 0.4; ctx.stroke();
+    }
+
+    // Min / Max
+    const sy = ny + 12;
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '6.5px "Inter",system-ui,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`↓${p.min.toFixed(0)}`, cx+4, sy);
+    ctx.textAlign = 'right';
+    ctx.fillText(`↑${p.max.toFixed(0)}`, cx+cw-4, sy);
+
+    // Badge méthode
+    const ml = METHODE_LABELS[p.methode] || p.methode;
+    const mw = ctx.measureText(ml).width + 10;
+    const my2 = sy + 5;
+    roundRect(ctx, cx+4, my2, mw, 11, 2);
+    ctx.fillStyle = '#f1f5f9'; ctx.fill();
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth=0.5; ctx.stroke();
+    ctx.fillStyle = '#475569';
+    ctx.font = 'bold 6.5px "Inter",system-ui,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(ml, cx+9, my2+8);
+
+    // Bandeau Commander
+    if (p.alerte_commande && p.statut!=='RUPTURE') {
+        const cmdW = 48, cmdX = cx+cw-cmdW-2;
+        roundRect(ctx, cmdX, my2, cmdW, 11, 2);
+        ctx.fillStyle = '#fef9c3'; ctx.fill();
+        ctx.strokeStyle = '#fde047'; ctx.lineWidth=0.5; ctx.stroke();
+        ctx.fillStyle = '#854d0e';
+        ctx.font = 'bold 6px "Inter",system-ui,sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠ Commander', cmdX + cmdW/2, my2+8);
+    }
+}
+
+/* ── Dessin complet du plan ──────────────────────── */
+function drawWarehouse(rawData, filter) {
+    const produits = (rawData.matieres || rawData || []);
+
+    // Effacer (dans l'espace logique — la transform s'occupe du reste)
+    ctx.clearRect(0, 0, LW, LH);
+
+    // Fond général
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(0, 0, LW, LH);
+
+    hitBoxes = [];
+
+    // ── 3 zones thermiques
+    ROWS.forEach(r => {
+        roundRect(ctx, 8, r.y, GRID_W+4, SLOT_H+10, 8);
+        ctx.fillStyle = r.bg; ctx.fill();
+        ctx.strokeStyle = r.border; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 8.5px "Inter",system-ui,sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(r.label, 16, r.y+10);
+    });
+
+    // ── Allées
+    ctx.fillStyle = '#e2e8f0';
+    [161, 326].forEach(ay => ctx.fillRect(8, ay, GRID_W+4, 13));
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '7px "Inter",system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('↔  ALLÉE DE CIRCULATION', GRID_W/2, 170);
+    ctx.fillText('↔  ALLÉE DE CIRCULATION', GRID_W/2, 335);
+
+    // ── Zone fonctionnelle droite
+    const sideX = LW - SIDE_W + 2;
+    [
+        { y:15,  h:120, label:'RÉCEPTION',  color:'#e0f2fe', bdr:'#7dd3fc' },
+        { y:145, h:100, label:'Q.C.',       color:'#fce7f3', bdr:'#f9a8d4' },
+        { y:255, h:80,  label:'EXPÉDITION', color:'#ede9fe', bdr:'#c4b5fd' },
+        { y:345, h:90,  label:'BUREAU',     color:'#f3f4f6', bdr:'#d1d5db' },
+        { y:445, h:80,  label:'VESTIAIRES', color:'#f3f4f6', bdr:'#d1d5db' },
+    ].forEach(sb => {
+        roundRect(ctx, sideX, sb.y, SIDE_W-4, sb.h, 5);
+        ctx.fillStyle = sb.color; ctx.fill();
+        ctx.strokeStyle = sb.bdr; ctx.lineWidth=1; ctx.stroke();
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 7px "Inter",system-ui,sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(sb.label, sideX+(SIDE_W-4)/2, sb.y+sb.h/2+3);
+    });
+
+    // ── Compteur alertes
+    const nAlerte = produits.filter(pp => pp.statut!=='NORMAL').length;
+    const badge   = document.getElementById('alert-count');
+    badge.style.display = nAlerte ? 'inline-block' : 'none';
+    if (nAlerte) badge.textContent = `${nAlerte} alerte${nAlerte>1?'s':''}`;
+
+    const filtered = filter && filter!=='all'
+        ? produits.filter(pp => pp.statut===filter)
+        : produits;
+
+    // Distribution par zone
+    const byZone = { FROIDE:[], TEMPEREE:[], SECHE:[] };
+    filtered.forEach(pp => {
+        const z = pp.zone;
+        (byZone[z] || byZone.TEMPEREE).push(pp);
+    });
+
+    // Placement
+    ROWS.forEach(row => {
+        const items = byZone[row.zone] || [];
+        items.slice(0, COLS).forEach((pp, ci) => {
+            const px = 10 + ci * SLOT_W;
+            const py = row.y + 12;
+            drawCard(pp, px, py, pp.ref===selectedRef);
+            hitBoxes.push({ ref:pp.ref, x:px, y:py, w:SLOT_W-4, h:SLOT_H-4 });
+        });
+    });
+
+    // Timestamp
+    document.getElementById('last-update').textContent =
+        `Mis à jour : ${new Date().toLocaleTimeString('fr-FR')}`;
+}
+
+/* ── Hit-test clic ───────────────────────────────── */
+canvas.addEventListener('click', function(e) {
+    const rect   = canvas.getBoundingClientRect();
+    const scaleX = LW / rect.width;
+    const scaleY = LH / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top)  * scaleY;
+
+    const hit = hitBoxes.find(b => mx>=b.x && mx<=b.x+b.w && my>=b.y && my<=b.y+b.h);
+    if (!hit) return;
+    selectedRef = hit.ref;
+    drawWarehouse(window_PRODUITS, currentFilter);
+    document.getElementById('detail-ref').textContent = hit.ref;
+    document.getElementById('detail-ref').style.display = 'inline-block';
+    updatePanels(hit.ref);
+});
+
+/* ── Panels ─────────────────────────────────────── */
+function updatePanels(ref) {
+    fetch(`/magasin/api/detail/${ref}/`)
+        .then(r => r.json())
+        .then(p => { renderDetailPanel(p); renderRayonVertical(p); })
+        .catch(() => {
+            const p = (window_PRODUITS.matieres||[]).find(m=>m.ref===ref);
+            if (p) { renderDetailPanelLocal(p); renderRayonVertical(p); }
+        });
+}
+
+function renderDetailPanel(p) {
+    const bs = { RUPTURE:'danger', CRITIQUE:'warning', ALERTE:'warning', NORMAL:'success' };
+    const mvtHtml = (p.mouvements||[]).map(mv=>`
+        <tr style="font-size:11px;">
+            <td><span class="badge ${mv.type==='ENTREE'?'bg-success':'bg-danger'}" style="font-size:9px;">${mv.type}</span></td>
+            <td class="fw-bold">${mv.quantite.toFixed(2)}</td>
+            <td class="text-muted">${new Date(mv.date).toLocaleDateString('fr-FR')}</td>
+            <td class="text-muted">${mv.lot||'—'}</td>
+        </tr>`).join('');
+
+    const bonsHtml = (p.bons_en_cours||[]).map(bc=>`
+        <tr style="font-size:11px;">
+            <td><code style="font-size:10px;">${bc.reference}</code></td>
+            <td>${bc.quantite_commandee.toFixed(1)}</td>
+            <td><span class="badge ${bc.statut==='ENVOYE'?'bg-primary':'bg-secondary'}" style="font-size:9px;">${bc.statut}</span></td>
+            <td class="text-muted">${bc.date_prevue ? new Date(bc.date_prevue).toLocaleDateString('fr-FR') : '—'}</td>
+        </tr>`).join('');
+
+    document.getElementById('detailPanel').innerHTML = `
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <div class="fw-bold" style="font-size:13px;">${p.nom}</div>
+                <div class="text-muted" style="font-size:11px;">${p.fournisseur||'—'} · ${p.emplacement||'Non localisé'}</div>
+            </div>
+            <span class="badge bg-${bs[p.statut]||'secondary'}">${p.statut}</span>
+        </div>
+        <div class="row g-2 text-center mb-3">
+            <div class="col-4"><div class="bg-light rounded p-2">
+                <div style="font-size:10px;" class="text-muted">Stock actuel</div>
+                <div class="fw-bold text-${bs[p.statut]||'secondary'}" style="font-size:12px;">${p.qty.toFixed(2)} ${p.unit}</div>
+            </div></div>
+            <div class="col-4"><div class="bg-light rounded p-2">
+                <div style="font-size:10px;" class="text-muted">Seuil min</div>
+                <div class="fw-bold" style="font-size:12px;">${p.min.toFixed(2)} ${p.unit}</div>
+            </div></div>
+            <div class="col-4"><div class="bg-light rounded p-2">
+                <div style="font-size:10px;" class="text-muted">Valeur</div>
+                <div class="fw-bold text-primary" style="font-size:12px;">${(p.valeur_stock||0).toLocaleString('fr-MA')} MAD</div>
+            </div></div>
+        </div>
+        ${p.dernier_lot?`<div style="font-size:11px;" class="text-muted mb-2">🧪 Lot : <strong>${p.dernier_lot}</strong>${p.date_peremption?' · Exp. '+new Date(p.date_peremption).toLocaleDateString('fr-FR'):''}</div>`:''}
+        ${mvtHtml?`<div class="fw-semibold mb-1" style="font-size:11px;color:#64748b;">Derniers mouvements</div>
+            <div class="table-responsive mb-2"><table class="table table-sm mb-0"><tbody>${mvtHtml}</tbody></table></div>`:''}
+        ${bonsHtml?`<div class="fw-semibold mb-1" style="font-size:11px;color:#64748b;">Commandes en cours</div>
+            <div class="table-responsive mb-2"><table class="table table-sm mb-0"><tbody>${bonsHtml}</tbody></table></div>`:''}
+        <div class="d-flex gap-2 mt-2">
+            <a href="/produits/${p.id}/" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i> Fiche</a>
+            <a href="/approvisionnement/commandes/nouvelle/step1/?matiere=${p.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-cart-plus"></i> Commander</a>
+        </div>`;
+}
+
+function renderDetailPanelLocal(p) {
+    document.getElementById('detailPanel').innerHTML = `
+        <div class="fw-bold">${p.nom}</div>
+        <div class="text-muted small mb-2">${p.ref} · ${p.emplacement||'—'}</div>
+        <div class="small">Stock : <strong>${p.qty} ${p.unit}</strong> (${p.pct}%)</div>`;
+}
+
+function renderRayonVertical(p) {
+    const niv    = Math.min(p.niveaux||5, 8);
+    const occupes = p.row || (p.qty>0 ? 1 : 0);
+    const barC   = { RUPTURE:'#dc3545', CRITIQUE:'#fd7e14', ALERTE:'#eab308', NORMAL:'#22c55e' };
+    const color  = barC[p.statut] || '#22c55e';
+    const cid    = 'rc-' + p.ref.replace(/[^a-z0-9]/gi,'');
+
+    document.getElementById('rayonPanel').innerHTML = `
+        <div class="text-center mb-2">
+            <div class="fw-semibold" style="font-size:12px;">${p.ref} — ${truncateJs(p.nom,28)}</div>
+            <div class="text-muted" style="font-size:10px;">Emplacement : ${p.emplacement||'Non défini'}</div>
+        </div>
+        <div class="d-flex justify-content-center">
+            <canvas id="${cid}" width="220" height="200"
+                    style="border:1px solid #dee2e6;border-radius:6px;background:#f8f9fa;image-rendering:crisp-edges;"></canvas>
+        </div>
+        <div class="text-center mt-2" style="font-size:11px;" class="text-muted">
+            ${niv} niveaux · ${occupes} occupé(s) · 
+            <span class="fw-semibold text-primary">${((p.valeur_stock)||(p.qty*p.prix)||0).toLocaleString('fr-MA',{maximumFractionDigits:0})} MAD</span>
+        </div>`;
+
+    const rc = document.getElementById(cid);
+    if (!rc) return;
+    const rdpr = window.devicePixelRatio || 1;
+    rc.width  = 220 * rdpr; rc.height = 200 * rdpr;
+    rc.style.width = '220px'; rc.style.height = '200px';
+    const rctx = rc.getContext('2d');
+    rctx.scale(rdpr, rdpr);
+
+    const RW=220, RH=200, pad=12, nivH=20;
+    rctx.fillStyle='#f8f9fa'; rctx.fillRect(0,0,RW,RH);
+    rctx.strokeStyle='#94a3b8'; rctx.lineWidth=3;
+    rctx.beginPath();
+    rctx.moveTo(pad,10); rctx.lineTo(pad,RH-22);
+    rctx.moveTo(RW-pad,10); rctx.lineTo(RW-pad,RH-22);
+    rctx.stroke();
+
+    for (let i=0; i<niv; i++) {
+        const ny2 = RH-22-(i+1)*(nivH+3);
+        const occ = i < occupes;
+        rctx.fillStyle = occ ? color+'22' : '#e2e8f0';
+        rctx.fillRect(pad+3, ny2, RW-pad*2-6, nivH);
+        if (occ) {
+            const fp = i===0 ? Math.max(0.1, p.pct/100) : 0.75;
+            rctx.fillStyle = color;
+            rctx.globalAlpha = 0.65;
+            rctx.fillRect(pad+3, ny2+nivH*(1-fp), RW-pad*2-6, nivH*fp);
+            rctx.globalAlpha = 1;
+        }
+        rctx.strokeStyle='#94a3b8'; rctx.lineWidth=0.5;
+        rctx.strokeRect(pad+3, ny2, RW-pad*2-6, nivH);
+        rctx.fillStyle='#1e293b';
+        rctx.font='bold 8px "Inter",system-ui,sans-serif';
+        rctx.textAlign='left';
+        rctx.fillText(`N${i+1}`, pad+6, ny2+13);
+        rctx.font='8px "Inter",system-ui,sans-serif';
+        rctx.textAlign='right';
+        rctx.fillStyle = occ ? '#1e293b' : '#94a3b8';
+        rctx.fillText(occ ? (i===0?`${p.qty.toFixed(1)} ${p.unit}`:'≈ complet') : 'libre', RW-pad-6, ny2+13);
+    }
+    rctx.fillStyle='#475569';
+    rctx.fillRect(pad-3, RH-22, RW-pad*2+6, 4);
+}
+
+function truncateJs(s,n) { return s&&s.length>n ? s.slice(0,n-1)+'…' : (s||''); }
+
+/* ── Filtres ─────────────────────────────────────── */
+document.querySelectorAll('.btn-filter').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.btn-filter').forEach(b => {
+            const f = b.dataset.filter;
+            b.className = `btn btn-sm btn-outline-${f==='all'?'dark':f==='RUPTURE'?'danger':f==='CRITIQUE'?'warning':f==='ALERTE'?'secondary':'success'} btn-filter`;
+        });
+        const f = this.dataset.filter;
+        this.className = `btn btn-sm btn-${f==='all'?'dark':f==='RUPTURE'?'danger':f==='CRITIQUE'?'warning':f==='ALERTE'?'secondary':'success'} btn-filter`;
+        currentFilter = f;
+        drawWarehouse(window_PRODUITS, currentFilter);
+    });
+});
+
+/* ── Clignotement live ───────────────────────────── */
+let dotOn=true;
+setInterval(()=>{
+    const d=document.getElementById('dot-live');
+    if (d) { d.style.opacity=dotOn?'1':'0.15'; dotOn=!dotOn; }
+}, 700);
+
+/* ── Chargement initial + resize ─────────────────── */
+function loadAndDraw() {
+    fetch('/magasin/api/plan/')
+        .then(r => r.json())
+        .then(data => {
+            window_PRODUITS = data;
+            setupCanvas();
+            drawWarehouse(data, currentFilter);
+        });
+}
+
+// ResizeObserver — redessine proprement à chaque changement de taille (zoom, resize)
+const ro = new ResizeObserver(() => {
+    if (window_PRODUITS.matieres && window_PRODUITS.matieres.length) {
+        setupCanvas();
+        drawWarehouse(window_PRODUITS, currentFilter);
+    }
+});
+ro.observe(document.getElementById('canvas-wrapper'));
+
+loadAndDraw();
+
+// Refresh toutes les 5 secondes
+setInterval(()=>{
+    fetch('/magasin/api/plan/')
+        .then(r => r.json())
+        .then(data => {
+            window_PRODUITS = data;
+            setupCanvas();
+            drawWarehouse(data, currentFilter);
+            if (selectedRef) updatePanels(selectedRef);
+        });
+}, 5000);
+</script>
+{% endblock %}

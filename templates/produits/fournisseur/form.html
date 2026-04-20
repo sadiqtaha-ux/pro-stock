@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Modifier — {{ object.nom }}{% else %}Nouveau fournisseur{% endif %}{% endblock %}
+{% block active_fournisseurs %}active{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'produits:fournisseur-liste' %}">Fournisseurs</a></li>
+<li class="breadcrumb-item active">{% if object %}{{ object.nom }}{% else %}Nouveau{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- En-tête -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold">
+        {% if object %}Modifier — {{ object.nom }}{% else %}Nouveau fournisseur{% endif %}
+    </h4>
+    <a href="{% url 'produits:fournisseur-liste' %}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Annuler
+    </a>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="panel">
+        <!-- CARD 1 — Informations -->
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header fw-semibold bg-white border-bottom">
+                <i class="bi bi-building me-2 text-muted"></i>Informations
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label" for="{{ form.nom.id_for_label }}">
+                            Nom <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               name="{{ form.nom.html_name }}"
+                               id="{{ form.nom.id_for_label }}"
+                               value="{{ form.nom.value|default:'' }}"
+                               class="form-control {% if form.nom.errors %}is-invalid{% endif %}"
+                               placeholder="Raison sociale du fournisseur">
+                        {% for e in form.nom.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end pb-1">
+                        <div class="form-check">
+                            <input type="checkbox"
+                                   name="{{ form.actif.html_name }}"
+                                   id="{{ form.actif.id_for_label }}"
+                                   class="form-check-input"
+                                   {% if form.actif.value %}checked{% endif %}>
+                            <label class="form-check-label" for="{{ form.actif.id_for_label }}">
+                                Fournisseur actif
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ form.contact.id_for_label }}">Contact</label>
+                        <input type="text"
+                               name="{{ form.contact.html_name }}"
+                               id="{{ form.contact.id_for_label }}"
+                               value="{{ form.contact.value|default:'' }}"
+                               class="form-control {% if form.contact.errors %}is-invalid{% endif %}"
+                               placeholder="Nom du responsable commercial">
+                        {% for e in form.contact.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+                        <input type="email"
+                               name="{{ form.email.html_name }}"
+                               id="{{ form.email.id_for_label }}"
+                               value="{{ form.email.value|default:'' }}"
+                               class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                               placeholder="contact@fournisseur.ma">
+                        {% for e in form.email.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.telephone.id_for_label }}">Téléphone</label>
+                        <input type="tel"
+                               name="{{ form.telephone.html_name }}"
+                               id="{{ form.telephone.id_for_label }}"
+                               value="{{ form.telephone.value|default:'' }}"
+                               class="form-control {% if form.telephone.errors %}is-invalid{% endif %}"
+                               placeholder="+212 5XX-XXXXXX">
+                        {% for e in form.telephone.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.ville.id_for_label }}">Ville</label>
+                        <input type="text"
+                               name="{{ form.ville.html_name }}"
+                               id="{{ form.ville.id_for_label }}"
+                               value="{{ form.ville.value|default:'' }}"
+                               class="form-control {% if form.ville.errors %}is-invalid{% endif %}"
+                               placeholder="Casablanca, Rabat…">
+                        {% for e in form.ville.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.pays.id_for_label }}">Pays</label>
+                        <input type="text"
+                               name="{{ form.pays.html_name }}"
+                               id="{{ form.pays.id_for_label }}"
+                               value="{{ form.pays.value|default:'Maroc' }}"
+                               class="form-control {% if form.pays.errors %}is-invalid{% endif %}">
+                        {% for e in form.pays.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="{{ form.adresse.id_for_label }}">Adresse</label>
+                        <textarea name="{{ form.adresse.html_name }}"
+                                  id="{{ form.adresse.id_for_label }}"
+                                  rows="2"
+                                  class="form-control {% if form.adresse.errors %}is-invalid{% endif %}"
+                                  placeholder="Adresse complète…">{{ form.adresse.value|default:'' }}</textarea>
+                        {% for e in form.adresse.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boutons -->
+    <div class="d-flex gap-2 justify-content-end mt-3">
+        <a href="{% url 'produits:fournisseur-liste' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Annuler
+        </a>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Enregistrer
+        </button>
+    </div>
+
+</form>
+{% endblock %}

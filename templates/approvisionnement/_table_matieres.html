@@ -1,0 +1,149 @@
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 table-stockpro">
+        <thead class="table-light">
+            <tr>
+                <th>Référence</th>
+                <th>Matière première</th>
+                {% if show_methode_col %}<th>Méthode</th>{% endif %}
+                <th>Stock actuel</th>
+                <th>
+                    {% if show_rop_col %}Point de commande
+                    {% elif show_periode_col %}Période / Cible
+                    {% elif show_mrp_col %}Statut MRP
+                    {% else %}Seuil min
+                    {% endif %}
+                </th>
+                <th>Niveau</th>
+                <th>Statut</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in matieres %}
+            <tr>
+
+                <!-- Référence -->
+                <td><code class="fw-bold small">{{ m.reference }}</code></td>
+
+                <!-- Nom + fournisseur -->
+                <td>
+                    <div class="fw-medium">{{ m.nom }}</div>
+                    <div class="text-muted" style="font-size:10px;">
+                        {{ m.fournisseur_principal.nom|default:"—" }}
+                    </div>
+                </td>
+
+                <!-- Méthode (vue d'ensemble uniquement) -->
+                {% if show_methode_col %}
+                <td>
+                    {% if m.methode_approvisionnement == "POINT_COMMANDE" %}
+                        <span class="badge" style="background:#e7f0ff;color:#0d6efd;font-size:9px;">ROP</span>
+                    {% elif m.methode_approvisionnement == "REAPPRO_FIXE" %}
+                        <span class="badge" style="background:#e8f5e9;color:#198754;font-size:9px;">Fixe</span>
+                    {% elif m.methode_approvisionnement == "RECOMPLETEMENT" %}
+                        <span class="badge" style="background:#e0f7fa;color:#0dcaf0;font-size:9px;">Rec.</span>
+                    {% elif m.methode_approvisionnement == "MRP" %}
+                        <span class="badge" style="background:#fff8e1;color:#ffc107;font-size:9px;">MRP</span>
+                    {% else %}
+                        <span class="badge bg-secondary" style="font-size:9px;">—</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+
+                <!-- Stock actuel -->
+                <td>
+                    <span class="fw-bold
+                        {% if m.est_en_rupture %}text-danger
+                        {% elif m.est_en_alerte %}text-warning
+                        {% else %}text-success{% endif %}">
+                        {{ m.stock_actuel|floatformat:2 }}
+                    </span>
+                    <span class="text-muted small"> {{ m.unite.symbole }}</span>
+                </td>
+
+                <!-- Colonne contextuelle selon la méthode -->
+                <td class="small text-muted">
+                    {% if show_rop_col %}
+                        <span class="fw-medium text-dark">{{ m.point_commande|floatformat:2 }} {{ m.unite.symbole }}</span>
+                        <div style="font-size:9px;" class="text-muted mt-1">
+                            QEC: {{ m.qec|floatformat:2 }}
+                        </div>
+                    {% elif show_periode_col %}
+                        T = {{ m.periode_reappro_jours }} j
+                        <div style="font-size:9px;" class="text-muted mt-1">
+                            Cible S: {{ m.stock_maximum|floatformat:2 }} {{ m.unite.symbole }}
+                        </div>
+                    {% elif show_mrp_col %}
+                        <span class="badge bg-warning text-dark" style="font-size:9px;">Plan actif</span>
+                        <div style="font-size:9px;" class="text-muted mt-1">
+                            Rebut: {{ m.taux_rebut|floatformat:2 }}%
+                        </div>
+                    {% else %}
+                        {{ m.stock_minimum|floatformat:2 }} {{ m.unite.symbole }}
+                    {% endif %}
+                </td>
+
+                <!-- Barre de niveau -->
+                <td style="min-width:120px;">
+                    {% if m.stock_maximum and m.stock_maximum > 0 %}
+                        {% with pct=m.taux_remplissage|floatformat:0 %}
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height:8px;border-radius:4px;">
+                                <div class="progress-bar
+                                    {% if m.est_en_rupture %}bg-danger
+                                    {% elif m.est_en_alerte %}bg-warning
+                                    {% else %}bg-success{% endif %}"
+                                    role="progressbar"
+                                    style="width:{% if m.taux_remplissage > 100 %}100{% else %}{{ pct }}{% endif %}%;"
+                                    aria-valuenow="{{ pct }}"
+                                    aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                            <span class="fw-semibold" style="font-size:11px;white-space:nowrap;min-width:32px;text-align:right;">
+                                {{ pct }}%
+                            </span>
+                        </div>
+                        {% endwith %}
+                    {% else %}
+                        <span class="text-muted small">— (max non défini)</span>
+                    {% endif %}
+                </td>
+
+                <!-- Statut -->
+                <td>
+                    {% if m.est_en_rupture %}
+                        <span class="badge bg-danger">Rupture</span>
+                    {% elif m.est_en_alerte %}
+                        <span class="badge bg-warning text-dark">Alerte</span>
+                    {% else %}
+                        <span class="badge bg-success">Normal</span>
+                    {% endif %}
+                </td>
+
+                <!-- Actions -->
+                <td class="text-end">
+                    <a href="{% url 'produits:matiere-detail' m.pk %}"
+                       class="btn btn-sm btn-outline-secondary"
+                       title="Voir la fiche">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'approvisionnement:commande-step1' %}?matiere={{ m.pk }}"
+                       class="btn btn-sm btn-outline-primary ms-1"
+                       title="Créer une commande">
+                        <i class="bi bi-cart-plus"></i>
+                    </a>
+                </td>
+
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{% if show_methode_col %}8{% else %}7{% endif %}"
+                    class="text-center text-muted py-5">
+                    <i class="bi bi-check-circle fs-1 d-block mb-2 opacity-25 text-success"></i>
+                    <p class="mb-0">Aucune matière avec cette méthode</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
