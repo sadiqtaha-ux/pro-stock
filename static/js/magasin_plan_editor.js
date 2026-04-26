@@ -588,6 +588,57 @@ class PlanEditor {
             ctx.fillStyle = '#000'; ctx.font = 'bold 8px Inter';
             ctx.fillText("⚠️ RÉAPPRO", r.x + 4, r.y - 3);
         }
+
+        // --- Dessin des affectations (Boîtes d'articles) ---
+        let affectations = [];
+        if (r.niveaux) {
+            r.niveaux.forEach(n => {
+                if (n.affectations) affectations.push(...n.affectations);
+            });
+        }
+
+        if (affectations.length > 0) {
+            let startY = r.y + 20; // Commencer sous le titre du rayon
+            const boxH = 16;
+            const margin = 4;
+            const paddingX = 4;
+            const maxVisible = Math.floor((r.h - 20) / (boxH + margin));
+
+            ctx.font = '8px Inter';
+            for (let i = 0; i < Math.min(affectations.length, maxVisible); i++) {
+                const aff = affectations[i];
+                let bgColor = '#e2e8f0'; // gris par défaut
+                let textColor = '#0f172a';
+                if (aff.statut_stock === 'NORMAL') { bgColor = '#dcfce7'; textColor = '#166534'; }
+                else if (aff.statut_stock === 'ALERTE') { bgColor = '#fef3c7'; textColor = '#92400e'; }
+                else if (aff.statut_stock === 'CRITIQUE') { bgColor = '#ffedd5'; textColor = '#9a3412'; }
+                else if (aff.statut_stock === 'RUPTURE') { bgColor = '#fee2e2'; textColor = '#991b1b'; }
+
+                const boxY = startY + i * (boxH + margin);
+                const boxW = r.w - margin * 2;
+                if (boxW < 20) continue; // Si le rayon est trop étroit, on passe
+
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(r.x + margin, boxY, boxW, boxH);
+                ctx.strokeStyle = textColor;
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(r.x + margin, boxY, boxW, boxH);
+
+                ctx.fillStyle = textColor;
+                // Tronquer le texte si trop long
+                let text = aff.reference;
+                if (ctx.measureText(text).width > boxW - paddingX * 2) {
+                    text = text.substring(0, 5) + '...';
+                }
+                ctx.fillText(text, r.x + margin + paddingX, boxY + 11);
+            }
+
+            // Indicateur si plus d'articles qu'affichés
+            if (affectations.length > maxVisible) {
+                ctx.fillStyle = '#64748b';
+                ctx.fillText(`+ ${affectations.length - maxVisible} autres`, r.x + margin, r.y + r.h - 4);
+            }
+        }
     }
 
     drawDelim(d) {

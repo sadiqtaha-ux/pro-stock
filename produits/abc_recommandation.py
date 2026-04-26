@@ -143,7 +143,15 @@ def recommander_methode_approvisionnement(matiere) -> dict:
         message_historique_insuffisant : str | None
     """
     # 1. Compter l'historique de sorties
-    nb_sorties = matiere.nb_sorties_12_mois if matiere.pk else 0
+    nb_sorties = 0
+    if matiere.pk:
+        from django.utils import timezone
+        import datetime
+        un_an_ago = timezone.now() - datetime.timedelta(days=365)
+        nb_sorties = matiere.mouvements.filter(
+            type_mouvement="SORTIE",
+            date_mouvement__gte=un_an_ago
+        ).count()
 
     # 2. Déterminer si l'historique est suffisant
     historique_suffisant = (nb_sorties >= SEUIL_HISTORIQUE_FAIBLE)
