@@ -128,12 +128,20 @@
 .mpe-canvas-wrapper.mode-pan { cursor: grab; }
 .mpe-canvas-wrapper.mode-pan:active { cursor: grabbing; }
 
+#canvas-inner {
+    position: relative; /* Sized to effective canvas size to enable scroll */
+    flex-shrink: 0;
+}
+
 #mc {
+    position: absolute;
+    top: 0;
+    left: 0;
     background: white;
     box-shadow: 0 0 40px rgba(0,0,0,0.05);
     display: block;
-    image-rendering: pixelated;
-    transition: transform 0.1s ease-out;
+    transform-origin: top left;
+    image-rendering: auto;
 }
 
 /* --- Properties Panel (Droite) --- */

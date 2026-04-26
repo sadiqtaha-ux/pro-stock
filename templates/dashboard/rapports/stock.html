@@ -70,15 +70,20 @@
     <!-- Top Alertes -->
     <div class="col-xl-6">
         <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white border-0 py-3">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold text-danger">Top 10 MP Critiques</h6>
+                <span class="badge bg-danger-subtle text-danger rounded-pill fs-11">Alerte Stock</span>
             </div>
-            <div class="table-responsive">
+            <div class="card-body">
+                <div style="height: 250px;">
+                    <canvas id="chart-top-critiques"></canvas>
+                </div>
+            </div>
+            <div class="table-responsive mt-2">
                 <table class="table table-hover align-middle mb-0 small">
                     <thead class="table-light">
                         <tr>
                             <th>Référence</th>
-                            <th>Nom</th>
                             <th>Stock</th>
                             <th>Min.</th>
                         </tr>
@@ -87,12 +92,11 @@
                         {% for m in top_mp_critiques %}
                         <tr>
                             <td>{{ m.reference }}</td>
-                            <td>{{ m.nom }}</td>
-                            <td class="fw-bold text-danger">{{ m.stock_actuel }}</td>
-                            <td>{{ m.stock_minimum }}</td>
+                            <td class="fw-bold text-danger">{{ m.stock_actuel|floatformat:1 }}</td>
+                            <td>{{ m.stock_minimum|floatformat:1 }}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun article critique.</td></tr>
+                        <tr><td colspan="3" class="text-center py-3 text-muted">Aucun article critique.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -106,6 +110,7 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Chart 1: Pie
     new Chart(document.getElementById('chart-cat-valeur'), {
         type: 'pie',
         data: {
@@ -119,6 +124,42 @@ document.addEventListener('DOMContentLoaded', function() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { position: 'right' } }
+        }
+    });
+
+    // Chart 2: Bar (Top Critiques)
+    const labelsCrit = [{% for m in top_mp_critiques %}"{{ m.reference }}",{% endfor %}];
+    const dataCrit = [{% for m in top_mp_critiques %}{{ m.stock_actuel|stringformat:".2f" }},{% endfor %}];
+    const minCrit = [{% for m in top_mp_critiques %}{{ m.stock_minimum|stringformat:".2f" }},{% endfor %}];
+
+    new Chart(document.getElementById('chart-top-critiques'), {
+        type: 'bar',
+        data: {
+            labels: labelsCrit,
+            datasets: [
+                {
+                    label: 'Stock Actuel',
+                    data: dataCrit,
+                    backgroundColor: '#dc3545',
+                    borderRadius: 5
+                },
+                {
+                    label: 'Stock Minimum',
+                    data: minCrit,
+                    backgroundColor: '#e9ecef',
+                    borderRadius: 5
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true }
+            },
+            plugins: {
+                legend: { display: false }
+            }
         }
     });
 });

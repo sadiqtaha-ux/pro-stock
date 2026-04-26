@@ -57,9 +57,36 @@
     </div>
 </div>
 
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold">Occupation Globale</h6>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <div style="height: 250px; width: 100%;">
+                    <canvas id="chart-occupation-globale"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold">Saturation par Zone (%)</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 250px;">
+                    <canvas id="chart-zones-saturation"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="panel shadow-sm">
     <div class="panel-header bg-light">
-        <h6 class="mb-0 fw-bold">Occupation par Zone</h6>
+        <h6 class="mb-0 fw-bold">Détail des Zones</h6>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -68,7 +95,6 @@
                     <th>Zone</th>
                     <th>Code</th>
                     <th>Emplacements</th>
-                    <th>Occupation</th>
                     <th style="width: 300px;">Progression</th>
                 </tr>
             </thead>
@@ -80,25 +106,75 @@
                     <td>{{ z.nb_occ }} / {{ z.nb_total }}</td>
                     <td>
                         {% if z.nb_total > 0 %}
-                        {{ z.nb_occ|divide:z.nb_total|multiply:100|floatformat:1 }}%
-                        {% else %}
-                        0%
-                        {% endif %}
-                    </td>
-                    <td>
                         <div class="progress" style="height: 10px;">
                             <div class="progress-bar {% if z.nb_occ|divide:z.nb_total|multiply:100 > 90 %}bg-danger{% elif z.nb_occ|divide:z.nb_total|multiply:100 > 70 %}bg-warning{% else %}bg-success{% endif %}" 
                                  role="progressbar" 
                                  style="width: {{ z.nb_occ|divide:z.nb_total|multiply:100 }}%"></div>
                         </div>
+                        <small class="text-muted fs-11 mt-1 d-block">{{ z.nb_occ|divide:z.nb_total|multiply:100|floatformat:1 }}% occupé</small>
+                        {% else %}
+                        <span class="text-muted small">Aucun emplacement</span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5" class="text-center py-4 text-muted">Aucune zone définie.</td></tr>
+                <tr><td colspan="4" class="text-center py-4 text-muted">Aucune zone définie.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart 1: Doughnut (Global)
+    new Chart(document.getElementById('chart-occupation-globale'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Occupés', 'Libres', 'Bloqués'],
+            datasets: [{
+                data: [{{ occupes }}, {{ libres }}, {{ bloques }}],
+                backgroundColor: ['#0d6efd', '#198754', '#dc3545'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // Chart 2: Horizontal Bar (Zones)
+    new Chart(document.getElementById('chart-zones-saturation'), {
+        type: 'bar',
+        data: {
+            labels: {{ zone_labels_json|safe }},
+            datasets: [{
+                label: '% Occupation',
+                data: {{ zone_pct_json|safe }},
+                backgroundColor: '#6610f2',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { beginAtZero: true, max: 100 }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

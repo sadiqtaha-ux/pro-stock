@@ -6,7 +6,7 @@
 {% block show_magasin %}show{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/magasin_plan_editor.css' %}">
+<link rel="stylesheet" href="{% static 'css/magasin_plan_editor.css' %}?v=5.1">
 {% endblock %}
 
 {% block content %}
@@ -65,7 +65,9 @@
 
         <!-- Zone Canvas -->
         <div class="mpe-canvas-wrapper" id="canvas-wrapper">
-            <canvas id="mc"></canvas>
+            <div id="canvas-inner">
+                <canvas id="mc"></canvas>
+            </div>
         </div>
 
         <!-- Panneau Propriétés Droite -->
@@ -92,5 +94,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/magasin_plan_editor.js' %}?v=5.0"></script>
+<script src="{% static 'js/magasin_plan_editor.js' %}?v=5.1"></script>
 {% endblock %}

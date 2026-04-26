@@ -408,6 +408,27 @@ class RapportMouvementsView(LoginRequiredMixin, TemplateView):
         ctx["mouvements"] = mvts
         
         ctx["stats"] = mvts.values("type_mouvement").annotate(nb=Count("id"), qty=Sum("quantite"))
+        
+        # Tendance quotidienne (30 derniers jours par défaut)
+        from django.db.models.functions import TruncDay
+        tendance = (
+            mvts.annotate(jour=TruncDay("date_mouvement"))
+            .values("jour", "type_mouvement")
+            .annotate(total=Sum("quantite"))
+            .order_by("jour")
+        )
+        
+        import json
+        chart_data = {}
+        for t in tendance:
+            j = t['jour'].strftime('%d/%m')
+            if j not in chart_data: chart_data[j] = {'ENTREE': 0, 'SORTIE': 0}
+            chart_data[j][t['type_mouvement']] = float(t['total'])
+            
+        ctx["chart_labels_json"] = json.dumps(list(chart_data.keys()))
+        ctx["chart_entrees_json"] = json.dumps([d['ENTREE'] for d in chart_data.values()])
+        ctx["chart_sorties_json"] = json.dumps([d['SORTIE'] for d in chart_data.values()])
+        
         return ctx
 
 class RapportApproView(LoginRequiredMixin, TemplateView):
@@ -448,7 +469,8 @@ class RapportMRPView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         from produits.models import Nomenclature
-        ctx["nomenclatures"] = Nomenclature.objects.select_related("produit_fini", "matiere")
+        from approvisionnement.models import PlanMRP
+        ctx["nomenclatures"] = Nomenclature.objects.select_related("produit_fini").prefetch_related("lignes__matiere")
         ctx["besoins"] = PlanMRP.objects.filter(statut="CALCULE").select_related("matiere")
         
         # Blocants: Matières en rupture nécessaires pour des PF
@@ -470,10 +492,18 @@ class RapportMagasinView(LoginRequiredMixin, TemplateView):
         ctx["occupes"] = emplacements.filter(statut="OCCUPE").count()
         ctx["bloques"] = emplacements.filter(statut="BLOQUE").count()
         
-        ctx["zones"] = ZoneStockage.objects.annotate(
+        zones = ZoneStockage.objects.annotate(
             nb_total=Count("rayons__emplacements"),
             nb_occ=Count("rayons__emplacements", filter=Q(rayons__emplacements__statut="OCCUPE"))
         )
+        ctx["zones"] = zones
+        
+        import json
+        ctx["zone_labels_json"] = json.dumps([z.nom for z in zones])
+        ctx["zone_pct_json"] = json.dumps([
+            round((z.nb_occ / z.nb_total * 100), 1) if z.nb_total > 0 else 0 
+            for z in zones
+        ])
         
         return ctx
 
@@ -673,7 +703,7 @@ def api_notifications(request):
             'level': 'info',
             'title': _("Nouvelles propositions MRP"),
             'message': _(f"{propos.count()} propositions d'approvisionnement sont en attente de validation."),
-            'url': reverse('approvisionnement:planificateur'),
+            'url': reverse('approvisionnement:commandes-a-valider'),
             'created_at': timezone.now().isoformat()
         })
 
@@ -796,7 +826,7 @@ class AlertesView(LoginRequiredMixin, TemplateView):
                 'level': 'info',
                 'title': _("Propositions à valider"),
                 'message': _(f"{propos.count()} propositions d'approvisionnement sont en attente de validation."),
-                'url': reverse('approvisionnement:planificateur'),
+                'url': reverse('approvisionnement:commandes-a-valider'),
                 'date': timezone.now(),
                 'category': 'appro'
             })

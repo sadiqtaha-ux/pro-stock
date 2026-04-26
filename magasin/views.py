@@ -89,9 +89,20 @@ def api_plan_data(request):
     try:
         # 1. Config du Plan
         plan_obj = PlanMagasin.objects.filter(est_actif=True).first()
+        base_w = plan_obj.largeur_totale if plan_obj else 2000
+        base_h = plan_obj.hauteur_totale if plan_obj else 1200
+        
+        # Trouver la taille maximale nécessaire
+        max_w, max_h = base_w, base_h
+        for z in ZoneStockage.objects.filter(actif=True):
+            if z.position_x + z.largeur + 100 > max_w:
+                max_w = z.position_x + z.largeur + 100
+            if z.position_y + z.hauteur + 100 > max_h:
+                max_h = z.position_y + z.hauteur + 100
+
         plan_config = {
-            "width": plan_obj.largeur_totale if plan_obj else 1600,
-            "height": plan_obj.hauteur_totale if plan_obj else 1000
+            "width": max_w,
+            "height": max_h
         }
 
         # 2. Zones et Rayons (imbriqués)
@@ -143,7 +154,7 @@ def api_plan_data(request):
                         
                         # Fallbacks si proposition-creer n'existe pas
                         if not appro_url:
-                            appro_url = safe_reverse_url('approvisionnement:planificateur')
+                            appro_url = safe_reverse_url('approvisionnement:commandes-a-valider')
                         if not appro_url:
                             appro_url = safe_reverse_url('approvisionnement:dashboard')
                         

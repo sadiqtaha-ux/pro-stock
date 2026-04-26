@@ -8,7 +8,8 @@ class PlanEditor {
         this.canvas = document.getElementById(canvasId);
         if (!this.canvas) return;
         this.ctx = this.canvas.getContext('2d');
-        this.wrapper = this.canvas.parentElement;
+        this.canvasInner = document.getElementById('canvas-inner');
+        this.wrapper = this.canvasInner ? this.canvasInner.parentElement : this.canvas.parentElement;
         this.root = document.getElementById('mpe-root');
 
         // --- État Central ---
@@ -67,7 +68,7 @@ class PlanEditor {
         try {
             await this.loadData();
             this.setupEventListeners();
-            this.fitToScreen();
+            setTimeout(() => this.fitToScreen(), 500);
             this.startRenderLoop();
             this.setLoading(false);
             this.showMessage("Éditeur prêt", "info");
@@ -151,7 +152,7 @@ class PlanEditor {
         // Viewport Controls
         document.getElementById('btn-zoom-in').onclick = () => this.zoom(0.2);
         document.getElementById('btn-zoom-out').onclick = () => this.zoom(-0.2);
-        document.getElementById('btn-zoom-reset').onclick = () => { this.state.viewport.zoom = 1; this.applyZoom(); };
+        document.getElementById('btn-zoom-reset').onclick = () => { this.state.viewport.zoom = 1; this.applyZoom(); this.updateUI(); };
         document.getElementById('btn-fit').onclick = () => this.fitToScreen();
         document.getElementById('btn-grid-toggle').onclick = (e) => {
             this.state.viewport.showGrid = !this.state.viewport.showGrid;
@@ -630,6 +631,9 @@ class PlanEditor {
         }
         document.getElementById('unsaved-badge').classList.toggle('d-none', !this.state.dirty);
         document.getElementById('btn-save').disabled = !this.state.dirty;
+        
+        const zoomBtn = document.getElementById('btn-zoom-reset');
+        if (zoomBtn) zoomBtn.innerText = `${Math.round(this.state.viewport.zoom * 100)}%`;
     }
 
     renderProperties() {
@@ -863,28 +867,60 @@ class PlanEditor {
     zoom(delta) {
         this.state.viewport.zoom = this.clamp(this.state.viewport.zoom + delta, 0.2, 3);
         this.applyZoom();
+        this.updateUI();
     }
 
     applyZoom() {
-        this.canvas.style.transform = `scale(${this.state.viewport.zoom})`;
-        this.canvas.style.transformOrigin = 'top left';
+        const zoom = this.state.viewport.zoom;
+        const eff_w = this.canvas.width  * zoom;
+        const eff_h = this.canvas.height * zoom;
+
+        // Scale the canvas visually (it's position:absolute, doesn't affect flow)
+        this.canvas.style.transform = `scale(${zoom})`;
+
+        // Size the inner div to the effective post-scale dimensions
+        // This tells the wrapper's scrollbars how large the content really is
+        const inner = document.getElementById('canvas-inner');
+        if (inner) {
+            inner.style.width  = eff_w + 'px';
+            inner.style.height = eff_h + 'px';
+        }
+
         this.requestRender();
     }
 
     fitToScreen() {
-        const padding = 60;
-        const scaleX = (this.wrapper.clientWidth - padding) / this.state.data.plan.width;
-        const scaleY = (this.wrapper.clientHeight - padding) / this.state.data.plan.height;
-        this.state.viewport.zoom = Math.min(scaleX, scaleY, 1);
-        this.applyZoom();
-        this.centerView();
+        if (!this.wrapper || !this.state.data.plan) return;
+
+        const doFit = () => {
+            const availableW = this.wrapper.offsetWidth  - 40;
+            const availableH = this.wrapper.offsetHeight - 40;
+
+            if (availableW <= 0 || availableH <= 0) return;
+
+            const scaleX = availableW / this.state.data.plan.width;
+            const scaleY = availableH / this.state.data.plan.height;
+
+            this.state.viewport.zoom = Math.max(0.1, Math.min(scaleX, scaleY, 2));
+            this.applyZoom();
+            this.updateUI();
+            this.wrapper.scrollLeft = 0;
+            this.wrapper.scrollTop  = 0;
+        };
+
+        // Double rAF ensures flex layout is fully computed before measuring
+        requestAnimationFrame(() => requestAnimationFrame(doFit));
     }
 
     centerView() {
-        const cw = this.canvas.width * this.state.viewport.zoom;
-        const ch = this.canvas.height * this.state.viewport.zoom;
-        this.wrapper.scrollLeft = (cw - this.wrapper.clientWidth) / 2;
-        this.wrapper.scrollTop = (ch - this.wrapper.clientHeight) / 2;
+        const zoom = this.state.viewport.zoom;
+        const cw = this.canvas.width * zoom;
+        const ch = this.canvas.height * zoom;
+        const ww = this.wrapper.clientWidth;
+        const wh = this.wrapper.clientHeight;
+        // Center if smaller than wrapper, else go to top-left with a small offset
+        this.wrapper.scrollLeft = cw > ww ? Math.max(0, (cw - ww) / 2) : 0;
+        this.wrapper.scrollTop  = ch > wh ? Math.max(0, (ch - wh) / 2) : 0;
     }
 
     setLoading(loading) {
