@@ -1,4 +1,4 @@
-{% load static %}
+{% load static i18n %}
 <!DOCTYPE html>
 <html lang="fr" data-bs-theme="light">
 <head>
@@ -72,6 +72,15 @@
                 </ul>
             </li>
 
+            <!-- Produits Finis -->
+            <li class="nav-item">
+                <a href="{% url 'produits:produit-fini-liste' %}" class="nav-link {% block active_produits_finis %}{% endblock %}" id="nav-produits-finis"
+                   data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Produits Finis">
+                    <i class="bi bi-box-seam-fill"></i>
+                    <span>Produits Finis</span>
+                </a>
+            </li>
+
             <!-- Fournisseurs -->
             <li class="nav-item">
                 <a href="{% url 'produits:fournisseur-liste' %}" class="nav-link {% block active_fournisseurs %}{% endblock %}" id="nav-fournisseurs"
@@ -93,11 +102,8 @@
                     <li><a href="{% url 'mouvements:etat-stock' %}" class="nav-link">
                         <i class="bi bi-activity"></i> État du stock
                     </a></li>
-                    <li><a href="{% url 'mouvements:entree-liste' %}" class="nav-link">
-                        <i class="bi bi-box-arrow-in-right"></i> Entrées
-                    </a></li>
-                    <li><a href="{% url 'mouvements:sortie-liste' %}" class="nav-link">
-                        <i class="bi bi-box-arrow-right"></i> Sorties
+                    <li><a href="{% url 'mouvements:create' %}" class="nav-link">
+                        <i class="bi bi-plus-circle"></i> Nouveau mouvement
                     </a></li>
                     <li><a href="{% url 'mouvements:liste' %}" class="nav-link">
                         <i class="bi bi-clock-history"></i> Historique
@@ -117,10 +123,11 @@
                 </a>
                 <ul class="collapse submenu {% block show_appro %}{% endblock %}" id="submenu-appro">
                     <li><a href="{% url 'approvisionnement:dashboard' %}" class="nav-link">
-                        <i class="bi bi-speedometer"></i> Vue d'ensemble
+                        <i class="bi bi-speedometer2"></i> Dashboard
                     </a></li>
-                    <li><a href="{% url 'approvisionnement:planificateur' %}" class="nav-link">
-                        <i class="bi bi-cpu"></i> Planificateur
+
+                    <li><a href="{% url 'approvisionnement:commandes-a-valider' %}" class="nav-link">
+                        <i class="bi bi-calendar-check"></i> Commandes à valider
                     </a></li>
                     <li><a href="{% url 'approvisionnement:commande-liste' %}" class="nav-link">
                         <i class="bi bi-file-earmark-text"></i> Bons de commande
@@ -138,28 +145,11 @@
                 </a>
             </li>
 
-            <!-- Organisation magasin (sous-menu) -->
-            <li class="nav-item nav-collapsible">
-                <a href="#submenu-magasin" data-bs-toggle="collapse" class="nav-link" id="nav-magasin-sub"
-                   data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Organisation">
-                    <i class="bi bi-map"></i>
-                    <span>Organisation</span>
-                    <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
-                </a>
-                <ul class="collapse submenu {% block show_magasin %}{% endblock %}" id="submenu-magasin">
-                    <li><a href="{% url 'magasin:zone-liste' %}" class="nav-link">
-                        <i class="bi bi-bounding-box"></i> Zones
-                    </a></li>
-                    <li><a href="{% url 'magasin:rayon-liste' %}" class="nav-link">
-                        <i class="bi bi-columns-gap"></i> Rayons
-                    </a></li>
-                </ul>
-            </li>
 
-            <li class="nav-section-title">Rapports</li>
+            <li class="nav-section-title">Analyses & Rapports</li>
 
             <li class="nav-item">
-                <a href="{% url 'dashboard:rapports' %}" class="nav-link" id="nav-rapports"
+                <a href="{% url 'dashboard:rapports' %}" class="nav-link {% block active_rapports %}{% endblock %}" id="nav-rapports"
                    data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Rapports">
                     <i class="bi bi-file-earmark-bar-graph"></i>
                     <span>Rapports</span>
@@ -232,11 +222,12 @@
             </nav>
         </div>
         <div class="topbar-right">
-            <!-- Alertes stock -->
+            <!-- Alertes système -->
             {% if nb_alertes_stock > 0 %}
-            <a href="{% url 'produits:matiere-liste' %}?statut_stock=alerte" class="btn btn-sm btn-warning me-2" title="Alertes stock">
-                <i class="bi bi-exclamation-triangle"></i>
-                <span class="d-none d-md-inline">{{ nb_alertes_stock }} alerte{{ nb_alertes_stock|pluralize }}</span>
+            <a href="{% url 'dashboard:alertes' %}" class="btn btn-sm btn-warning me-2 fw-medium shadow-sm" title="Alertes actives">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                <span class="d-none d-md-inline">{{ nb_alertes_stock }} {% trans "alerte" %}{{ nb_alertes_stock|pluralize }}</span>
+                <span class="d-md-none">{{ nb_alertes_stock }}</span>
             </a>
             {% endif %}
 
@@ -336,7 +327,7 @@
 <!-- ============================================================ -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="{% static 'js/stockpro.js' %}"></script>
+<script src="{% static 'js/stockpro.js' %}?v=1.1"></script>
 {% block extra_js %}{% endblock %}
 
 </body>

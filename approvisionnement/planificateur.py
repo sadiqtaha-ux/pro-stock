@@ -202,7 +202,7 @@ def lancer_planification(matieres=None, force=False):
         # Éviter les doublons
         if not force and PropositionCommande.objects.filter(
             matiere=matiere,
-            statut=PropositionCommande.Statut.PROPOSEE
+            statut=PropositionCommande.Statut.EN_ATTENTE
         ).exists():
             resultats["ignorees"] += 1
             continue
@@ -220,7 +220,7 @@ def lancer_planification(matieres=None, force=False):
                 urgence           = result["urgence"],
                 date_besoin       = result.get("date_besoin"),
                 detail_calcul     = result["detail_calcul"],
-                statut            = PropositionCommande.Statut.PROPOSEE,
+                statut            = PropositionCommande.Statut.EN_ATTENTE,
             )
             resultats["creees"] += 1
 

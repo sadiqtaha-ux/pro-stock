@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Analyse des Mouvements{% endblock %}
+{% block active_dashboard %}active{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:rapports' %}">Centre de Rapports</a></li>
+<li class="breadcrumb-item active">Mouvements</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold">Historique des Mouvements</h4>
+        <p class="text-muted mb-0 small">Analyse chronologique des entrées, sorties et ajustements de stock.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'dashboard:export-rapport' 'mouvements' 'csv' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body py-2">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Du</label>
+                <input type="date" name="date_debut" class="form-control form-control-sm" value="{{ request.GET.date_debut }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Au</label>
+                <input type="date" name="date_fin" class="form-control form-control-sm" value="{{ request.GET.date_fin }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Type</label>
+                <select name="type_mouvement" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="ENTREE" {% if request.GET.type_mouvement == 'ENTREE' %}selected{% endif %}>Entrée</option>
+                    <option value="SORTIE" {% if request.GET.type_mouvement == 'SORTIE' %}selected{% endif %}>Sortie</option>
+                    <option value="AJUSTEMENT" {% if request.GET.type_mouvement == 'AJUSTEMENT' %}selected{% endif %}>Ajustement</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">Filtrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="panel shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Article</th>
+                    <th class="text-end">Quantité</th>
+                    <th>Opérateur</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in mouvements %}
+                <tr>
+                    <td class="text-muted">{{ m.date_mouvement|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <span class="badge {% if m.type_mouvement == 'ENTREE' %}bg-success{% elif m.type_mouvement == 'SORTIE' %}bg-danger{% else %}bg-secondary{% endif %}">
+                            {{ m.get_type_mouvement_display }}
+                        </span>
+                    </td>
+                    <td class="fw-medium">
+                        {% if m.matiere %}{{ m.matiere.nom }}{% else %}{{ m.produit_fini.nom }}{% endif %}
+                    </td>
+                    <td class="text-end fw-bold">
+                        {% if m.type_mouvement == 'SORTIE' %}-{% else %}+{% endif %}{{ m.quantite|floatformat:2 }}
+                    </td>
+                    <td>{{ m.operateur.get_full_name|default:m.operateur.username }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center py-4 text-muted">Aucun mouvement trouvé.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

@@ -14,6 +14,89 @@
     <p class="text-muted mb-0 fs-13">Étape préliminaire : choisissez la méthode d'approvisionnement.</p>
 </div>
 
+{% include 'components/step_progress.html' %}
+
+<!-- Information Recommandation -->
+<div class="alert alert-info border-0 shadow-sm mb-4">
+    <div class="d-flex gap-3">
+        <div class="fs-4">
+            <i class="bi bi-info-circle-fill"></i>
+        </div>
+        <div>
+            <h5 class="alert-heading mb-1 fs-6 fw-bold">Recommandation automatique indisponible</h5>
+            <p class="mb-0 small">
+                Le système ne dispose pas encore de suffisamment de données historiques pour recommander une méthode de manière fiable. 
+                Veuillez sélectionner manuellement la méthode la plus adaptée à vos besoins actuels.
+            </p>
+        </div>
+    </div>
+</div>
+
+{# ── Panneau de recommandation ABC (Si disponible) ──────────────────────── #}
+{% with rec=recommandation %}
+{% if rec and not rec.message_historique_insuffisant %}
+
+{# Panneau de recommandation avec classe ABC #}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom d-flex align-items-center gap-2">
+        <i class="bi bi-stars text-warning"></i>
+        <span class="fw-semibold">Recommandation basée sur l'analyse ABC</span>
+        {# Badge confiance #}
+        {% if rec.niveau_confiance == 'eleve' %}
+            <span class="badge bg-success ms-auto">Confiance élevée</span>
+        {% elif rec.niveau_confiance == 'moyen' %}
+            <span class="badge bg-warning text-dark ms-auto">Confiance moyenne</span>
+        {% else %}
+            <span class="badge bg-secondary ms-auto">Confiance faible</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <div class="row g-3 align-items-start">
+            {# Classe ABC #}
+            <div class="col-md-2 text-center">
+                <div class="fw-bold text-muted small mb-1">Classe ABC</div>
+                {% if rec.classe_abc == 'A' %}
+                    <div class="display-5 fw-bold text-danger">A</div>
+                    <div class="small text-danger">Critique</div>
+                {% elif rec.classe_abc == 'B' %}
+                    <div class="display-5 fw-bold text-warning">B</div>
+                    <div class="small text-warning">Intermédiaire</div>
+                {% elif rec.classe_abc == 'C' %}
+                    <div class="display-5 fw-bold text-success">C</div>
+                    <div class="small text-success">Faible valeur</div>
+                {% else %}
+                    <div class="display-5 fw-bold text-muted">—</div>
+                    <div class="small text-muted">Non classé</div>
+                {% endif %}
+            </div>
+            {# Recommandation #}
+            <div class="col-md-5">
+                <div class="fw-semibold mb-1 small text-muted">Méthode recommandée</div>
+                <div class="fw-bold fs-6 mb-1">{{ methode_recommandee_label }}</div>
+                <div class="fw-semibold mb-1 small text-muted mt-2">Alternative</div>
+                <div class="text-secondary small">{{ methode_alternative_label }}</div>
+            </div>
+            {# Justification #}
+            <div class="col-md-5">
+                <div class="fw-semibold mb-1 small text-muted">Justification</div>
+                <div class="small text-muted">{{ rec.justification }}</div>
+                <div class="mt-2 small">
+                    <span class="text-muted">Basé sur </span>
+                    <strong>{{ rec.nb_mouvements_sorties }}</strong>
+                    <span class="text-muted"> mouvement(s) de sortie (12 derniers mois)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-top-0 small text-muted">
+        <i class="bi bi-lightbulb me-1"></i>
+        Vous pouvez ignorer cette recommandation et choisir librement une méthode ci-dessous.
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endwith %}
+
 <form method="post">
     {% csrf_token %}
 
@@ -146,7 +229,7 @@
     </div>
 
     <div class="d-flex justify-content-between">
-        <a href="{% url 'produits:matiere-liste' %}" class="btn btn-secondary">
+        <a href="{% url 'produits:matiere-create-cancel' %}" class="btn btn-secondary">
             <i class="bi bi-arrow-left me-1"></i>Annuler
         </a>
         <button type="submit" class="btn btn-primary" id="btn-continuer" disabled>

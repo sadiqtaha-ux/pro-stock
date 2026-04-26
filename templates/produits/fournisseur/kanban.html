@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+{% load app_filters %}
+
+{% block title %}Fournisseurs - Kanban{% endblock %}
+{% block active_fournisseurs %}active{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-1 fw-bold">Vue Kanban — Fournisseurs</h4>
+            <p class="text-muted mb-0 fs-13">Gérez vos relations fournisseurs par statut.</p>
+        </div>
+        <div class="d-flex align-items-center">
+            {% include 'components/view_toggle.html' with current_view='kanban' %}
+            {% include 'components/export_dropdown.html' %}
+            <a href="{% url 'produits:fournisseur-create' %}" class="btn btn-primary btn-sm ms-2">
+                <i class="bi bi-plus-lg me-1"></i>Nouveau
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-center">
+            <input type="hidden" name="view" value="kanban">
+            <div class="col-md-6">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Nom, ville, pays..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select name="statut" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tous les statuts</option>
+                    {% for val, label in statut_choices %}
+                    <option value="{{ val }}" {% if request.GET.statut == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <a href="?view=kanban" class="btn btn-light btn-sm w-100 border text-muted">Réinitialiser les filtres</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="kanban-board d-flex gap-3 overflow-auto pb-3" style="min-height: 70vh;">
+    <!-- Colonne ACTIF -->
+    <div class="kanban-col flex-shrink-0" style="width: 300px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-success rounded-circle p-1 me-2"><i class="bi bi-check-circle-fill"></i></span>
+            <h6 class="mb-0 fw-bold">Actifs</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ fournisseurs|filter_attr:'statut:ACTIF'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for f in fournisseurs %}
+                {% if f.statut == 'ACTIF' %}
+                    {% include 'produits/fournisseur/kanban_card.html' with fournisseur=f %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne À SURVEILLER -->
+    <div class="kanban-col flex-shrink-0" style="width: 300px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-warning rounded-circle p-1 me-2"><i class="bi bi-eye-fill text-dark"></i></span>
+            <h6 class="mb-0 fw-bold">À surveiller</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ fournisseurs|filter_attr:'statut:A_SURVEILLER'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for f in fournisseurs %}
+                {% if f.statut == 'A_SURVEILLER' %}
+                    {% include 'produits/fournisseur/kanban_card.html' with fournisseur=f %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne INACTIF -->
+    <div class="kanban-col flex-shrink-0" style="width: 300px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-secondary rounded-circle p-1 me-2"><i class="bi bi-slash-circle-fill"></i></span>
+            <h6 class="mb-0 fw-bold">Inactifs</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ fournisseurs|filter_attr:'statut:INACTIF'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for f in fournisseurs %}
+                {% if f.statut == 'INACTIF' %}
+                    {% include 'produits/fournisseur/kanban_card.html' with fournisseur=f %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne BLOQUÉ -->
+    <div class="kanban-col flex-shrink-0" style="width: 300px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-danger rounded-circle p-1 me-2"><i class="bi bi-dash-circle-fill"></i></span>
+            <h6 class="mb-0 fw-bold">Bloqués</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ fournisseurs|filter_attr:'statut:BLOQUE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for f in fournisseurs %}
+                {% if f.statut == 'BLOQUE' %}
+                    {% include 'produits/fournisseur/kanban_card.html' with fournisseur=f %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .kanban-board { min-height: 500px; }
+    .kanban-items { min-height: 100px; padding: 2px; }
+    .kanban-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+</style>
+{% endblock %}

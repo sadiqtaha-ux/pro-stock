@@ -1,0 +1,73 @@
+<!-- Modal Validation -->
+<div class="modal fade" id="modal-valider-{{ prop.pk }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-check-circle me-2"></i>Valider Proposition</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'approvisionnement:proposition-valider' prop.pk %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">Matière</label>
+                        <div class="fw-bold">{{ prop.matiere.nom }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold text-muted small">Quantité suggérée</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="quantite_validee" class="form-control" value="{{ prop.quantite_proposee }}" step="0.0001" min="0" required>
+                                <span class="input-group-text">{{ prop.matiere.unite.symbole }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold text-muted small">Fournisseur</label>
+                            <select name="fournisseur" class="form-select form-select-sm" required>
+                                {% for f in fournisseurs_actifs %}
+                                <option value="{{ f.pk }}" {% if prop.matiere.fournisseur_principal_id == f.pk %}selected{% endif %}>{{ f.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">Date de réception souhaitée</label>
+                        <input type="date" name="date_reception_prevue" class="form-control form-control-sm" value="{{ prop.date_besoin|date:'Y-m-d' }}">
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-bold text-muted small">Note interne (acheteur)</label>
+                        <textarea name="note_acheteur" class="form-control form-control-sm" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-sm btn-success px-4">Confirmer & Créer BC</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Rejet -->
+<div class="modal fade" id="modal-rejeter-{{ prop.pk }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold small"><i class="bi bi-x-circle me-2"></i>Rejeter Proposition</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'approvisionnement:proposition-rejeter' prop.pk %}">
+                {% csrf_token %}
+                <div class="modal-body p-3">
+                    <p class="small text-muted mb-3">Voulez-vous vraiment rejeter cette proposition pour <strong>{{ prop.matiere.nom }}</strong> ?</p>
+                    <label class="form-label fw-bold text-muted small">Raison du rejet</label>
+                    <textarea name="note_rejet" class="form-control form-control-sm" rows="2" placeholder="Motif obligatoire..." required></textarea>
+                </div>
+                <div class="modal-footer bg-light border-0 py-2">
+                    <button type="button" class="btn btn-xs btn-light border" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-xs btn-danger">Confirmer Rejet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

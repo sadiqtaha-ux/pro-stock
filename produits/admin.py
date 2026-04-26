@@ -1,6 +1,6 @@
 """produits/admin.py"""
 from django.contrib import admin
-from .models import Fournisseur, UnitesMesure, MatierePremiere
+from .models import Fournisseur, UnitesMesure, MatierePremiere, ProduitFini, Nomenclature, LigneNomenclature
 
 
 @admin.register(Fournisseur)
@@ -52,3 +52,21 @@ class MatierePremiereAdmin(admin.ModelAdmin):
             "classes": ("collapse",)
         }),
     )
+
+@admin.register(ProduitFini)
+class ProduitFiniAdmin(admin.ModelAdmin):
+    list_display = ("reference", "nom", "categorie", "stock_actuel", "actif")
+    list_filter = ("categorie", "actif")
+    search_fields = ("reference", "nom")
+
+@admin.register(Nomenclature)
+class NomenclatureAdmin(admin.ModelAdmin):
+    list_display = ("produit_fini", "nom", "version", "actif", "date_creation")
+    list_filter = ("actif",)
+    search_fields = ("produit_fini__nom", "nom")
+
+@admin.register(LigneNomenclature)
+class LigneNomenclatureAdmin(admin.ModelAdmin):
+    list_display = ("nomenclature", "matiere", "quantite_par_unite", "obligatoire", "ordre_affichage")
+    list_filter = ("obligatoire",)
+    search_fields = ("nomenclature__produit_fini__nom", "matiere__nom")

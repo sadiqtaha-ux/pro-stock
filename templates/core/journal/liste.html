@@ -1,154 +1,156 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
+
 {% block title %}Journal d'activité{% endblock %}
-{% block breadcrumb %}
-<li class="breadcrumb-item active">Journal</li>
-{% endblock %}
 
 {% block content %}
-
-<!-- En-tête -->
-<div class="mb-4">
-    <h4 class="mb-1 fw-bold">Journal d'activité</h4>
-    <p class="text-muted mb-0 fs-13">Audit trail complet de toutes les actions utilisateurs.</p>
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h4 class="mb-1 fw-bold">Journal d'Activité</h4>
+        <p class="text-muted mb-0 fs-13">Audit trail complet de toutes les actions réalisées sur la plateforme.</p>
+    </div>
+    <div class="col-auto d-flex align-items-center">
+        {% include 'components/view_toggle.html' with current_view='table' %}
+        {% include 'components/export_dropdown.html' %}
+    </div>
 </div>
 
 <!-- Filtres -->
-<form method="get" class="row g-2 mb-3 align-items-end" id="filter-form">
-    <div class="col-md-3">
-        <select name="utilisateur" class="form-select form-select-sm">
-            <option value="">Tous les utilisateurs</option>
-            {% for u in utilisateurs %}
-            <option value="{{ u.pk }}" {% if request.GET.utilisateur == u.pk|stringformat:"s" %}selected{% endif %}>
-                {{ u.get_full_name|default:u.username }}
-            </option>
-            {% endfor %}
-        </select>
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-end">
+            <input type="hidden" name="view" value="table">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted">Recherche</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Mots-clés..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Action</label>
+                <select name="action" class="form-select form-select-sm">
+                    <option value="">Toutes</option>
+                    {% for val, label in statuts_choices %}
+                    <option value="{{ val }}" {% if request.GET.action == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Utilisateur</label>
+                <select name="utilisateur" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    {% for u in utilisateurs %}
+                    <option value="{{ u.id }}" {% if request.GET.utilisateur == u.id|stringformat:"i" %}selected{% endif %}>{{ u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Niveau</label>
+                <select name="niveau" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="INFO" {% if request.GET.niveau == 'INFO' %}selected{% endif %}>Information</option>
+                    <option value="WARNING" {% if request.GET.niveau == 'WARNING' %}selected{% endif %}>Avertissement</option>
+                    <option value="ERROR" {% if request.GET.niveau == 'ERROR' %}selected{% endif %}>Erreur</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small fw-semibold text-muted">Du</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request.GET.date_from }}">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small fw-semibold text-muted">Au</label>
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request.GET.date_to }}">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Filtrer</button>
+            </div>
+        </form>
     </div>
-    <div class="col-md-2">
-        <select name="action" class="form-select form-select-sm">
-            <option value="">Toutes les actions</option>
-            {% for val, label in actions %}
-            <option value="{{ val }}" {% if request.GET.action == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-2">
-        <input type="date" name="date_from" class="form-control form-control-sm"
-               value="{{ request.GET.date_from }}" placeholder="Du">
-    </div>
-    <div class="col-md-2">
-        <input type="date" name="date_to" class="form-control form-control-sm"
-               value="{{ request.GET.date_to }}" placeholder="Au">
-    </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-sm btn-primary">
-            <i class="bi bi-funnel"></i>
-        </button>
-    </div>
-    {% if request.GET.utilisateur or request.GET.action or request.GET.date_from or request.GET.date_to %}
-    <div class="col-auto">
-        <a href="{% url 'core:journal-liste' %}" class="btn btn-sm btn-outline-secondary" title="Réinitialiser">
-            <i class="bi bi-x-lg"></i>
-        </a>
-    </div>
-    {% endif %}
-</form>
+</div>
 
-<!-- Table (dense) -->
 <div class="panel">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 small table-stockpro">
+        <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Date / Heure</th>
+                    <th class="ps-4">Date / Heure</th>
+                    <th>Niveau</th>
                     <th>Utilisateur</th>
-                    <th>Action</th>
-                    <th>Objet</th>
+                    <th class="text-center">Action</th>
+                    <th>Modèle</th>
                     <th>Description</th>
-                    <th>IP</th>
+                    <th class="pe-4 text-end">IP</th>
                 </tr>
             </thead>
             <tbody>
-                {% for activite in activites %}
+                {% for log in activites %}
                 <tr>
-                    <!-- Date -->
-                    <td class="text-muted font-monospace" style="font-size:11px;white-space:nowrap;">
-                        {{ activite.date_action|date:"d/m/Y H:i:s" }}
+                    <td class="ps-4">
+                        <div class="fw-bold fs-13">{{ log.date_action|date:"d/m/Y" }}</div>
+                        <small class="text-muted">{{ log.date_action|date:"H:i:s" }}</small>
                     </td>
-                    <!-- Utilisateur -->
                     <td>
-                        <div class="d-flex align-items-center gap-1">
-                            <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0"
-                                 style="width:20px;height:20px;font-size:9px;">
-                                {{ activite.utilisateur.first_name|first|upper }}{{ activite.utilisateur.last_name|first|upper }}
+                        {% if log.niveau == 'INFO' %}
+                            <span class="text-info"><i class="bi bi-info-circle me-1"></i>Info</span>
+                        {% elif log.niveau == 'WARNING' %}
+                            <span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Warn</span>
+                        {% elif log.niveau == 'ERROR' %}
+                            <span class="text-danger"><i class="bi bi-x-octagon me-1"></i>Error</span>
+                        {% else %}
+                            {{ log.niveau }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center fw-bold text-primary fs-11 me-2" style="width:24px; height:24px;">
+                                {{ log.utilisateur.username|first|upper }}
                             </div>
-                            <span>{{ activite.utilisateur.get_full_name|default:activite.utilisateur.username }}</span>
+                            <span class="fs-13 fw-semibold">{{ log.utilisateur.username }}</span>
                         </div>
                     </td>
-                    <!-- Action -->
+                    <td class="text-center">
+                        {% if log.action == 'CREATE' %}
+                            <span class="badge bg-success-soft text-success rounded-pill px-3">Création</span>
+                        {% elif log.action == 'UPDATE' %}
+                            <span class="badge bg-warning-soft text-warning rounded-pill px-3">Modif.</span>
+                        {% elif log.action == 'DELETE' %}
+                            <span class="badge bg-danger-soft text-danger rounded-pill px-3">Suppression</span>
+                        {% elif log.action == 'LOGIN' %}
+                            <span class="badge bg-primary-soft text-primary rounded-pill px-3">Connexion</span>
+                        {% elif log.action == 'VALIDATION' %}
+                            <span class="badge bg-success text-white rounded-pill px-3">Validation</span>
+                        {% elif log.action == 'REJET' %}
+                            <span class="badge bg-danger text-white rounded-pill px-3">Rejet</span>
+                        {% else %}
+                            <span class="badge bg-light text-muted border rounded-pill px-3">{{ log.get_action_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge bg-light text-dark border fw-normal">{{ log.modele }}</span></td>
                     <td>
-                        {% if activite.action == 'CREATE' %}<span class="badge bg-success">Création</span>
-                        {% elif activite.action == 'UPDATE' %}<span class="badge bg-warning text-dark">Modif.</span>
-                        {% elif activite.action == 'DELETE' %}<span class="badge bg-danger">Suppression</span>
-                        {% elif activite.action == 'LOGIN' %}<span class="badge bg-primary">Connexion</span>
-                        {% elif activite.action == 'LOGOUT' %}<span class="badge bg-secondary">Déconnexion</span>
-                        {% elif activite.action == 'EXPORT' %}<span class="badge bg-info text-dark">Export</span>
-                        {% elif activite.action == 'PRINT' %}<span class="badge bg-light text-dark border">Impression</span>
-                        {% else %}<span class="badge bg-light text-dark border">{{ activite.action }}</span>{% endif %}
+                        <div class="text-truncate fs-13" style="max-width: 350px;" title="{{ log.description }}">
+                            {{ log.description }}
+                        </div>
                     </td>
-                    <!-- Objet -->
-                    <td class="text-muted" style="font-size:11px;">
-                        {{ activite.modele }} #{{ activite.objet_id|default:"—" }}
-                    </td>
-                    <!-- Description -->
-                    <td style="max-width:300px;">
-                        <span class="d-inline-block text-truncate" style="max-width:280px;"
-                              title="{{ activite.description }}">
-                            {{ activite.description }}
-                        </span>
-                    </td>
-                    <!-- IP -->
-                    <td class="font-monospace text-muted" style="font-size:11px;">
-                        {{ activite.adresse_ip|default:"—" }}
+                    <td class="pe-4 text-end text-muted small font-monospace">
+                        {{ log.adresse_ip|default:"—" }}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center py-5 text-muted">
-                        <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
-                        Aucune activité enregistrée
-                        {% if request.GET.action or request.GET.utilisateur %}pour ces critères{% endif %}
+                    <td colspan="6" class="text-center py-5">
+                        <i class="bi bi-journal-text fs-1 text-muted opacity-25 d-block mb-3"></i>
+                        <p class="text-muted">Aucune activité enregistrée.</p>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-
-    <!-- Pagination -->
     {% if is_paginated %}
-    <div class="d-flex justify-content-center py-3">
-        <nav><ul class="pagination pagination-sm mb-0">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
-                    <i class="bi bi-chevron-left"></i>
-                </a>
-            </li>
-            {% endif %}
-            <li class="page-item disabled">
-                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-            </li>
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
-                    <i class="bi bi-chevron-right"></i>
-                </a>
-            </li>
-            {% endif %}
-        </ul></nav>
+    <div class="panel-footer py-3">
+        {% include "components/pagination.html" %}
     </div>
     {% endif %}
 </div>
-
 {% endblock %}

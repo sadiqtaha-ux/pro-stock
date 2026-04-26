@@ -38,9 +38,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ============================================================
-    // AUTO-DISMISS DES MESSAGES
+    // AUTO-DISMISS DES MESSAGES (sauf si .no-auto-dismiss)
     // ============================================================
-    document.querySelectorAll('.alert.alert-success, .alert.alert-info').forEach(alert => {
+    document.querySelectorAll('.alert.alert-success:not(.no-auto-dismiss), .alert.alert-info:not(.no-auto-dismiss)').forEach(alert => {
         setTimeout(() => {
             const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
             if (bsAlert) bsAlert.close();
@@ -94,16 +94,31 @@ function rafraichirKPIs() {
     })
     .then(r => r.json())
     .then(data => {
-        ['nb_ruptures', 'nb_alertes', 'nb_suggestions', 'nb_commandes_attente'].forEach(key => {
+        // Liste des IDs à mettre à jour
+        const keys = [
+            'mp_total', 'mp_rupture', 'mp_critique', 'mp_dispo',
+            'pf_total', 'pf_rupture', 'pf_critique',
+            'cmd_attente', 'cmd_retard', 'prop_valider'
+        ];
+        
+        keys.forEach(key => {
             const el = document.getElementById(`kpi-${key}`);
-            if (el) el.textContent = data[key];
+            if (el) {
+                let suffix = '';
+                if (key === 'mp_dispo') suffix = '%';
+                el.textContent = data[key] + suffix;
+            }
         });
-        const valeur = document.getElementById('kpi-valeur_stock');
-        if (valeur) {
-            valeur.textContent = new Intl.NumberFormat('fr-MA', {
-                minimumFractionDigits: 2, maximumFractionDigits: 2
-            }).format(data.valeur_stock) + ' DH';
-        }
+
+        // Cas particuliers (DH)
+        ['mp_valeur', 'pf_valeur', 'montant_ouvert'].forEach(key => {
+            const el = document.getElementById(`kpi-${key}`);
+            if (el && data[key] !== undefined) {
+                el.textContent = new Intl.NumberFormat('fr-MA', {
+                    minimumFractionDigits: 2, maximumFractionDigits: 2
+                }).format(data[key]) + ' DH';
+            }
+        });
     })
     .catch(err => console.warn('Refresh KPI failed:', err));
 }
@@ -232,6 +247,111 @@ function marquerNotifLue(pk) {
             data.non_lues > 0 ? (badge.textContent = data.non_lues) : badge.remove();
         }
     });
+}
+
+// ============================================================
+// CHARGEMENT DES NOTIFICATIONS AJAX
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    const btnNotif = document.getElementById('btn-notifications');
+    const listNotif = document.querySelector('.notifications-list');
+    const badgeNotif = document.querySelector('#btn-notifications .badge');
+
+    if (btnNotif && listNotif) {
+        // Bootstrap 5 fires events on the toggle element
+        btnNotif.addEventListener('show.bs.dropdown', function () {
+            // Reset content with spinner
+            listNotif.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <div class="spinner-border spinner-border-sm mb-2" role="status"></div>
+                    <p class="mb-0 small">Chargement en cours...</p>
+                </div>
+            `;
+            
+            fetch('/dashboard/api/notifications/', {
+                method: 'GET',
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Erreur ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                try {
+                    listNotif.innerHTML = '';
+                    
+                    // Mise à jour du badge
+                    if (badgeNotif) {
+                        if (data.count > 0) {
+                            badgeNotif.textContent = data.count;
+                            badgeNotif.style.display = 'inline-block';
+                        } else {
+                            badgeNotif.style.display = 'none';
+                        }
+                    }
+
+                    if (!data.notifications || data.notifications.length === 0) {
+                        listNotif.innerHTML = '<div class="text-center text-muted py-4 small">Aucune notification</div>';
+                        return;
+                    }
+
+                    data.notifications.forEach(n => {
+                        const item = document.createElement('a');
+                        item.href = n.url || '#';
+                        item.className = 'dropdown-item p-3 border-bottom';
+                        
+                        // Icone et Couleur (Bootstrap 5.3 subtle)
+                        let icon = 'bi-info-circle';
+                        if (n.type === 'stock') icon = 'bi-box-seam';
+                        else if (n.type === 'appro') icon = 'bi-cart-check';
+                        else if (n.type === 'magasin') icon = 'bi-grid-3x3-gap';
+
+                        const level = n.level || 'primary';
+
+                        item.innerHTML = `
+                            <div class="d-flex align-items-start">
+                                <div class="avatar-sm bg-${level}-subtle text-${level} rounded-circle me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px;height:32px; min-width:32px;">
+                                    <i class="bi ${icon}"></i>
+                                </div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="mb-1 fw-bold fs-13 text-truncate">${n.title}</h6>
+                                        <small class="text-muted ms-2 flex-shrink-0" style="font-size: 10px;">${formatRelativeDate(n.created_at)}</small>
+                                    </div>
+                                    <p class="mb-0 text-muted small lh-sm text-wrap">${n.message}</p>
+                                </div>
+                            </div>
+                        `;
+                        listNotif.appendChild(item);
+                    });
+                } catch (e) {
+                    console.error("Rendering error:", e);
+                    listNotif.innerHTML = '<div class="text-center text-danger py-3 small">Erreur d\'affichage</div>';
+                }
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                listNotif.innerHTML = '<div class="text-center text-danger py-3 small">Impossible de charger les notifications</div>';
+            });
+        });
+    }
+});
+
+/**
+ * Formater une date ISO en texte relatif (ex: il y a 5 min)
+ */
+function formatRelativeDate(isoString) {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) return 'À l\'instant';
+    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)} min`;
+    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)} h`;
+    return date.toLocaleDateString('fr-FR');
 }
 
 // ============================================================

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Rapport d'État du Stock{% endblock %}
+{% block active_dashboard %}active{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:rapports' %}">Centre de Rapports</a></li>
+<li class="breadcrumb-item active">État du Stock</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold">Rapport d'État du Stock</h4>
+        <p class="text-muted mb-0 small">Détail des inventaires, valorisation et alertes de rupture.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'dashboard:export-rapport' 'stock' 'csv' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+        </a>
+        <a href="{% url 'dashboard:export-rapport' 'stock' 'pdf' %}" class="btn btn-danger btn-sm">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+        </a>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Valeur MP</p>
+                <h4 class="fw-bold mb-0">{{ valeur_mp|floatformat:0|intcomma }} DH</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Valeur PF</p>
+                <h4 class="fw-bold mb-0">{{ valeur_pf|floatformat:0|intcomma }} DH</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Articles en Rupture</p>
+                <h4 class="fw-bold mb-0 text-danger">{{ stock_statut.rupture }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Graphique -->
+    <div class="col-xl-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold">Valeur par Catégorie</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="chart-cat-valeur"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Top Alertes -->
+    <div class="col-xl-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold text-danger">Top 10 MP Critiques</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Référence</th>
+                            <th>Nom</th>
+                            <th>Stock</th>
+                            <th>Min.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in top_mp_critiques %}
+                        <tr>
+                            <td>{{ m.reference }}</td>
+                            <td>{{ m.nom }}</td>
+                            <td class="fw-bold text-danger">{{ m.stock_actuel }}</td>
+                            <td>{{ m.stock_minimum }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun article critique.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    new Chart(document.getElementById('chart-cat-valeur'), {
+        type: 'pie',
+        data: {
+            labels: {{ cat_labels|safe }},
+            datasets: [{
+                data: {{ cat_values|safe }},
+                backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'right' } }
+        }
+    });
+});
+</script>
+{% endblock %}

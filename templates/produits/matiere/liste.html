@@ -13,9 +13,11 @@
             <h4 class="mb-1 fw-bold">Catalogue des Matières Premières</h4>
             <p class="text-muted mb-0 fs-13">Gérez vos API, excipients et conditionnements.</p>
         </div>
-        <div>
+        <div class="d-flex align-items-center">
+            {% include 'components/view_toggle.html' with current_view='table' %}
+            {% include 'components/export_dropdown.html' %}
             {% if peut_administrer or peut_saisir %}
-            <a href="{% url 'produits:matiere-choisir-methode' %}" class="btn btn-primary btn-sm">
+            <a href="{% url 'produits:matiere-choisir-methode' %}" class="btn btn-primary btn-sm ms-2">
                 <i class="bi bi-plus-lg me-1"></i>Nouvelle matière
             </a>
             {% endif %}
@@ -23,29 +25,61 @@
     </div>
 </div>
 
-{% if not peut_administrer %}
-<div class="alert alert-info alert-sm py-2 px-3 mb-3">
-    <i class="bi bi-info-circle me-1"></i>
-    Ajout et suppression de matières réservés à l'administrateur.
-</div>
-{% endif %}
-
-<div class="panel">
-    <div class="panel-header d-flex justify-content-between align-items-center">
-        <h5 class="panel-title mb-0">Liste des matières</h5>
-        <div class="d-flex gap-2">
-            <!-- Filtres simples -->
-            <form method="get" class="d-flex gap-2">
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Rechercher (réf, nom)..." value="{{ request.GET.q }}">
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2">
+            <input type="hidden" name="view" value="table">
+            <div class="col-md-2">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Référence, nom..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-2">
                 <select name="categorie" class="form-select form-select-sm">
-                    <option value="">Toutes les catégories</option>
+                    <option value="">Toutes catégories</option>
                     {% for val, label in categories %}
                     <option value="{{ val }}" {% if request.GET.categorie == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-search"></i></button>
-            </form>
-        </div>
+            </div>
+            <div class="col-md-2">
+                <select name="fournisseur" class="form-select form-select-sm">
+                    <option value="">Tous fournisseurs</option>
+                    {% for f in fournisseurs %}
+                    <option value="{{ f.id }}" {% if request.GET.fournisseur == f.id|stringformat:"i" %}selected{% endif %}>{{ f.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="statut_stock" class="form-select form-select-sm">
+                    <option value="">Statut Stock (Tous)</option>
+                    {% for val, label in statut_stock_choices %}
+                    <option value="{{ val }}" {% if request.GET.statut_stock == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <select name="abc" class="form-select form-select-sm">
+                    <option value="">ABC</option>
+                    {% for val, label in abc_choices %}
+                    <option value="{{ val }}" {% if request.GET.abc == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100">Filtrer</button>
+            </div>
+            <div class="col-md-2">
+                <a href="?view=table" class="btn btn-light btn-sm w-100 border">Réinitialiser les filtres</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header d-flex justify-content-between align-items-center">
+        <h5 class="panel-title mb-0">Résultats ({{ page_obj.paginator.count }})</h5>
     </div>
     
     <div class="table-responsive">
@@ -56,9 +90,9 @@
                     <th>Nom</th>
                     <th>Catégorie</th>
                     <th>Stock Actuel</th>
-                    <th>Unité</th>
-                    <th>Zone</th>
-                    <th>Statut</th>
+                    <th>Min / PC</th>
+                    <th>ABC</th>
+                    <th class="text-center">Statut</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
@@ -66,52 +100,73 @@
                 {% for matiere in matieres %}
                 <tr>
                     <td class="fw-medium">{{ matiere.reference }}</td>
-                    <td>{{ matiere.nom }}</td>
-                    <td><span class="badge bg-secondary">{{ matiere.get_categorie_display }}</span></td>
                     <td>
-                        {% if matiere.stock_actuel <= 0 %}
-                            <span class="text-danger fw-bold">{{ matiere.stock_actuel }}</span>
-                        {% elif matiere.stock_actuel <= matiere.stock_minimum %}
-                            <span class="text-warning fw-bold">{{ matiere.stock_actuel }}</span>
-                        {% else %}
-                            <span class="text-success fw-bold">{{ matiere.stock_actuel }}</span>
-                        {% endif %}
+                        <div class="fw-bold">{{ matiere.nom }}</div>
+                        <small class="text-muted">{{ matiere.fournisseur_principal.nom|default:"-" }}</small>
                     </td>
-                    <td>{{ matiere.unite.symbole }}</td>
-                    <td>{{ matiere.get_zone_stockage_display }}<br><small class="text-muted">{{ matiere.emplacement }}</small></td>
+                    <td><span class="badge bg-secondary-soft text-secondary">{{ matiere.get_categorie_display }}</span></td>
                     <td>
-                        {% if matiere.actif %}
-                            <span class="badge bg-success-soft text-success">Actif</span>
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold {% if matiere.stock_actuel <= 0 %}text-danger{% elif matiere.stock_actuel <= matiere.stock_minimum %}text-warning{% else %}text-success{% endif %}">
+                                {{ matiere.stock_actuel|floatformat:2 }}
+                            </span>
+                            <span class="ms-1 text-muted fs-11">{{ matiere.unite.symbole }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <small class="text-muted">Min: {{ matiere.stock_minimum|floatformat:2 }}</small><br>
+                        <small class="text-muted">PC: {{ matiere.point_commande|floatformat:2 }}</small>
+                    </td>
+                    <td>
+                        {% if matiere.classe_abc %}
+                        <span class="badge {% if matiere.classe_abc == 'A' %}bg-danger{% elif matiere.classe_abc == 'B' %}bg-warning text-dark{% else %}bg-info{% endif %} fs-10">
+                            {{ matiere.classe_abc }}
+                        </span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if matiere.calculated_statut == 'RUPTURE' %}
+                            <span class="badge bg-danger rounded-pill">Rupture</span>
+                        {% elif matiere.calculated_statut == 'CRITIQUE' %}
+                            <span class="badge bg-warning text-dark rounded-pill">Critique</span>
+                        {% elif matiere.calculated_statut == 'ALERTE' %}
+                            <span class="badge bg-info rounded-pill">Alerte</span>
                         {% else %}
-                            <span class="badge bg-danger-soft text-danger">Inactif</span>
+                            <span class="badge bg-success rounded-pill">Normal</span>
                         {% endif %}
                     </td>
                     <td class="text-end">
-                        <a href="{% url 'produits:matiere-detail' matiere.pk %}" class="btn btn-sm btn-outline-info" title="Voir">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <a href="{% url 'produits:matiere-update' matiere.pk %}" class="btn btn-sm btn-outline-primary" title="Modifier">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        {% if peut_administrer %}
-                        <a href="{% url 'produits:matiere-delete' matiere.pk %}"
-                           class="btn btn-sm btn-outline-danger ms-1"
-                           title="Supprimer">
-                            <i class="bi bi-trash"></i>
-                        </a>
-                        {% endif %}
+                        <div class="btn-group">
+                            <a href="{% url 'produits:matiere-detail' matiere.pk %}" class="btn btn-sm btn-white border" title="Voir">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'produits:matiere-update' matiere.pk %}" class="btn btn-sm btn-white border" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% if request.user.est_admin %}
+                            <a href="{% url 'produits:matiere-delete' matiere.pk %}" class="btn btn-sm btn-white border text-danger" title="Supprimer">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8" class="text-center py-4 text-muted">
-                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                        Aucune matière première trouvée dans le catalogue.
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                        Aucune matière première ne correspond à vos critères.
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    
+    {% if is_paginated %}
+    <div class="panel-footer">
+        {% include 'components/pagination.html' %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

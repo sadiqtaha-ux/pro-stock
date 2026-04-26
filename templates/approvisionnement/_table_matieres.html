@@ -127,9 +127,9 @@
                        title="Voir la fiche">
                         <i class="bi bi-eye"></i>
                     </a>
-                    <a href="{% url 'approvisionnement:commande-step1' %}?matiere={{ m.pk }}"
+                    <a href="{% url 'approvisionnement:commandes-a-valider' %}?q={{ m.reference }}"
                        class="btn btn-sm btn-outline-primary ms-1"
-                       title="Créer une commande">
+                       title="Vérifier les besoins">
                         <i class="bi bi-cart-plus"></i>
                     </a>
                 </td>

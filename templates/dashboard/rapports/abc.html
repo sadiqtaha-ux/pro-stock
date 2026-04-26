@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Analyse ABC{% endblock %}
+{% block active_dashboard %}active{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:rapports' %}">Centre de Rapports</a></li>
+<li class="breadcrumb-item active">Analyse ABC</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold">Classification ABC</h4>
+        <p class="text-muted mb-0 small">Analyse croisée de la valeur du stock et de la fréquence d'utilisation.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'dashboard:export-rapport' 'abc' 'csv' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Résumé ABC -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 border-start border-primary border-4 py-2">
+            <div class="card-body">
+                <h6 class="text-primary fw-bold mb-1">Classe A (Stratégique)</h6>
+                <h4 class="mb-0">{{ abc_stats.A.nb|default:0 }} <small class="text-muted fs-13">articles</small></h4>
+                <p class="text-muted small mb-0">{{ abc_stats.A.val|default:0|floatformat:0|intcomma }} DH</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 border-start border-warning border-4 py-2">
+            <div class="card-body">
+                <h6 class="text-warning fw-bold mb-1">Classe B (Intermédiaire)</h6>
+                <h4 class="mb-0">{{ abc_stats.B.nb|default:0 }} <small class="text-muted fs-13">articles</small></h4>
+                <p class="text-muted small mb-0">{{ abc_stats.B.val|default:0|floatformat:0|intcomma }} DH</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 border-start border-success border-4 py-2">
+            <div class="card-body">
+                <h6 class="text-success fw-bold mb-1">Classe C (Standard)</h6>
+                <h4 class="mb-0">{{ abc_stats.C.nb|default:0 }} <small class="text-muted fs-13">articles</small></h4>
+                <p class="text-muted small mb-0">{{ abc_stats.C.val|default:0|floatformat:0|intcomma }} DH</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphique ABC / Pareto -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2"></i>Courbe de Pareto (ABC) — Top 40 articles</h6>
+            </div>
+            <div class="card-body">
+                {% if matieres_abc %}
+                <div style="height: 350px;">
+                    <canvas id="abcCurveChart"></canvas>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-info-circle mb-3 d-block fs-1 opacity-25"></i>
+                    <p>Aucune donnée disponible pour générer la courbe ABC.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel shadow-sm">
+    <div class="panel-header bg-light">
+        <h6 class="mb-0 fw-bold">Détail des Classifications</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light">
+                <tr>
+                    <th>Classe</th>
+                    <th>Référence</th>
+                    <th>Nom</th>
+                    <th class="text-end">Stock Actuel</th>
+                    <th class="text-end">Valeur (DH)</th>
+                    <th class="text-end">% Cumulé</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in matieres_abc %}
+                <tr>
+                    <td>
+                        <span class="badge {% if m.classe_abc == 'A' %}bg-primary{% elif m.classe_abc == 'B' %}bg-warning{% elif m.classe_abc == 'C' %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ m.classe_abc }}
+                        </span>
+                    </td>
+                    <td>{{ m.reference }}</td>
+                    <td class="fw-medium">{{ m.nom }}</td>
+                    <td class="text-end">{{ m.stock_actuel|floatformat:2 }} {{ m.unite_symbole }}</td>
+                    <td class="text-end">{{ m.valeur_stock|floatformat:2|intcomma }}</td>
+                    <td class="text-end text-muted">{{ m.pct_cumule|floatformat:1 }}%</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center py-4 text-muted">Aucune donnée disponible.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('abcCurveChart');
+    if (!ctx) return;
+
+    const data = {{ chart_data_json|safe }};
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.labels,
+            datasets: [
+                {
+                    label: 'Valeur Stock (DH)',
+                    data: data.values,
+                    backgroundColor: 'rgba(13, 110, 253, 0.6)',
+                    borderColor: 'rgb(13, 110, 253)',
+                    borderWidth: 1,
+                    yAxisID: 'y',
+                    order: 2
+                },
+                {
+                    label: '% Cumulé',
+                    data: data.cumulative,
+                    type: 'line',
+                    borderColor: '#dc3545',
+                    backgroundColor: '#dc3545',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    yAxisID: 'y1',
+                    order: 1,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    position: 'left',
+                    title: { display: true, text: 'Valeur (DH)', font: { weight: 'bold' } }
+                },
+                y1: {
+                    beginAtZero: true,
+                    max: 100,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    title: { display: true, text: '% Cumulé', font: { weight: 'bold' } }
+                }
+            },
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.datasetIndex === 0) {
+                                label += new Intl.NumberFormat('fr-FR').format(context.parsed.y) + ' DH';
+                            } else {
+                                label += context.parsed.y + '%';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,129 +1,148 @@
-{% extends 'base.html' %}
-{% block title %}Notifications{% endblock %}
-{% block breadcrumb %}
-<li class="breadcrumb-item active">Notifications</li>
-{% endblock %}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Alertes & Notifications{% endblock %}
 
 {% block content %}
-
-<!-- En-tête -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h4 class="mb-1 fw-bold">Notifications</h4>
-        <p class="text-muted mb-0 fs-13">Vos alertes et messages systèmes.</p>
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h4 class="mb-1 fw-bold">Alertes & Notifications</h4>
+        <p class="text-muted mb-0 fs-13">Suivi des événements critiques et messages du système.</p>
     </div>
-    {% for n in notifications %}{% if not n.lue %}
-    <a href="{% url 'core:notifications-tout-lire' %}"
-       class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-check-all me-1"></i>Tout marquer comme lu
-    </a>
-    {% if forloop.first %}{% endif %}{% endif %}{% endfor %}
+    <div class="col-auto d-flex align-items-center">
+        {% include 'components/view_toggle.html' with current_view='table' %}
+        {% include 'components/export_dropdown.html' %}
+        <a href="{% url 'core:notifications-tout-lire' %}" class="btn btn-outline-secondary btn-sm ms-2">
+            Tout marquer lu
+        </a>
+    </div>
 </div>
 
-<!-- Filtres pills -->
-<div class="d-flex gap-2 mb-3">
-    <a href="{% url 'core:notifications-liste' %}"
-       class="btn btn-sm {% if not request.GET.lue %}btn-primary{% else %}btn-outline-secondary{% endif %}">
-        Toutes
-    </a>
-    <a href="?lue=0"
-       class="btn btn-sm {% if request.GET.lue == '0' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
-        Non lues
-    </a>
-    <a href="?lue=1"
-       class="btn btn-sm {% if request.GET.lue == '1' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
-        Lues
-    </a>
-</div>
-
-<!-- Liste -->
-<div class="panel">
-    <div class="list-group list-group-flush">
-        {% for notification in notifications %}
-        <div class="list-group-item list-group-item-action
-                    {% if not notification.lue %}list-group-item-light border-start border-4 border-primary{% endif %}
-                    py-3">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="d-flex align-items-center gap-2">
-                    <!-- Icône type -->
-                    {% if notification.type == 'STOCK' %}
-                        <i class="bi bi-exclamation-triangle text-danger fs-5"></i>
-                    {% elif notification.type == 'PEREMPTION' %}
-                        <i class="bi bi-clock text-warning fs-5"></i>
-                    {% elif notification.type == 'COMMANDE' %}
-                        <i class="bi bi-cart text-primary fs-5"></i>
-                    {% elif notification.type == 'SYSTEME' %}
-                        <i class="bi bi-gear text-secondary fs-5"></i>
-                    {% else %}
-                        <i class="bi bi-info-circle text-info fs-5"></i>
-                    {% endif %}
-                    <span class="fw-semibold">{{ notification.titre }}</span>
-                    {% if not notification.lue %}
-                    <span class="badge bg-primary">Nouveau</span>
-                    {% endif %}
+<!-- Filtres -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-end">
+            <input type="hidden" name="view" value="table">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted">Recherche</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Mots-clés..." value="{{ request.GET.q }}">
                 </div>
-                <small class="text-muted flex-shrink-0 ms-2">
-                    {{ notification.date_envoi|timesince }} ago
-                </small>
             </div>
-
-            <p class="mb-1 text-muted small mt-1 ms-4">{{ notification.message }}</p>
-
-            <div class="d-flex justify-content-between align-items-center ms-4">
-                <small class="text-muted">
-                    Priorité :
-                    {% if notification.priorite == 'HAUTE' %}
-                        <span class="text-danger fw-medium">Haute</span>
-                    {% elif notification.priorite == 'BASSE' %}
-                        <span class="text-muted">Basse</span>
-                    {% else %}
-                        <span>Normale</span>
-                    {% endif %}
-                    {% if notification.expediteur %}
-                    · De : {{ notification.expediteur.get_full_name|default:notification.expediteur.username }}
-                    {% endif %}
-                </small>
-                {% if not notification.lue %}
-                <a href="{% url 'core:notification-lire' notification.pk %}"
-                   class="btn btn-sm btn-outline-primary py-0 px-2">
-                    Marquer comme lu
-                </a>
-                {% endif %}
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Type</label>
+                <select name="type" class="form-select form-select-sm">
+                    <option value="">Tous les types</option>
+                    {% for val, label in types_notif %}
+                    <option value="{{ val }}" {% if request.GET.type == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
             </div>
-        </div>
-        {% empty %}
-        <div class="text-center py-5 text-muted">
-            <i class="bi bi-bell-slash fs-1 d-block mb-2"></i>
-            Aucune notification
-            {% if request.GET.lue == '0' %}non lue{% elif request.GET.lue == '1' %}lue{% endif %}
-        </div>
-        {% endfor %}
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Gravité</label>
+                <select name="priorite" class="form-select form-select-sm">
+                    <option value="">Toutes</option>
+                    {% for val, label in priorites %}
+                    <option value="{{ val }}" {% if request.GET.priorite == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">État</label>
+                <select name="lue" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    <option value="0" {% if request.GET.lue == '0' %}selected{% endif %}>Non lues</option>
+                    <option value="1" {% if request.GET.lue == '1' %}selected{% endif %}>Lues</option>
+                </select>
+            </div>
+            <div class="col-md-1 ms-auto">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Filtrer</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<!-- Pagination -->
-{% if is_paginated %}
-<div class="d-flex justify-content-center mt-3">
-    <nav><ul class="pagination pagination-sm mb-0">
-        {% if page_obj.has_previous %}
-        <li class="page-item">
-            <a class="page-link" href="?{% if request.GET.lue %}lue={{ request.GET.lue }}&{% endif %}page={{ page_obj.previous_page_number }}">
-                <i class="bi bi-chevron-left"></i>
-            </a>
-        </li>
-        {% endif %}
-        <li class="page-item disabled">
-            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-        </li>
-        {% if page_obj.has_next %}
-        <li class="page-item">
-            <a class="page-link" href="?{% if request.GET.lue %}lue={{ request.GET.lue }}&{% endif %}page={{ page_obj.next_page_number }}">
-                <i class="bi bi-chevron-right"></i>
-            </a>
-        </li>
-        {% endif %}
-    </ul></nav>
+<!-- Alertes Temps Réel (Live) -->
+{% if live_alerts %}
+<div class="row g-3 mb-4">
+    {% for alert in live_alerts %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-start border-4 {% if alert.priorite == 'HAUTE' %}border-danger{% else %}border-warning{% endif %} shadow-sm">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge {% if alert.priorite == 'HAUTE' %}bg-danger{% else %}bg-warning{% endif %} me-2">LIVE</span>
+                    <small class="text-muted">{{ alert.date|date:"d/m/Y H:i" }}</small>
+                </div>
+                <h6 class="fw-bold mb-1">{{ alert.titre }}</h6>
+                <p class="small text-muted mb-0">{{ alert.message }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
 {% endif %}
 
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Date</th>
+                    <th>Type</th>
+                    <th>Gravité</th>
+                    <th>Titre / Message</th>
+                    <th class="pe-4 text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in notifications_list %}
+                <tr class="{% if not n.lue %}table-light fw-bold{% endif %}">
+                    <td class="ps-4">
+                        <div class="fs-13">{{ n.date_envoi|date:"d/m/Y" }}</div>
+                        <small class="text-muted">{{ n.date_envoi|date:"H:i" }}</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border fw-normal">{{ n.get_type_notification_display }}</span>
+                    </td>
+                    <td>
+                        {% if n.priorite == 'HAUTE' %}
+                            <span class="text-danger"><i class="bi bi-fire me-1"></i> Haute</span>
+                        {% elif n.priorite == 'NORMALE' %}
+                            <span class="text-primary"><i class="bi bi-info-circle me-1"></i> Normale</span>
+                        {% else %}
+                            <span class="text-muted">Basse</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fw-bold fs-14">{{ n.titre }}</div>
+                        <div class="text-muted fs-12 text-truncate" style="max-width: 500px;">{{ n.message }}</div>
+                    </td>
+                    <td class="pe-4 text-end">
+                        {% if not n.lue %}
+                        <a href="{% url 'core:notification-lue' n.pk %}" class="btn btn-xs btn-primary">
+                            <i class="bi bi-check-lg"></i> Lu
+                        </a>
+                        {% else %}
+                        <span class="text-success small"><i class="bi bi-check-circle-fill"></i> Lu</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <i class="bi bi-bell-slash fs-1 text-muted opacity-25 d-block mb-3"></i>
+                        <p class="text-muted">Aucune alerte trouvée.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}
+    <div class="panel-footer py-3">
+        {% include "components/pagination.html" %}
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

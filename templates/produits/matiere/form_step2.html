@@ -4,39 +4,62 @@
 {% block show_produits %}show{% endblock %}
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'produits:matiere-liste' %}">Matières Premières</a></li>
+{% if object %}
 <li class="breadcrumb-item"><a href="{% url 'produits:matiere-detail' object.pk %}">{{ object.nom|truncatechars:20 }}</a></li>
+{% else %}
+<li class="breadcrumb-item">Nouvelle matière</li>
+{% endif %}
 <li class="breadcrumb-item active">Paramètres</li>
 {% endblock %}
 
 {% block content %}
 
 <div class="mb-3">
-    <h4 class="mb-1 fw-bold">{{ object.nom }} — Paramètres {{ methode_label }}</h4>
+    <h4 class="mb-1 fw-bold">
+        {% if is_creation %}Nouvelle matière{% else %}{{ object.nom }}{% endif %} 
+        — Paramètres {{ methode_label }}
+    </h4>
 </div>
 
 {% include 'components/step_progress.html' %}
 
-<!-- Résumé matière -->
+{# ── Résumé matière (lecture seule) ──────────────────────────────────────── #}
 <div class="bg-light p-3 rounded mb-4 d-flex gap-4 flex-wrap align-items-center border">
     <div>
         <span class="text-muted small">Référence</span>
-        <div class="fw-bold">{{ object.reference }}</div>
+        <div class="fw-bold">{% if object %}{{ object.reference }}{% else %}{{ info_resume.reference }}{% endif %}</div>
     </div>
     <div>
         <span class="text-muted small">Nom</span>
-        <div class="fw-medium">{{ object.nom }}</div>
+        <div class="fw-medium">{% if object %}{{ object.nom }}{% else %}{{ info_resume.nom }}{% endif %}</div>
     </div>
     <div>
         <span class="text-muted small">Stock actuel</span>
-        <div class="fw-bold">{{ object.stock_actuel }} {{ object.unite.symbole }}</div>
+        <div class="fw-bold">
+            {% if object %}{{ object.stock_actuel }} {{ object.unite.symbole }}{% else %}{{ info_resume.stock_actuel }} {{ unite_obj.symbole }}{% endif %}
+        </div>
     </div>
     <div>
-        {% if object.est_en_rupture %}
-            <span class="badge bg-danger fs-13">Rupture</span>
-        {% elif object.est_en_alerte %}
-            <span class="badge bg-warning text-dark fs-13">Alerte</span>
+        <span class="text-muted small">Stock sécurité</span>
+        <div class="fw-bold">
+            {% if object %}{{ object.stock_securite }} {{ object.unite.symbole }}{% else %}{{ info_resume.stock_securite }} {{ unite_obj.symbole }}{% endif %}
+        </div>
+    </div>
+    {% if methode_code == 'RECOMPLETEMENT' %}
+    <div>
+        <span class="text-muted small">Stock maximum</span>
+        <div class="fw-bold">
+            {% if object %}{{ object.stock_maximum }} {{ object.unite.symbole }}{% else %}{{ info_resume.stock_maximum }} {{ unite_obj.symbole }}{% endif %}
+        </div>
+    </div>
+    {% endif %}
+    <div>
+        {% if object %}
+            {% if object.est_en_rupture %}<span class="badge bg-danger fs-13">Rupture</span>
+            {% elif object.est_en_alerte %}<span class="badge bg-warning text-dark fs-13">Alerte</span>
+            {% else %}<span class="badge bg-success fs-13">Normal</span>{% endif %}
         {% else %}
-            <span class="badge bg-success fs-13">Normal</span>
+             <span class="badge bg-secondary fs-13">En création</span>
         {% endif %}
     </div>
 </div>
@@ -49,68 +72,173 @@
     {% csrf_token %}
 
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-header fw-semibold bg-white border-bottom">
-            <i class="bi {{ methode_config.icon|default:'bi-gear' }} me-2 text-muted"></i>
+        <div class="card-header fw-semibold bg-white border-bottom d-flex align-items-center gap-2">
+            <i class="bi {{ methode_config.icon|default:'bi-gear' }} text-{{ methode_config.couleur|default:'secondary' }}"></i>
             Paramètres — {{ methode_label }}
         </div>
         <div class="card-body">
 
-            <!-- Description de la méthode -->
+            {# ── Description de la méthode ──────────────────────────────────── #}
             <div class="alert alert-light border mb-4">
                 <i class="bi {{ methode_config.icon|default:'bi-gear' }} me-2"></i>
                 {{ methode_config.description }}
             </div>
 
-            {% if object.methode_approvisionnement == 'MRP' %}
-            <div class="alert alert-warning small mb-4">
-                <i class="bi bi-diagram-3 me-2"></i>
-                La quantité à commander sera calculée automatiquement par le plan MRP.
-                Configurez ici uniquement le taux de rebut et les délais.
+            {# ── Message d'aide spécifique (MRP) ────────────────────────────── #}
+            {% if methode_config.message_aide %}
+            <div class="alert alert-warning d-flex gap-2 align-items-start mb-4 small">
+                <i class="bi bi-diagram-3 fs-5 flex-shrink-0 mt-1"></i>
+                <div>{{ methode_config.message_aide }}</div>
             </div>
             {% endif %}
 
+            {# ── Champs spécifiques à la méthode ────────────────────────────── #}
             <div class="row g-4">
                 {% for field in form %}
+                {% with fname=field.html_name %}
                 <div class="col-md-4">
-                    <label class="form-label" for="{{ field.id_for_label }}">
-                        {{ field.label }}
+                    <label class="form-label fw-semibold" for="{{ field.id_for_label }}">
+                        {# Label enrichi si disponible dans methode_config.labels #}
+                        {% if methode_config.labels %}
+                            {% for lkey, lval in methode_config.labels.items %}
+                                {% if lkey == fname %}{{ lval }}{% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        {# Fallback au label du champ Django #}
+                        {% if not methode_config.labels or fname not in methode_config.labels.keys %}
+                            {{ field.label }}
+                        {% endif %}
                         {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
                     </label>
+
                     <input type="number"
                            name="{{ field.html_name }}"
                            id="{{ field.id_for_label }}"
                            value="{{ field.value|default:'0' }}"
                            class="form-control {% if field.errors %}is-invalid{% endif %}"
-                           step="0.001" min="0">
+                           {% if fname == 'taux_rebut' %}
+                           step="0.01"
+                           {% elif fname == 'lot_minimum' or fname == 'multiple_lot' or fname == 'qec' or fname == 'point_commande' or fname == 'stock_maximum' or fname == 'stock_securite' %}
+                           data-qty-field="1" step="0.0001"
+                           {% else %}
+                           step="1"
+                           {% endif %}
+                           min="0">
+
                     {% for e in field.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
 
-                    {% if field.name in methode_config.formulas %}
-                    <div class="form-text font-monospace text-primary small mt-1">
-                        <i class="bi bi-calculator me-1"></i>
-                        {{ methode_config.formulas|get_item:field.name }}
-                    </div>
+                    {# ── Formule ─────────────────────────────────────────────── #}
+                    {% if methode_config.formulas %}
+                        {% for fkey, fval in methode_config.formulas.items %}
+                            {% if fkey == fname %}
+                            <div class="form-text font-monospace text-primary small mt-1">
+                                <i class="bi bi-calculator me-1"></i>{{ fval }}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+
+                    {# ── Texte d'aide ─────────────────────────────────────────── #}
+                    {% if methode_config.help_texts %}
+                        {% for hkey, hval in methode_config.help_texts.items %}
+                            {% if hkey == fname %}
+                            <div class="form-text text-muted small">{{ hval }}</div>
+                            {% endif %}
+                        {% endfor %}
                     {% endif %}
                 </div>
+                {% endwith %}
                 {% endfor %}
             </div>
 
+            {# ── Rappel formule principale pour POINT_COMMANDE ──────────────── #}
+            {% if methode_code == 'POINT_COMMANDE' %}
+            <div class="alert alert-primary bg-primary bg-opacity-10 border-0 mt-4 small">
+                <strong><i class="bi bi-lightbulb me-1"></i>Rappel :</strong>
+                ROP = CJM × Délai livraison + Stock sécurité
+                &nbsp;|&nbsp;
+                QEC = √(2 × D × K / h × Pu)
+                &nbsp;—&nbsp; Stock sécurité actuel : <strong>{{ object.stock_securite }} {{ object.unite.symbole }}</strong>
+            </div>
+            {% endif %}
+
+            {# ── Rappel formule principale pour RECOMPLETEMENT ──────────────── #}
+            {% if methode_code == 'RECOMPLETEMENT' %}
+            <div class="alert alert-info bg-info bg-opacity-10 border-0 mt-4 small">
+                <strong><i class="bi bi-lightbulb me-1"></i>Formule :</strong>
+                Qté à commander = S (stock max) − stock actuel − commandes en cours
+                &nbsp;|&nbsp; Stock actuel : <strong>{{ object.stock_actuel }} {{ object.unite.symbole }}</strong>
+            </div>
+            {% endif %}
+
+            {# ── Explication MRP ───────────────────────────────────────────── #}
+            {% if methode_code == 'MRP' %}
+            <div class="alert alert-warning bg-warning bg-opacity-10 border-0 mt-4">
+                <h6 class="fw-bold mb-2 small text-uppercase">Rappel du calcul MRP</h6>
+                <div class="row g-3 small">
+                    <div class="col-md-4">
+                        <div class="fw-bold text-muted mb-1">1. Ajustement Rebut</div>
+                        <code class="text-dark">Besoin brut ajusté = besoin brut / (1 - taux de rebut)</code>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="fw-bold text-muted mb-1">2. Besoin Net</div>
+                        <code class="text-dark">Besoin net = besoin ajusté - stock disponible - réceptions planifiées</code>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="fw-bold text-muted mb-1">3. Quantité Proposée</div>
+                        <code class="text-dark">Qté proposée = besoin net arrondi selon lot mini et multiple de lot</code>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
         </div>
     </div>
 
-    <!-- Footer -->
+    {# ── Footer ──────────────────────────────────────────────────────────── #}
     <div class="d-flex justify-content-between">
-        <a href="{% url 'produits:matiere-update' object.pk %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left me-1"></i>Retour
-        </a>
-        <div class="d-flex gap-2">
-            <a href="{% url 'produits:matiere-detail' object.pk %}" class="btn btn-outline-info">
-                <i class="bi bi-eye me-1"></i>Voir la fiche
-            </a>
-            <button type="submit" class="btn btn-success">
-                <i class="bi bi-check-lg me-1"></i>Terminer la configuration
+        {% if is_creation %}
+            <div class="d-flex gap-2">
+                <a href="{% url 'produits:matiere-create-info' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Retour aux informations
+                </a>
+                <a href="{% url 'produits:matiere-create-cancel' %}" class="btn btn-outline-secondary">
+                    Annuler
+                </a>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle-fill me-1"></i>Créer la matière
             </button>
-        </div>
+        {% else %}
+            <a href="{% url 'produits:matiere-update' object.pk %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Retour
+            </a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'produits:matiere-detail' object.pk %}" class="btn btn-outline-info">
+                    <i class="bi bi-eye me-1"></i>Voir la fiche
+                </a>
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-lg me-1"></i>Terminer la configuration
+                </button>
+            </div>
+        {% endif %}
     </div>
 
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const unitsMap = {{ unites_json|safe }};
+    const unitId = "{% if object %}{{ object.unite.id }}{% else %}{{ unite_obj.id }}{% endif %}";
+    
+    if (unitId && unitsMap[unitId] === false) {
+        // L'unité n'autorise pas les décimales
+        document.querySelectorAll('input[data-qty-field="1"]').forEach(el => {
+            el.setAttribute('step', '1');
+        });
+    }
+});
+</script>
 {% endblock %}

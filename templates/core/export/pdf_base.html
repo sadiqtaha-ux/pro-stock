@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: a4 landscape;
+            margin: 1cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background-color: #0d6efd;
+            color: white;
+            padding: 5px;
+            text-align: left;
+        }
+        td {
+            border-bottom: 1px solid #eee;
+            padding: 5px;
+        }
+        .header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #0d6efd;
+        }
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">MediCare Industries</div>
+        <div>{{ title }}</div>
+        <div>Exporté le : {{ today|date:"d/m/Y H:i" }}</div>
+    </div>
+
+    {% if filters %}
+    <p><strong>Filtres :</strong> {{ filters }}</p>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                {% for h in headers %}
+                <th>{{ h }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                {% for cell in row %}
+                <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

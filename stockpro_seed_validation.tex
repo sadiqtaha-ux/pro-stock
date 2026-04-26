@@ -1,0 +1,585 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=1.7cm}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{primary}{RGB}{30,80,160}
+\definecolor{lightblue}{RGB}{235,243,255}
+\definecolor{lightgray}{RGB}{246,248,250}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{StockPro -- Jeu de donnees seed}
+\rhead{\thepage}
+\setlength{\headheight}{14pt}
+
+\hypersetup{colorlinks=true,linkcolor=primary,urlcolor=primary}
+\renewcommand{\arraystretch}{1.22}
+\setlist[itemize]{leftmargin=1cm}
+
+\newtcolorbox{note}{
+  enhanced,
+  breakable,
+  colback=lightblue,
+  colframe=primary,
+  boxrule=0.5pt,
+  arc=2mm,
+  left=2mm,
+  right=2mm,
+  top=1mm,
+  bottom=1mm
+}
+
+\title{\textbf{Jeu de donnees seed pour StockPro}\\
+\large Donnees de validation fonctionnelle -- MediCare Industries}
+\author{}
+\date{Version de validation}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Objectif du jeu de donnees}
+
+Ce document propose un jeu de donnees seed complet pour valider les principales fonctionnalites de l'application StockPro. Les donnees sont inspirees d'un contexte industriel pharmaceutique : matieres premieres, excipients, articles de conditionnement, produits finis, fournisseurs, zones de stockage, mouvements, approvisionnement, MRP, nomenclatures, utilisateurs, alertes et rapports.
+
+\begin{note}
+La partie magasin doit conserver le libelle \textbf{Editeur Plan}. L'ancien libelle \textit{Editeur Plan Magasin} peut etre simplifie dans l'interface pour eviter un nom trop long.
+\end{note}
+
+\section{Regles generales de validation}
+
+\begin{itemize}
+  \item Les unites discretes comme boite, piece, flacon, carton et palette doivent accepter uniquement des quantites entieres.
+  \item Les unites continues comme kilogramme, gramme, litre et millilitre peuvent accepter des quantites decimales.
+  \item Une matiere premiere doit avoir une seule methode principale d'approvisionnement.
+  \item Le Kanban est une vue de visualisation, pas une methode d'approvisionnement.
+  \item Le MRP utilise les nomenclatures uniquement pour les matieres configurees en methode MRP.
+  \item Les commandes doivent etre generees par le planificateur et validees ensuite.
+  \item Le planificateur doit eviter les doublons lors de plusieurs lancements successifs.
+\end{itemize}
+
+\section{Utilisateurs et roles}
+
+\begin{longtable}{|p{3cm}|p{3.2cm}|p{4cm}|p{3cm}|p{2cm}|}
+\hline
+\textbf{Identifiant} & \textbf{Nom complet} & \textbf{Email} & \textbf{Role} & \textbf{Actif} \\
+\hline
+admin & Admin Principal & admin@medicare.ma & Administrateur & Oui \\
+\hline
+rstock & Responsable Stock & rstock@medicare.ma & Responsable Stock & Oui \\
+\hline
+magasinier1 & Youssef Magasinier & magasinier@medicare.ma & Magasinier & Oui \\
+\hline
+acheteur1 & Salma Acheteur & achat@medicare.ma & Acheteur & Oui \\
+\hline
+consultant1 & Consultant Qualite & consultant@medicare.ma & Consultant & Oui \\
+\hline
+\caption{Utilisateurs de test}
+\end{longtable}
+
+\section{Unites de mesure}
+
+\begin{longtable}{|p{3.2cm}|p{2cm}|p{3cm}|p{4cm}|}
+\hline
+\textbf{Nom} & \textbf{Symbole} & \textbf{Type} & \textbf{Decimales autorisees} \\
+\hline
+Kilogramme & kg & Continue & Oui \\
+\hline
+Gramme & g & Continue & Oui \\
+\hline
+Litre & L & Continue & Oui \\
+\hline
+Millilitre & mL & Continue & Oui \\
+\hline
+Boite & bt & Discrete & Non \\
+\hline
+Piece & pcs & Discrete & Non \\
+\hline
+Flacon & fl & Discrete & Non \\
+\hline
+Carton & carton & Discrete & Non \\
+\hline
+Palette & palette & Discrete & Non \\
+\hline
+Unite & u & Discrete & Non \\
+\hline
+\caption{Unites a creer dans le seed}
+\end{longtable}
+
+\section{Categories d'articles}
+
+\begin{longtable}{|p{4cm}|p{9cm}|}
+\hline
+\textbf{Categorie} & \textbf{Description} \\
+\hline
+Principe actif & Substance active entrant directement dans la formulation du medicament. \\
+\hline
+Excipient & Substance non active utilisee pour la formulation, la stabilite ou la mise en forme. \\
+\hline
+Solvant & Liquide utilise dans les operations de formulation, nettoyage ou extraction. \\
+\hline
+Conditionnement primaire & Element en contact direct avec le produit : blister, flacon, bouchon. \\
+\hline
+Conditionnement secondaire & Boite, notice, carton et autres elements d'emballage externe. \\
+\hline
+Produit fini & Medicament ou article final pret a etre stocke ou distribue. \\
+\hline
+Consommable production & Element consommable utilise en production ou controle qualite. \\
+\hline
+\caption{Categories principales}
+\end{longtable}
+
+\section{Zones de stockage}
+
+\begin{longtable}{|p{2cm}|p{3cm}|p{3cm}|p{3cm}|p{2cm}|}
+\hline
+\textbf{Code} & \textbf{Nom} & \textbf{Type} & \textbf{Conditions} & \textbf{Actif} \\
+\hline
+Z-MP & Matieres premieres & Ambiante & 15--25 C & Oui \\
+\hline
+Z-FR & Zone froide & Froide & 2--8 C & Oui \\
+\hline
+Z-SEC & Zone seche & Seche & Humidite controlee & Oui \\
+\hline
+Z-QU & Quarantaine & Quarantaine & Acces controle & Oui \\
+\hline
+Z-PF & Produits finis & Ambiante & 15--25 C & Oui \\
+\hline
+Z-REC & Reception & Reception & Controle initial & Oui \\
+\hline
+\caption{Zones de stockage}
+\end{longtable}
+
+\section{Rayons et niveaux}
+
+\begin{longtable}{|p{2cm}|p{2cm}|p{3cm}|p{2cm}|p{3cm}|p{2cm}|}
+\hline
+\textbf{Rayon} & \textbf{Zone} & \textbf{Nom} & \textbf{Niveaux} & \textbf{Type stock} & \textbf{Statut} \\
+\hline
+R-MP-01 & Z-MP & Principes actifs & 4 & Matiere premiere & Actif \\
+\hline
+R-MP-02 & Z-MP & Excipients & 4 & Matiere premiere & Actif \\
+\hline
+R-MP-03 & Z-MP & Solvants & 3 & Matiere premiere & Actif \\
+\hline
+R-FR-01 & Z-FR & Produits froids & 3 & Mixte & Actif \\
+\hline
+R-SEC-01 & Z-SEC & Articles sensibles humidite & 3 & Matiere premiere & Actif \\
+\hline
+R-QU-01 & Z-QU & Quarantaine reception & 2 & Mixte & Actif \\
+\hline
+R-PF-01 & Z-PF & Produits finis medicaments & 4 & Produit fini & Actif \\
+\hline
+R-PF-02 & Z-PF & Produits finis lots speciaux & 3 & Produit fini & Actif \\
+\hline
+\caption{Rayons proposes pour l'Editeur Plan}
+\end{longtable}
+
+\section{Fournisseurs}
+
+\begin{longtable}{|p{3.5cm}|p{3.2cm}|p{3.4cm}|p{2cm}|p{2cm}|}
+\hline
+\textbf{Nom} & \textbf{Email} & \textbf{Specialite} & \textbf{Delai moyen} & \textbf{Statut} \\
+\hline
+PharmaChem Maroc & contact@pharmachem.ma & Principes actifs & 14 j & Actif \\
+\hline
+EuroExcipients SAS & sales@euroexcipients.eu & Excipients & 21 j & Actif \\
+\hline
+PackMed Industrie & commandes@packmed.ma & Conditionnement & 10 j & Actif \\
+\hline
+Solvex North Africa & supply@solvex.ma & Solvants & 7 j & Actif \\
+\hline
+ColdBio Logistics & contact@coldbio.ma & Produits froids & 5 j & Actif \\
+\hline
+Global API Trading & api@globalapi.com & Principes actifs import & 30 j & A surveiller \\
+\hline
+\caption{Fournisseurs de reference}
+\end{longtable}
+
+\section{Matieres premieres}
+
+\begin{longtable}{|p{2.2cm}|p{3cm}|p{2.4cm}|p{1.2cm}|p{1.6cm}|p{1.6cm}|p{1.6cm}|p{1.8cm}|p{2cm}|}
+\hline
+\textbf{Reference} & \textbf{Nom} & \textbf{Categorie} & \textbf{Unite} & \textbf{Stock} & \textbf{Min} & \textbf{Max} & \textbf{Methode} & \textbf{Fournisseur} \\
+\hline
+MP-API-001 & Paracetamol Pur & Principe actif & kg & 120.0 & 50.0 & 500.0 & MRP & PharmaChem Maroc \\
+\hline
+MP-API-002 & Ibuprofene USP & Principe actif & kg & 18.0 & 30.0 & 300.0 & ROP & Global API Trading \\
+\hline
+MP-EXC-001 & Lactose monohydrate & Excipient & kg & 420.0 & 100.0 & 800.0 & Recompl. & EuroExcipients SAS \\
+\hline
+MP-EXC-002 & Amidon de mais & Excipient & kg & 75.0 & 80.0 & 600.0 & ROP & EuroExcipients SAS \\
+\hline
+MP-EXC-003 & Cellulose microcristalline & Excipient & kg & 250.0 & 120.0 & 700.0 & Fixe & EuroExcipients SAS \\
+\hline
+MP-SOL-001 & Ethanol 96 & Solvant & L & 0.0 & 50.0 & 400.0 & ROP & Solvex North Africa \\
+\hline
+MP-SOL-002 & Eau purifiee & Solvant & L & 900.0 & 200.0 & 1500.0 & Recompl. & Solvex North Africa \\
+\hline
+MP-PACK-001 & Blister aluminium PVC & Cond. primaire & pcs & 3500 & 1000 & 10000 & MRP & PackMed Industrie \\
+\hline
+MP-PACK-002 & Boite carton standard & Cond. secondaire & pcs & 800 & 1000 & 12000 & MRP & PackMed Industrie \\
+\hline
+MP-PACK-003 & Notice patient FR/AR & Cond. secondaire & pcs & 1500 & 1200 & 15000 & Fixe & PackMed Industrie \\
+\hline
+MP-COLD-001 & Reactif thermosensible A & Principe actif & g & 300.0 & 100.0 & 1000.0 & MRP & ColdBio Logistics \\
+\hline
+MP-QA-001 & Gants nitrile QC & Consommable & boite & 24 & 20 & 100 & Fixe & PackMed Industrie \\
+\hline
+\caption{Matieres premieres pour tests stock, approvisionnement, MRP et alertes}
+\end{longtable}
+
+\section{Parametres d'approvisionnement par matiere}
+
+\begin{longtable}{|p{2.4cm}|p{2cm}|p{2cm}|p{2cm}|p{2cm}|p{2cm}|p{2cm}|}
+\hline
+\textbf{Reference} & \textbf{Point commande} & \textbf{Stock securite} & \textbf{QEC / Qte fixe} & \textbf{Periode} & \textbf{Delai} & \textbf{Lot / Multiple} \\
+\hline
+MP-API-001 & -- & 20 & -- & -- & 14 j & 25 / 5 \\
+\hline
+MP-API-002 & 60 & 20 & 120 & -- & 30 j & -- \\
+\hline
+MP-EXC-001 & -- & 60 & -- & 15 j & 21 j & -- \\
+\hline
+MP-EXC-002 & 120 & 40 & 200 & -- & 21 j & -- \\
+\hline
+MP-EXC-003 & -- & 80 & 150 & 30 j & 21 j & -- \\
+\hline
+MP-SOL-001 & 100 & 30 & 200 & -- & 7 j & -- \\
+\hline
+MP-SOL-002 & -- & 100 & -- & 10 j & 7 j & -- \\
+\hline
+MP-PACK-001 & -- & 500 & -- & -- & 10 j & 1000 / 100 \\
+\hline
+MP-PACK-002 & -- & 500 & -- & -- & 10 j & 1000 / 100 \\
+\hline
+MP-PACK-003 & -- & 500 & 3000 & 30 j & 10 j & -- \\
+\hline
+MP-COLD-001 & -- & 50 & -- & -- & 5 j & 100 / 10 \\
+\hline
+MP-QA-001 & -- & 10 & 20 & 30 j & 10 j & -- \\
+\hline
+\caption{Parametres selon la methode d'approvisionnement}
+\end{longtable}
+
+\section{Produits finis}
+
+\begin{longtable}{|p{2.4cm}|p{4cm}|p{2.5cm}|p{1.2cm}|p{1.6cm}|p{1.6cm}|p{1.6cm}|p{2cm}|}
+\hline
+\textbf{Reference} & \textbf{Nom} & \textbf{Categorie} & \textbf{Unite} & \textbf{Stock} & \textbf{Min} & \textbf{Max} & \textbf{Statut} \\
+\hline
+PF-PARA-500 & Paracetamol 500mg boite 16 & Medicament & bt & 1200 & 300 & 5000 & Disponible \\
+\hline
+PF-IBU-400 & Ibuprofene 400mg boite 20 & Medicament & bt & 150 & 200 & 3000 & Critique \\
+\hline
+PF-SIROP-100 & Sirop pediatrique 100mL & Medicament & fl & 0 & 120 & 2000 & Rupture \\
+\hline
+PF-COLD-01 & Kit thermosensible A & Medicament froid & bt & 80 & 50 & 500 & Disponible \\
+\hline
+\caption{Produits finis pour validation stock et MRP}
+\end{longtable}
+
+\section{Nomenclatures}
+
+\subsection{Nomenclature PF-PARA-500}
+
+\begin{longtable}{|p{3cm}|p{4cm}|p{2cm}|p{2cm}|p{2cm}|}
+\hline
+\textbf{Matiere} & \textbf{Nom} & \textbf{Quantite par unite} & \textbf{Unite} & \textbf{Taux rebut} \\
+\hline
+MP-API-001 & Paracetamol Pur & 0.008 & kg & 2 \% \\
+\hline
+MP-EXC-001 & Lactose monohydrate & 0.004 & kg & 1 \% \\
+\hline
+MP-EXC-003 & Cellulose microcristalline & 0.002 & kg & 1 \% \\
+\hline
+MP-PACK-001 & Blister aluminium PVC & 1 & pcs & 0 \% \\
+\hline
+MP-PACK-002 & Boite carton standard & 1 & pcs & 0 \% \\
+\hline
+MP-PACK-003 & Notice patient FR/AR & 1 & pcs & 0 \% \\
+\hline
+\caption{Nomenclature active V1 pour PF-PARA-500}
+\end{longtable}
+
+\subsection{Nomenclature PF-IBU-400}
+
+\begin{longtable}{|p{3cm}|p{4cm}|p{2cm}|p{2cm}|p{2cm}|}
+\hline
+\textbf{Matiere} & \textbf{Nom} & \textbf{Quantite par unite} & \textbf{Unite} & \textbf{Taux rebut} \\
+\hline
+MP-API-002 & Ibuprofene USP & 0.008 & kg & 2 \% \\
+\hline
+MP-EXC-002 & Amidon de mais & 0.003 & kg & 1 \% \\
+\hline
+MP-PACK-001 & Blister aluminium PVC & 1 & pcs & 0 \% \\
+\hline
+MP-PACK-002 & Boite carton standard & 1 & pcs & 0 \% \\
+\hline
+MP-PACK-003 & Notice patient FR/AR & 1 & pcs & 0 \% \\
+\hline
+\caption{Nomenclature active V1 pour PF-IBU-400}
+\end{longtable}
+
+\subsection{Nomenclature PF-COLD-01}
+
+\begin{longtable}{|p{3cm}|p{4cm}|p{2cm}|p{2cm}|p{2cm}|}
+\hline
+\textbf{Matiere} & \textbf{Nom} & \textbf{Quantite par unite} & \textbf{Unite} & \textbf{Taux rebut} \\
+\hline
+MP-COLD-001 & Reactif thermosensible A & 2.5 & g & 3 \% \\
+\hline
+MP-PACK-002 & Boite carton standard & 1 & pcs & 0 \% \\
+\hline
+MP-PACK-003 & Notice patient FR/AR & 1 & pcs & 0 \% \\
+\hline
+\caption{Nomenclature active V1 pour PF-COLD-01}
+\end{longtable}
+
+\section{Affectations magasin}
+
+\begin{longtable}{|p{3cm}|p{3cm}|p{2cm}|p{2cm}|p{2cm}|}
+\hline
+\textbf{Article} & \textbf{Rayon} & \textbf{Niveau} & \textbf{Quantite} & \textbf{Unite} \\
+\hline
+MP-API-001 & R-MP-01 & 1 & 120.0 & kg \\
+\hline
+MP-API-002 & R-MP-01 & 2 & 18.0 & kg \\
+\hline
+MP-EXC-001 & R-MP-02 & 1 & 420.0 & kg \\
+\hline
+MP-EXC-002 & R-MP-02 & 2 & 75.0 & kg \\
+\hline
+MP-SOL-001 & R-MP-03 & 1 & 0.0 & L \\
+\hline
+MP-COLD-001 & R-FR-01 & 1 & 300.0 & g \\
+\hline
+PF-PARA-500 & R-PF-01 & 1 & 1200 & bt \\
+\hline
+PF-IBU-400 & R-PF-01 & 2 & 150 & bt \\
+\hline
+PF-SIROP-100 & R-PF-02 & 1 & 0 & fl \\
+\hline
+\caption{Affectations physiques dans l'Editeur Plan}
+\end{longtable}
+
+\section{Mouvements de stock initiaux}
+
+\begin{longtable}{|p{2cm}|p{2.5cm}|p{2.4cm}|p{2cm}|p{2cm}|p{3cm}|}
+\hline
+\textbf{Date} & \textbf{Type} & \textbf{Article} & \textbf{Quantite} & \textbf{Unite} & \textbf{Motif} \\
+\hline
+2026-04-01 & Entree & MP-API-001 & 150.0 & kg & Reception fournisseur \\
+\hline
+2026-04-05 & Sortie & MP-API-001 & 30.0 & kg & Production PF-PARA-500 \\
+\hline
+2026-04-06 & Entree & MP-EXC-001 & 500.0 & kg & Reception fournisseur \\
+\hline
+2026-04-10 & Sortie & MP-EXC-001 & 80.0 & kg & Production \\
+\hline
+2026-04-11 & Sortie & MP-SOL-001 & 50.0 & L & Utilisation formulation \\
+\hline
+2026-04-13 & Ajustement & MP-SOL-001 & 0.0 & L & Inventaire : stock epuise \\
+\hline
+2026-04-15 & Entree & PF-PARA-500 & 500 & bt & Production terminee \\
+\hline
+2026-04-16 & Sortie & PF-PARA-500 & 120 & bt & Livraison client \\
+\hline
+2026-04-17 & Sortie & PF-SIROP-100 & 40 & fl & Livraison client \\
+\hline
+\caption{Mouvements initiaux pour valider historique, stock et alertes}
+\end{longtable}
+
+\section{Besoins de production pour MRP}
+
+\begin{longtable}{|p{2.8cm}|p{4cm}|p{2cm}|p{2.5cm}|p{3cm}|}
+\hline
+\textbf{Reference besoin} & \textbf{Produit fini} & \textbf{Quantite} & \textbf{Date besoin} & \textbf{Statut} \\
+\hline
+MRP-DEM-001 & PF-PARA-500 & 2000 bt & 2026-05-15 & Planifie \\
+\hline
+MRP-DEM-002 & PF-IBU-400 & 1000 bt & 2026-05-20 & Planifie \\
+\hline
+MRP-DEM-003 & PF-COLD-01 & 150 bt & 2026-05-10 & Planifie \\
+\hline
+\caption{Besoins de production pour simuler le MRP}
+\end{longtable}
+
+\section{Propositions d'approvisionnement attendues}
+
+Ces propositions doivent etre generees par le planificateur, et non creees manuellement.
+
+\begin{longtable}{|p{2.5cm}|p{2.6cm}|p{2cm}|p{2cm}|p{2.5cm}|p{3cm}|}
+\hline
+\textbf{Reference} & \textbf{Matiere} & \textbf{Methode} & \textbf{Quantite} & \textbf{Statut} & \textbf{Raison} \\
+\hline
+PROP-ROP-001 & MP-API-002 & ROP & 120 kg & En attente & Stock sous point de commande \\
+\hline
+PROP-ROP-002 & MP-SOL-001 & ROP & 200 L & En attente & Stock en rupture \\
+\hline
+PROP-REC-001 & MP-EXC-001 & Recompl. & 380 kg & En attente & Recompletion vers stock cible \\
+\hline
+PROP-FIX-001 & MP-EXC-003 & Fixe & 150 kg & En attente & Periode de 30 jours atteinte \\
+\hline
+PROP-FIX-002 & MP-PACK-003 & Fixe & 3000 pcs & En attente & Approvisionnement periodique \\
+\hline
+PROP-MRP-001 & MP-PACK-002 & MRP & 3000 pcs & En attente & Besoin conditionnement PF \\
+\hline
+\caption{Propositions a valider}
+\end{longtable}
+
+\section{Bons de commande valides}
+
+\begin{longtable}{|p{2.6cm}|p{3.4cm}|p{2.4cm}|p{2.2cm}|p{2cm}|p{2cm}|}
+\hline
+\textbf{Reference} & \textbf{Fournisseur} & \textbf{Date commande} & \textbf{Livraison prevue} & \textbf{Statut} & \textbf{Valeur} \\
+\hline
+BC-2026-001 & PackMed Industrie & 2026-04-12 & 2026-04-22 & Envoyee & 18500 MAD \\
+\hline
+BC-2026-002 & Solvex North Africa & 2026-04-14 & 2026-04-21 & Validee & 9800 MAD \\
+\hline
+BC-2026-003 & Global API Trading & 2026-03-20 & 2026-04-19 & En retard & 42000 MAD \\
+\hline
+\caption{Bons de commande existants pour tester suivi et valeur engagee}
+\end{longtable}
+
+\section{Alertes attendues}
+
+\begin{longtable}{|p{3cm}|p{3cm}|p{3cm}|p{5cm}|}
+\hline
+\textbf{Type} & \textbf{Article} & \textbf{Niveau} & \textbf{Message attendu} \\
+\hline
+Rupture & MP-SOL-001 & Danger & Ethanol 96 est en rupture de stock. \\
+\hline
+Critique & MP-API-002 & Warning & Ibuprofene USP est sous le stock minimum. \\
+\hline
+Critique & MP-EXC-002 & Warning & Amidon de mais est sous le stock minimum. \\
+\hline
+Critique & MP-PACK-002 & Warning & Boite carton standard est sous le stock minimum. \\
+\hline
+Rupture & PF-SIROP-100 & Danger & Sirop pediatrique 100mL est en rupture. \\
+\hline
+Commande retard & BC-2026-003 & Warning & Bon de commande en retard. \\
+\hline
+MRP & MRP-DEM-001 & Info & Besoins MRP a planifier. \\
+\hline
+\caption{Alertes que le tableau de bord doit afficher}
+\end{longtable}
+
+\section{Donnees pour rapports et validations}
+
+\subsection{Rapport ABC}
+
+Pour valider l'ABC, utiliser les valeurs suivantes :
+\begin{itemize}
+  \item MP-API-001 et MP-API-002 doivent etre classes en A ou B selon la valeur totale.
+  \item Les articles de conditionnement a grand volume peuvent apparaitre en B.
+  \item Les consommables comme les gants peuvent apparaitre en C.
+\end{itemize}
+
+\subsection{Rapport stock}
+
+Le rapport stock doit montrer :
+\begin{itemize}
+  \item total matieres actives : 12 ;
+  \item ruptures matieres : au moins 1 ;
+  \item alertes critiques : plusieurs articles sous seuil ;
+  \item valeur de stock coherente avec prix unitaire et quantite.
+\end{itemize}
+
+\subsection{Rapport MRP}
+
+Le rapport MRP doit distinguer :
+\begin{itemize}
+  \item les composants planifies par MRP ;
+  \item les composants presents dans la nomenclature mais geres par une autre methode ;
+  \item les besoins nets ;
+  \item les propositions a valider.
+\end{itemize}
+
+\section{Tests de validation a realiser avec ce seed}
+
+\begin{enumerate}
+  \item Verifier que le tableau de bord affiche les alertes et ruptures.
+  \item Verifier que la liste des matieres affiche les filtres par methode, statut et categorie.
+  \item Lancer le planificateur une premiere fois : des propositions doivent etre creees.
+  \item Relancer le planificateur : aucune proposition doublon ne doit etre creee.
+  \item Valider une proposition : elle doit devenir un bon de commande.
+  \item Ouvrir les bons de commande : les bons valides et envoyes doivent etre visibles.
+  \item Lancer un calcul MRP pour PF-PARA-500.
+  \item Verifier que les besoins sont calcules a partir de la nomenclature.
+  \item Verifier que les mouvements modifient correctement les stocks.
+  \item Verifier que les quantites discretes refusent les decimales.
+  \item Verifier que l'Editeur Plan affiche les zones, rayons et affectations.
+  \item Verifier que la suppression d'un rayon contenant du stock est bloquee.
+\end{enumerate}
+
+\section{Synthese des donnees a creer}
+
+\begin{longtable}{|p{5cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Domaine} & \textbf{Nombre cible} & \textbf{Objectif de validation} \\
+\hline
+Utilisateurs & 5 & Roles, permissions et journalisation. \\
+\hline
+Unites & 10 & Validation quantites discretes et continues. \\
+\hline
+Categories & 7 & Filtres, rapports et classification. \\
+\hline
+Fournisseurs & 6 & Commandes, approvisionnement et delais. \\
+\hline
+Matieres premieres & 12 & Stock, alertes, ABC, methodes, MRP. \\
+\hline
+Produits finis & 4 & Stock PF, MRP et nomenclatures. \\
+\hline
+Nomenclatures & 3 & Calcul MRP. \\
+\hline
+Zones & 6 & Editeur Plan et stockage. \\
+\hline
+Rayons & 8 & Affectations et occupation magasin. \\
+\hline
+Mouvements & 9 & Historique et mise a jour du stock. \\
+\hline
+Propositions & 6 & Commandes a valider. \\
+\hline
+Bons de commande & 3 & Suivi fournisseur et valeur engagee. \\
+\hline
+Alertes & 7 & Dashboard et page alertes. \\
+\hline
+\caption{Synthese du jeu de donnees seed}
+\end{longtable}
+
+\section{Remarques pour implementation en seed Django}
+
+Le fichier seed Django pourra etre implemente sous forme de commande de gestion, par exemple :
+
+\begin{verbatim}
+python manage.py seed_demo_data
+\end{verbatim}
+
+La commande doit etre idempotente :
+\begin{itemize}
+  \item utiliser get\_or\_create pour les referentiels ;
+  \item mettre a jour les donnees existantes si necessaire ;
+  \item ne pas creer de doublons si elle est relancee ;
+  \item creer les propositions uniquement si elles n'existent pas deja ;
+  \item vider ou reconstruire les donnees demo seulement avec une option explicite.
+\end{itemize}
+
+\end{document}

@@ -123,9 +123,16 @@ class BonCommande(models.Model):
                 seq = 1
             self.reference = f"BC-{annee}-{seq:04d}"
 
-        # Calcul automatique du montant total
         self.montant_total = self.quantite_commandee * self.prix_unitaire
         super().save(*args, **kwargs)
+
+    @property
+    def est_en_retard(self):
+        if self.statut in [self.Statut.RECU, self.Statut.ANNULE]:
+            return False
+        if not self.date_reception_prevue:
+            return False
+        return self.date_reception_prevue < timezone.now().date()
 
 
 # ============================================================
@@ -208,10 +215,11 @@ class PropositionCommande(models.Model):
     """
 
     class Statut(models.TextChoices):
-        PROPOSEE  = "PROPOSEE",  _("Proposée")
+        EN_ATTENTE = "EN_ATTENTE", _("En attente")
         VALIDEE   = "VALIDEE",   _("Validée")
         REJETEE   = "REJETEE",   _("Rejetée")
         CONVERTIE = "CONVERTIE", _("Convertie en BC")
+        EXPIREE   = "EXPIREE",   _("Expirée")
 
     matiere = models.ForeignKey(
         "produits.MatierePremiere",
@@ -219,9 +227,20 @@ class PropositionCommande(models.Model):
         related_name="propositions",
         verbose_name=_("Matière première"),
     )
+    fournisseur = models.ForeignKey(
+        "produits.Fournisseur",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="propositions",
+        verbose_name=_("Fournisseur proposé"),
+    )
     methode = models.CharField(
         _("Méthode (héritée)"), max_length=20,
         help_text=_("Copie de matiere.methode_approvisionnement au moment du calcul")
+    )
+    cle_deduplication = models.CharField(
+        _("Clé de déduplication"), max_length=100, unique=True, null=True, blank=True,
+        help_text=_("Format: [matiere_id]-[methode]-[periode] pour éviter les doublons")
     )
     quantite_proposee = models.DecimalField(
         _("Quantité proposée"), max_digits=14, decimal_places=4,
@@ -247,7 +266,7 @@ class PropositionCommande(models.Model):
     )
     statut = models.CharField(
         _("Statut"), max_length=15,
-        choices=Statut.choices, default=Statut.PROPOSEE
+        choices=Statut.choices, default=Statut.EN_ATTENTE
     )
     bon_commande = models.OneToOneField(
         BonCommande, on_delete=models.SET_NULL,

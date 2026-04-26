@@ -42,7 +42,7 @@
                     <label class="form-label" for="{{ form.reference.id_for_label }}">Référence <span class="text-danger">*</span></label>
                     <input type="text" name="{{ form.reference.html_name }}"
                            id="{{ form.reference.id_for_label }}"
-                           value="{{ form.reference.value|default:'' }}"
+                           value="{{ form.reference.value|default:form.instance.reference|default:'' }}"
                            class="form-control {% if form.reference.errors %}is-invalid{% endif %}"
                            placeholder="EX-001">
                     {% for e in form.reference.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -51,7 +51,7 @@
                     <label class="form-label" for="{{ form.nom.id_for_label }}">Nom <span class="text-danger">*</span></label>
                     <input type="text" name="{{ form.nom.html_name }}"
                            id="{{ form.nom.id_for_label }}"
-                           value="{{ form.nom.value|default:'' }}"
+                           value="{{ form.nom.value|default:form.instance.nom|default:'' }}"
                            class="form-control {% if form.nom.errors %}is-invalid{% endif %}"
                            placeholder="Nom complet de la matière">
                     {% for e in form.nom.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -62,7 +62,7 @@
                               id="{{ form.description.id_for_label }}"
                               rows="3"
                               class="form-control {% if form.description.errors %}is-invalid{% endif %}"
-                              placeholder="Description optionnelle…">{{ form.description.value|default:'' }}</textarea>
+                              placeholder="Description optionnelle…">{{ form.description.value|default:form.instance.description|default:'' }}</textarea>
                     {% for e in form.description.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
                 </div>
                 <div class="col-md-4">
@@ -70,7 +70,7 @@
                     <select name="{{ form.categorie.html_name }}" id="{{ form.categorie.id_for_label }}"
                             class="form-select {% if form.categorie.errors %}is-invalid{% endif %}">
                         {% for val, label in form.categorie.field.choices %}
-                        <option value="{{ val }}" {% if form.categorie.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                        <option value="{{ val }}" {% if form.categorie.value|stringformat:"s" == val|stringformat:"s" or form.instance.categorie == val %}selected{% endif %}>
                             {{ label }}
                         </option>
                         {% endfor %}
@@ -82,7 +82,7 @@
                     <select name="{{ form.unite.html_name }}" id="{{ form.unite.id_for_label }}"
                             class="form-select {% if form.unite.errors %}is-invalid{% endif %}">
                         {% for val, label in form.unite.field.choices %}
-                        <option value="{{ val }}" {% if form.unite.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                        <option value="{{ val }}" {% if form.unite.value|stringformat:"s" == val|stringformat:"s" or form.instance.unite_id|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
                             {{ label }}
                         </option>
                         {% endfor %}
@@ -94,7 +94,7 @@
                     <select name="{{ form.zone_stockage.html_name }}" id="{{ form.zone_stockage.id_for_label }}"
                             class="form-select {% if form.zone_stockage.errors %}is-invalid{% endif %}">
                         {% for val, label in form.zone_stockage.field.choices %}
-                        <option value="{{ val }}" {% if form.zone_stockage.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                        <option value="{{ val }}" {% if form.zone_stockage.value|stringformat:"s" == val|stringformat:"s" or form.instance.zone_stockage == val %}selected{% endif %}>
                             {{ label }}
                         </option>
                         {% endfor %}
@@ -116,7 +116,7 @@
                     <label class="form-label" for="{{ form.stock_actuel.id_for_label }}">Stock actuel</label>
                     <input type="number" name="{{ form.stock_actuel.html_name }}"
                            id="{{ form.stock_actuel.id_for_label }}"
-                           value="{{ form.stock_actuel.value|default:'0' }}"
+                           value="{{ form.stock_actuel.value|default:form.instance.stock_actuel|default:'0' }}"
                            class="form-control {% if form.stock_actuel.errors %}is-invalid{% endif %}"
                            step="0.001" min="0">
                     {% for e in form.stock_actuel.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -125,7 +125,7 @@
                     <label class="form-label" for="{{ form.stock_minimum.id_for_label }}">Stock minimum <span class="text-danger">*</span></label>
                     <input type="number" name="{{ form.stock_minimum.html_name }}"
                            id="{{ form.stock_minimum.id_for_label }}"
-                           value="{{ form.stock_minimum.value|default:'0' }}"
+                           value="{{ form.stock_minimum.value|default:form.instance.stock_minimum|default:'0' }}"
                            class="form-control {% if form.stock_minimum.errors %}is-invalid{% endif %}"
                            step="0.001" min="0">
                     {% for e in form.stock_minimum.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -134,7 +134,7 @@
                     <label class="form-label" for="{{ form.stock_maximum.id_for_label }}">Stock maximum</label>
                     <input type="number" name="{{ form.stock_maximum.html_name }}"
                            id="{{ form.stock_maximum.id_for_label }}"
-                           value="{{ form.stock_maximum.value|default:'0' }}"
+                           value="{{ form.stock_maximum.value|default:form.instance.stock_maximum|default:'0' }}"
                            class="form-control {% if form.stock_maximum.errors %}is-invalid{% endif %}"
                            step="0.001" min="0">
                     {% for e in form.stock_maximum.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -143,7 +143,7 @@
                     <label class="form-label" for="{{ form.stock_securite.id_for_label }}">Stock sécurité</label>
                     <input type="number" name="{{ form.stock_securite.html_name }}"
                            id="{{ form.stock_securite.id_for_label }}"
-                           value="{{ form.stock_securite.value|default:'0' }}"
+                           value="{{ form.stock_securite.value|default:form.instance.stock_securite|default:'0' }}"
                            class="form-control {% if form.stock_securite.errors %}is-invalid{% endif %}"
                            step="0.001" min="0">
                     {% for e in form.stock_securite.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -152,7 +152,7 @@
                     <label class="form-label" for="{{ form.prix_unitaire.id_for_label }}">Prix unitaire (DH)</label>
                     <input type="number" name="{{ form.prix_unitaire.html_name }}"
                            id="{{ form.prix_unitaire.id_for_label }}"
-                           value="{{ form.prix_unitaire.value|default:'0' }}"
+                           value="{{ form.prix_unitaire.value|default:form.instance.prix_unitaire|default:'0' }}"
                            class="form-control {% if form.prix_unitaire.errors %}is-invalid{% endif %}"
                            step="0.01" min="0">
                     {% for e in form.prix_unitaire.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -163,7 +163,7 @@
                             id="{{ form.fournisseur_principal.id_for_label }}"
                             class="form-select {% if form.fournisseur_principal.errors %}is-invalid{% endif %}">
                         {% for val, label in form.fournisseur_principal.field.choices %}
-                        <option value="{{ val }}" {% if form.fournisseur_principal.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                        <option value="{{ val }}" {% if form.fournisseur_principal.value|stringformat:"s" == val|stringformat:"s" or form.instance.fournisseur_principal_id|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
                             {{ label }}
                         </option>
                         {% endfor %}
@@ -174,7 +174,7 @@
                     <label class="form-label" for="{{ form.emplacement.id_for_label }}">Emplacement</label>
                     <input type="text" name="{{ form.emplacement.html_name }}"
                            id="{{ form.emplacement.id_for_label }}"
-                           value="{{ form.emplacement.value|default:'' }}"
+                           value="{{ form.emplacement.value|default:form.instance.emplacement|default:'' }}"
                            class="form-control {% if form.emplacement.errors %}is-invalid{% endif %}"
                            placeholder="ex. Rayon A-3">
                     {% for e in form.emplacement.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -196,7 +196,7 @@
                             id="{{ form.methode_approvisionnement.id_for_label }}"
                             class="form-select {% if form.methode_approvisionnement.errors %}is-invalid{% endif %}">
                         {% for val, label in form.methode_approvisionnement.field.choices %}
-                        <option value="{{ val }}" {% if form.methode_approvisionnement.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                        <option value="{{ val }}" {% if form.methode_approvisionnement.value|stringformat:"s" == val|stringformat:"s" or form.instance.methode_approvisionnement == val %}selected{% endif %}>
                             {{ label }}
                         </option>
                         {% endfor %}
@@ -207,7 +207,7 @@
                     <label class="form-label" for="{{ form.point_commande.id_for_label }}">Point de commande</label>
                     <input type="number" name="{{ form.point_commande.html_name }}"
                            id="{{ form.point_commande.id_for_label }}"
-                           value="{{ form.point_commande.value|default:'0' }}"
+                           value="{{ form.point_commande.value|default:form.instance.point_commande|default:'0' }}"
                            class="form-control {% if form.point_commande.errors %}is-invalid{% endif %}"
                            step="0.001" min="0">
                     <div class="form-text text-muted small">Seuil de déclenchement commande</div>
@@ -217,7 +217,7 @@
                     <label class="form-label" for="{{ form.qec.id_for_label }}">QEC (Qté éco. commande)</label>
                     <input type="number" name="{{ form.qec.html_name }}"
                            id="{{ form.qec.id_for_label }}"
-                           value="{{ form.qec.value|default:'0' }}"
+                           value="{{ form.qec.value|default:form.instance.qec|default:'0' }}"
                            class="form-control {% if form.qec.errors %}is-invalid{% endif %}"
                            step="0.001" min="0">
                     {% for e in form.qec.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -226,7 +226,7 @@
                     <label class="form-label" for="{{ form.delai_livraison_jours.id_for_label }}">Délai livraison (jours)</label>
                     <input type="number" name="{{ form.delai_livraison_jours.html_name }}"
                            id="{{ form.delai_livraison_jours.id_for_label }}"
-                           value="{{ form.delai_livraison_jours.value|default:'0' }}"
+                           value="{{ form.delai_livraison_jours.value|default:form.instance.delai_livraison_jours|default:'0' }}"
                            class="form-control {% if form.delai_livraison_jours.errors %}is-invalid{% endif %}"
                            min="0">
                     {% for e in form.delai_livraison_jours.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -235,7 +235,7 @@
                     <label class="form-label" for="{{ form.periode_reappro_jours.id_for_label }}">Période réappro (jours)</label>
                     <input type="number" name="{{ form.periode_reappro_jours.html_name }}"
                            id="{{ form.periode_reappro_jours.id_for_label }}"
-                           value="{{ form.periode_reappro_jours.value|default:'0' }}"
+                           value="{{ form.periode_reappro_jours.value|default:form.instance.periode_reappro_jours|default:'0' }}"
                            class="form-control {% if form.periode_reappro_jours.errors %}is-invalid{% endif %}"
                            min="0">
                     {% for e in form.periode_reappro_jours.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
@@ -244,7 +244,7 @@
                     <label class="form-label" for="{{ form.taux_rebut.id_for_label }}">Taux de rebut (%)</label>
                     <input type="number" name="{{ form.taux_rebut.html_name }}"
                            id="{{ form.taux_rebut.id_for_label }}"
-                           value="{{ form.taux_rebut.value|default:'0' }}"
+                           value="{{ form.taux_rebut.value|default:form.instance.taux_rebut|default:'0' }}"
                            class="form-control {% if form.taux_rebut.errors %}is-invalid{% endif %}"
                            step="0.01" min="0" max="100">
                     <div class="form-text text-muted small">Pourcentage de pertes en production</div>
@@ -288,4 +288,39 @@
     </div>
 
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const unitsMap = {{ unites_json|safe }};
+    const unitSelect = document.getElementById('{{ form.unite.id_for_label }}');
+    const qtyFields = [
+        '{{ form.stock_actuel.id_for_label }}',
+        '{{ form.stock_minimum.id_for_label }}',
+        '{{ form.stock_maximum.id_for_label }}',
+        '{{ form.stock_securite.id_for_label }}',
+        '{{ form.point_commande.id_for_label }}',
+        '{{ form.qec.id_for_label }}',
+        '{{ form.lot_minimum.id_for_label }}',
+        '{{ form.multiple_lot.id_for_label }}'
+    ];
+    
+    function updateSteps() {
+        const unitId = unitSelect.value;
+        const allowDecimals = unitId ? unitsMap[unitId] : true;
+        const stepValue = allowDecimals ? "0.0001" : "1";
+        
+        qtyFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.setAttribute('step', stepValue);
+        });
+    }
+    
+    if (unitSelect) {
+        unitSelect.addEventListener('change', updateSteps);
+        updateSteps(); // Initial call
+    }
+});
+</script>
 {% endblock %}

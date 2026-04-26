@@ -1,0 +1,21 @@
+{% comment %}
+Composant pour les boutons d'exportation.
+Usage: {% include 'components/export_dropdown.html' %}
+{% endcomment %}
+<div class="dropdown d-inline-block ms-2">
+    <button class="btn btn-white btn-sm border dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-download me-1"></i> Export
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+        <li>
+            <a class="dropdown-item py-2" href="?{% for k,v in request.GET.items %}{% if k != 'export' %}{{ k }}={{ v }}&{% endif %}{% endfor %}export=csv" id="export-csv-btn">
+                <i class="bi bi-filetype-csv me-2 text-success"></i> Export CSV (.csv)
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item py-2" href="?{% for k,v in request.GET.items %}{% if k != 'export' %}{{ k }}={{ v }}&{% endif %}{% endfor %}export=pdf" id="export-pdf-btn">
+                <i class="bi bi-filetype-pdf me-2 text-danger"></i> Export PDF (.pdf)
+            </a>
+        </li>
+    </ul>
+</div>

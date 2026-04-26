@@ -1,258 +1,271 @@
 {% extends "base.html" %}
-{% block title %}Nouveau mouvement{% endblock %}
+{% load static %}
+
+{% block title %}Nouveau Mouvement | MediCare Industries{% endblock %}
+{% block active_mouvements %}active{% endblock %}
+{% block show_mouvements %}show{% endblock %}
 
 {% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-8">
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h4 class="mb-1 fw-bold">Enregistrer un Mouvement</h4>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'mouvements:liste' %}">Mouvements</a></li>
+                        <li class="breadcrumb-item active">Nouveau</li>
+                    </ol>
+                </nav>
+            </div>
+            <a href="{% url 'mouvements:liste' %}" class="btn btn-white btn-sm shadow-sm border px-3">
+                <i class="bi bi-arrow-left me-1"></i> Retour à la liste
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if 'success' in message.tags %}alert-success-soft{% else %}alert-danger-soft{% endif %} border-0 shadow-sm mb-4 d-flex align-items-center p-3">
+                    <i class="bi {% if 'success' in message.tags %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} fs-4 me-3"></i>
+                    <div>{{ message }}</div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" novalidate class="animate-up">
+            {% csrf_token %}
+
+            <!-- Sélection du Type de Flux -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="w-100 cursor-pointer">
+                        <input type="radio" name="type_mouvement" value="ENTREE" class="d-none peer-check" {% if form.type_mouvement.value == "ENTREE" or not form.type_mouvement.value %}checked{% endif %}>
+                        <div class="card h-100 border-2 border-transparent transition-all peer-checked-primary hover-shadow">
+                            <div class="card-body p-3 text-center">
+                                <div class="avatar bg-success-soft text-success rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-size: 20px;">
+                                    <i class="bi bi-box-arrow-in-down"></i>
+                                </div>
+                                <h6 class="fw-bold mb-1">ENTRÉE</h6>
+                                <p class="small text-muted mb-0" style="font-size:11px;">Réception, retour</p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div class="col-md-4">
+                    <label class="w-100 cursor-pointer">
+                        <input type="radio" name="type_mouvement" value="SORTIE" class="d-none peer-check" {% if form.type_mouvement.value == "SORTIE" %}checked{% endif %}>
+                        <div class="card h-100 border-2 border-transparent transition-all peer-checked-danger hover-shadow">
+                            <div class="card-body p-3 text-center">
+                                <div class="avatar bg-danger-soft text-danger rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-size: 20px;">
+                                    <i class="bi bi-box-arrow-up"></i>
+                                </div>
+                                <h6 class="fw-bold mb-1">SORTIE</h6>
+                                <p class="small text-muted mb-0" style="font-size:11px;">Expédition, perte</p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div class="col-md-4">
+                    <label class="w-100 cursor-pointer">
+                        <input type="radio" name="type_mouvement" value="AJUSTEMENT" class="d-none peer-check" {% if form.type_mouvement.value == "AJUSTEMENT" %}checked{% endif %}>
+                        <div class="card h-100 border-2 border-transparent transition-all peer-checked-warning hover-shadow">
+                            <div class="card-body p-3 text-center">
+                                <div class="avatar bg-warning-soft text-warning rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-size: 20px;">
+                                    <i class="bi bi-sliders"></i>
+                                </div>
+                                <h6 class="fw-bold mb-1">AJUSTEMENT</h6>
+                                <p class="small text-muted mb-0" style="font-size:11px;">Correction d'inventaire</p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Formulaire Principal -->
+            <div class="panel shadow-sm border-0 mb-4 overflow-hidden">
+                <div class="panel-header bg-light bg-opacity-50 border-bottom">
+                    <h6 class="panel-title fw-bold"><i class="bi bi-info-circle me-2 text-primary"></i>Informations du Mouvement</h6>
+                </div>
+                <div class="panel-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-2">Type de Stock</label>
+                            <select name="type_stock" id="id_type_stock" class="form-select bg-light border-0 py-2">
+                                {% for val, label in form.type_stock.field.choices %}
+                                <option value="{{ val }}" {% if form.type_stock.value == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-2">Référence Bon de Commande (Optionnel)</label>
+                            <select name="bon_commande" class="form-select bg-light border-0 py-2">
+                                <option value="">-- Aucun --</option>
+                                {% for val, label in form.bon_commande.field.choices %}{% if val %}<option value="{{ val }}" {% if form.bon_commande.value == val %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Matière / Produit -->
+                        <div class="col-md-12" id="div_matiere" {% if form.type_stock.value == "PF" %}style="display:none;"{% endif %}>
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-2">Matière Première</label>
+                            <select name="matiere" class="form-select bg-light border-0 py-2 {% if form.matiere.errors %}is-invalid{% endif %}">
+                                <option value="">-- Choisir une matière --</option>
+                                {% for val, label in form.matiere.field.choices %}{% if val %}<option value="{{ val }}" {% if form.matiere.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}
+                            </select>
+                            {% if form.matiere.errors %}<div class="invalid-feedback">{{ form.matiere.errors|join:", " }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-12" id="div_produit" {% if form.type_stock.value != "PF" %}style="display:none;"{% endif %}>
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-2">Produit Fini</label>
+                            <select name="produit_fini" class="form-select bg-light border-0 py-2 {% if form.produit_fini.errors %}is-invalid{% endif %}">
+                                <option value="">-- Choisir un produit fini --</option>
+                                {% for val, label in form.produit_fini.field.choices %}{% if val %}<option value="{{ val }}" {% if form.produit_fini.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}
+                            </select>
+                            {% if form.produit_fini.errors %}<div class="invalid-feedback">{{ form.produit_fini.errors|join:", " }}</div>{% endif %}
+                        </div>
+
+                        <!-- Info Stock Actuel Dynamique -->
+                        <div class="col-md-12" id="div_stock_info" style="display:none;">
+                            <div class="alert alert-info py-2 px-3 mb-0 d-flex align-items-center">
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                <span>Stock actuel estimé : <strong id="stock_actuel_val">0</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Quantités -->
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-2">Quantité</label>
+                            <div class="input-group">
+                                <input type="number" name="quantite" step="0.01" class="form-control bg-light border-0 py-2 {% if form.quantite.errors %}is-invalid{% endif %}" value="{{ form.quantite.value|default:'' }}" required>
+                                <span class="input-group-text bg-light border-0 text-muted small"><i class="bi bi-hash"></i></span>
+                            </div>
+                            <div class="form-text text-muted" id="qty_help_text" style="font-size: 10px;"></div>
+                            {% if form.quantite.errors %}<div class="invalid-feedback d-block">{{ form.quantite.errors|join:", " }}</div>{% endif %}
+                        </div>
+
+                        <!-- Les champs quantite_avant sont gérés en back-end -->
+                        
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-2">Numéro de Lot</label>
+                            <input type="text" name="numero_lot" class="form-control bg-light border-0 py-2" value="{{ form.numero_lot.value|default:'' }}" placeholder="Ex: LOT2024-X">
+                        </div>
+
+                        <!-- Motif -->
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-2">Motif / Commentaire</label>
+                            <textarea name="motif" rows="3" class="form-control bg-light border-0 py-2" placeholder="Précisez la raison de ce mouvement...">{{ form.motif.value|default:'' }}</textarea>
+                            {% if form.motif.errors %}<div class="invalid-feedback d-block">{{ form.motif.errors|join:", " }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-footer bg-light bg-opacity-25 border-top p-4 d-flex justify-content-between align-items-center">
+                    <a href="{% url 'mouvements:liste' %}" class="btn btn-white px-4 border shadow-sm">Annuler</a>
+                    <button type="submit" class="btn btn-primary px-5 shadow-primary">
+                        <i class="bi bi-check-circle me-2"></i> Enregistrer le Mouvement
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-
-.form-page { font-family: 'DM Sans', sans-serif; padding: 2rem; background: #f8f9fb; min-height: 100vh; }
-
-.form-hero {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0e7490 100%);
-  border-radius: 20px; padding: 2rem 2.5rem; margin-bottom: 2rem;
-  position: relative; overflow: hidden;
-}
-.form-hero::before {
-  content: ''; position: absolute; top: -50px; right: -50px;
-  width: 250px; height: 250px;
-  background: radial-gradient(circle, rgba(14,116,144,0.3) 0%, transparent 70%);
-  border-radius: 50%;
-}
-.form-hero h1 {
-  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.9rem;
-  color: #fff; margin: 0 0 0.3rem; position: relative; z-index: 1;
-}
-.form-hero p { color: rgba(255,255,255,0.6); margin: 0; position: relative; z-index: 1; font-size: 0.9rem; }
-.btn-back {
-  background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.2);
-  color: #fff; border-radius: 10px; padding: 0.5rem 1.2rem;
-  font-size: 0.88rem; font-weight: 600; text-decoration: none;
-  display: inline-flex; align-items: center; gap: 6px;
-  transition: all 0.2s; position: relative; z-index: 1;
-}
-.btn-back:hover { background: rgba(255,255,255,0.25); color: #fff; }
-
-/* Type selector */
-.type-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-.type-option { position: relative; }
-.type-option input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
-.type-label {
-  display: flex; align-items: center; gap: 1rem;
-  padding: 1.2rem 1.5rem; border-radius: 14px;
-  border: 2px solid #e2e8f0; background: #fff;
-  cursor: pointer; transition: all 0.2s; user-select: none;
-}
-.type-label:hover { border-color: #94a3b8; transform: translateY(-2px); }
-.type-option input:checked + .type-label.entree {
-  border-color: #16a34a; background: #f0fdf4;
-  box-shadow: 0 4px 20px rgba(22,163,74,0.15);
-}
-.type-option input:checked + .type-label.sortie {
-  border-color: #dc2626; background: #fff5f5;
-  box-shadow: 0 4px 20px rgba(220,38,38,0.15);
-}
-.type-icon {
-  width: 48px; height: 48px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.4rem; flex-shrink: 0;
-}
-.type-icon.green { background: #dcfce7; }
-.type-icon.red { background: #fee2e2; }
-.type-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; color: #0f172a; }
-.type-desc { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
-
-/* Form card */
-.form-card {
-  background: #fff; border-radius: 20px; border: 1px solid #e8ecf0;
-  overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-}
-.form-section {
-  padding: 1.8rem 2rem; border-bottom: 1px solid #f1f5f9;
-}
-.form-section:last-child { border-bottom: none; }
-.section-title {
-  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
-  color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;
-  margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px;
-}
-.section-title::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
-
-.form-label-custom { font-size: 0.82rem; font-weight: 600; color: #374151; margin-bottom: 6px; display: block; }
-.form-label-custom span.req { color: #ef4444; margin-left: 3px; }
-
-.form-control-custom {
-  width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px;
-  padding: 0.7rem 1rem; font-size: 0.9rem; font-family: 'DM Sans', sans-serif;
-  background: #f8fafc; transition: all 0.2s; outline: none;
-  color: #0f172a;
-}
-.form-control-custom:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,0.1); }
-.form-control-custom.is-invalid { border-color: #ef4444; background: #fff5f5; }
-
-.input-hint { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
-
-/* Submit area */
-.form-footer {
-  padding: 1.5rem 2rem; background: #f8fafc;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.btn-submit {
-  background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; color: #fff;
-  padding: 0.8rem 2.5rem; border-radius: 12px; font-family: 'Syne', sans-serif;
-  font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s;
-  display: inline-flex; align-items: center; gap: 8px;
-  box-shadow: 0 4px 15px rgba(14,165,233,0.3);
-}
-.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(14,165,233,0.4); }
-.btn-cancel {
-  background: #f1f5f9; color: #64748b; border: none; border-radius: 12px;
-  padding: 0.8rem 1.8rem; font-weight: 600; font-size: 0.9rem;
-  text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
-}
-.btn-cancel:hover { background: #e2e8f0; color: #475569; }
-
-/* Alert */
-.alert-custom {
-  border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 1.5rem;
-  display: flex; align-items: center; gap: 10px; font-size: 0.88rem; font-weight: 500;
-}
-.alert-success-custom { background: #f0fdf4; color: #15803d; border: 1.5px solid #bbf7d0; }
-.alert-error-custom { background: #fff5f5; color: #dc2626; border: 1.5px solid #fecaca; }
-
-@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-.form-hero { animation: fadeUp 0.4s ease; }
-.type-selector { animation: fadeUp 0.4s ease 0.1s both; }
-.form-card { animation: fadeUp 0.4s ease 0.2s both; }
+    .animate-up { animation: fadeInUp 0.5s ease-out both; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .peer-check:checked + .peer-checked-primary { border-color: #0d6efd !important; background: #f0f7ff; box-shadow: 0 5px 15px rgba(13,110,253,0.1); }
+    .peer-check:checked + .peer-checked-danger { border-color: #dc3545 !important; background: #fff5f5; box-shadow: 0 5px 15px rgba(220,53,69,0.1); }
+    .peer-check:checked + .peer-checked-warning { border-color: #ffc107 !important; background: #fffdf5; box-shadow: 0 5px 15px rgba(255,193,7,0.1); }
+    .hover-shadow:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    .shadow-primary { box-shadow: 0 4px 15px rgba(13,110,253,0.3); }
+    .btn-xs { padding: 2px 8px; font-size: 10px; }
+    .transition-all { transition: all 0.2s ease; }
+    .alert-success-soft { background: rgba(25, 135, 84, 0.08); color: #198754; }
+    .alert-danger-soft { background: rgba(220, 53, 69, 0.08); color: #dc3545; }
+    .bg-warning-soft { background: rgba(255, 193, 7, 0.1); }
 </style>
 
-<div class="form-page">
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeStock = document.getElementById('id_type_stock');
+        const divMatiere = document.getElementById('div_matiere');
+        const divProduit = document.getElementById('div_produit');
+        const divStockInfo = document.getElementById('div_stock_info');
+        const stockActuelVal = document.getElementById('stock_actuel_val');
+        const qtyHelpText = document.getElementById('qty_help_text');
+        
+        const matieresMap = {{ matieres_decimales_json|safe|default:"{}" }};
+        const produitsMap = {{ produits_decimales_json|safe|default:"{}" }};
+        const matieresStockMap = {{ matieres_stock_json|safe|default:"{}" }};
+        const produitsStockMap = {{ produits_stock_json|safe|default:"{}" }};
+        
+        const matiereSelect = document.querySelector('select[name="matiere"]');
+        const produitSelect = document.querySelector('select[name="produit_fini"]');
+        const qtyField = document.querySelector('input[name="quantite"]');
+        const radiosMouvement = document.querySelectorAll('input[name="type_mouvement"]');
 
-  <!-- Hero -->
-  <div class="form-hero d-flex justify-content-between align-items-center">
-    <div>
-      <h1>➕ Nouveau mouvement</h1>
-      <p>Enregistrer une entrée ou une sortie de stock</p>
-    </div>
-    <a href="{% url 'mouvements:liste' %}" class="btn-back">
-      <i class="bi bi-arrow-left"></i> Retour
-    </a>
-  </div>
+        function updateStepsAndStock() {
+            let allowDecimals = true;
+            let currentStock = null;
+            let currentId = null;
+            
+            if (typeStock.value === 'MP') {
+                currentId = matiereSelect.value;
+                if (currentId) {
+                    allowDecimals = matieresMap[currentId] !== false;
+                    currentStock = matieresStockMap[currentId];
+                }
+            } else {
+                currentId = produitSelect.value;
+                if (currentId) {
+                    allowDecimals = produitsMap[currentId] !== false;
+                    currentStock = produitsStockMap[currentId];
+                }
+            }
+            
+            const stepValue = allowDecimals ? "0.0001" : "1";
+            if (qtyField) qtyField.setAttribute('step', stepValue);
+            
+            if (currentId && currentStock !== undefined && currentStock !== null) {
+                divStockInfo.style.display = 'block';
+                stockActuelVal.textContent = currentStock;
+            } else {
+                divStockInfo.style.display = 'none';
+            }
+            updateHelpText();
+        }
+        
+        function updateHelpText() {
+            let typeMvt = '';
+            radiosMouvement.forEach(r => {
+                if(r.checked) typeMvt = r.value;
+            });
+            
+            if (typeMvt === 'AJUSTEMENT') {
+                qtyHelpText.innerHTML = "<span class='text-warning'><i class='bi bi-exclamation-triangle'></i> Pour un ajustement, saisissez le <b>nouveau stock réel</b> constaté.</span>";
+            } else {
+                qtyHelpText.innerHTML = "";
+            }
+        }
 
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert-custom {% if 'success' in message.tags %}alert-success-custom{% else %}alert-error-custom{% endif %}">
-        <i class="bi {% if 'success' in message.tags %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %}"></i>
-        {{ message }}
-      </div>
-    {% endfor %}
-  {% endif %}
-
-  <form method="post" novalidate>
-    {% csrf_token %}
-
-    <!-- Type de mouvement -->
-    <div class="type-selector">
-      <div class="type-option">
-        <input type="radio" name="type_mouvement" id="entree" value="ENTREE"
-               {% if form.type_mouvement.value == "ENTREE" %}checked{% endif %}>
-        <label for="entree" class="type-label entree">
-          <div class="type-icon green">⬇️</div>
-          <div>
-            <div class="type-title">Entrée</div>
-            <div class="type-desc">Réception fournisseur, retour</div>
-          </div>
-        </label>
-      </div>
-      <div class="type-option">
-        <input type="radio" name="type_mouvement" id="sortie" value="SORTIE"
-               {% if form.type_mouvement.value == "SORTIE" %}checked{% endif %}>
-        <label for="sortie" class="type-label sortie">
-          <div class="type-icon red">⬆️</div>
-          <div>
-            <div class="type-title">Sortie</div>
-            <div class="type-desc">Consommation production, perte</div>
-          </div>
-        </label>
-      </div>
-    </div>
-
-    <div class="form-card">
-
-      <!-- Matière & Quantité -->
-      <div class="form-section">
-        <div class="section-title">🧪 Matière première & quantités</div>
-        <div class="row g-3">
-          <div class="col-md-12">
-            <label class="form-label-custom">Matière première <span class="req">*</span></label>
-            <select name="{{ form.matiere.html_name }}" class="form-control-custom {% if form.matiere.errors %}is-invalid{% endif %}">
-              <option value="">-- Sélectionner une matière première --</option>
-              {% for val, label in form.matiere.field.choices %}
-                {% if val %}
-                  <option value="{{ val }}" {% if form.matiere.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
-                {% endif %}
-              {% endfor %}
-            </select>
-            {% if form.matiere.errors %}<div style="color:#ef4444;font-size:0.78rem;margin-top:4px;">{{ form.matiere.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label-custom">Quantité <span class="req">*</span></label>
-            <input type="number" name="{{ form.quantite.html_name }}"
-                   value="{{ form.quantite.value|default:'' }}"
-                   step="0.001" min="0"
-                   class="form-control-custom {% if form.quantite.errors %}is-invalid{% endif %}"
-                   placeholder="Ex: 500">
-            <div class="input-hint">Quantité du mouvement à enregistrer</div>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label-custom">Stock avant mouvement <span class="req">*</span></label>
-            <input type="number" name="{{ form.quantite_avant.html_name }}"
-                   value="{{ form.quantite_avant.value|default:'' }}"
-                   step="0.001" min="0"
-                   class="form-control-custom {% if form.quantite_avant.errors %}is-invalid{% endif %}"
-                   placeholder="Stock actuel">
-            <div class="input-hint">Stock actuel avant ce mouvement</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Traçabilité -->
-      <div class="form-section">
-        <div class="section-title">🏷️ Traçabilité du lot</div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label-custom">Numéro de lot</label>
-            <input type="text" name="{{ form.numero_lot.html_name }}"
-                   value="{{ form.numero_lot.value|default:'' }}"
-                   class="form-control-custom"
-                   placeholder="Ex: LOT-2026-001">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label-custom">Date de péremption</label>
-            <input type="date" name="{{ form.date_peremption.html_name }}"
-                   value="{{ form.date_peremption.value|default:'' }}"
-                   class="form-control-custom">
-          </div>
-        </div>
-      </div>
-
-      <!-- Motif -->
-      <div class="form-section">
-        <div class="section-title">📝 Motif du mouvement</div>
-        <textarea name="{{ form.motif.html_name }}" rows="3" class="form-control-custom"
-                  placeholder="Ex: Réception commande #042, Consommation production batch #15...">{{ form.motif.value|default:'' }}</textarea>
-      </div>
-
-      <!-- Footer -->
-      <div class="form-footer">
-        <a href="{% url 'mouvements:liste' %}" class="btn-cancel">
-          <i class="bi bi-x-lg"></i> Annuler
-        </a>
-        <button type="submit" class="btn-submit">
-          <i class="bi bi-check-lg"></i> Enregistrer le mouvement
-        </button>
-      </div>
-
-    </div>
-  </form>
-</div>
+        typeStock.addEventListener('change', function() {
+            if (this.value === 'MP') {
+                divMatiere.style.display = 'block';
+                divProduit.style.display = 'none';
+                produitSelect.value = '';
+            } else {
+                divMatiere.style.display = 'none';
+                divProduit.style.display = 'block';
+                matiereSelect.value = '';
+            }
+            updateStepsAndStock();
+        });
+        
+        radiosMouvement.forEach(r => r.addEventListener('change', updateHelpText));
+        if (matiereSelect) matiereSelect.addEventListener('change', updateStepsAndStock);
+        if (produitSelect) produitSelect.addEventListener('change', updateStepsAndStock);
+        
+        updateStepsAndStock();
+    });
+</script>
 {% endblock %}

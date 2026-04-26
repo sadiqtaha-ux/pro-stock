@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Composant Nomenclature | {{ nomenclature.produit_fini.nom }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'produits:produit-fini-liste' %}">Produits finis</a></li>
+<li class="breadcrumb-item"><a href="{% url 'produits:produit-fini-detail' nomenclature.produit_fini.pk %}">{{ nomenclature.produit_fini.reference }}</a></li>
+<li class="breadcrumb-item active">Composant</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="card-title mb-0 fw-bold">
+                    {% if object %}Modifier le composant{% else %}Ajouter un composant{% endif %}
+                </h5>
+                <p class="text-muted small mb-0 mt-1">Nomenclature : {{ nomenclature.version }} pour {{ nomenclature.produit_fini.nom }}</p>
+            </div>
+            
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.matiere.id_for_label }}" class="form-label fw-semibold">Matière première / Composant</label>
+                        {{ form.matiere }}
+                        {% if form.matiere.help_text %}
+                        <div class="form-text">{{ form.matiere.help_text }}</div>
+                        {% endif %}
+                        {% if form.matiere.errors %}
+                        <div class="invalid-feedback d-block">{{ form.matiere.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.quantite_par_unite.id_for_label }}" class="form-label fw-semibold">Quantité par unité</label>
+                            {{ form.quantite_par_unite }}
+                            {% if form.quantite_par_unite.help_text %}
+                            <div class="form-text">{{ form.quantite_par_unite.help_text }}</div>
+                            {% endif %}
+                            {% if form.quantite_par_unite.errors %}
+                            <div class="invalid-feedback d-block">{{ form.quantite_par_unite.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.taux_perte.id_for_label }}" class="form-label fw-semibold">Taux de perte spécifique (%)</label>
+                            <div class="input-group">
+                                {{ form.taux_perte }}
+                                <span class="input-group-text">%</span>
+                            </div>
+                            {% if form.taux_perte.help_text %}
+                            <div class="form-text">{{ form.taux_perte.help_text }}</div>
+                            {% endif %}
+                            {% if form.taux_perte.errors %}
+                            <div class="invalid-feedback d-block">{{ form.taux_perte.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.ordre_affichage.id_for_label }}" class="form-label fw-semibold">Ordre d'affichage</label>
+                            {{ form.ordre_affichage }}
+                            {% if form.ordre_affichage.help_text %}
+                            <div class="form-text">{{ form.ordre_affichage.help_text }}</div>
+                            {% endif %}
+                            {% if form.ordre_affichage.errors %}
+                            <div class="invalid-feedback d-block">{{ form.ordre_affichage.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3 d-flex align-items-center mt-3">
+                            <div class="form-check form-switch pt-2">
+                                {{ form.obligatoire }}
+                                <label class="form-check-label fw-semibold" for="{{ form.obligatoire.id_for_label }}">
+                                    Composant obligatoire
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'produits:produit-fini-detail' nomenclature.produit_fini.pk %}" class="btn btn-light">Annuler</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check2 me-1"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% comment %}
+Composant pour basculer entre vue tableau et vue Kanban.
+Usage: {% include 'components/view_toggle.html' with current_view=current_view %}
+{% endcomment %}
+<div class="btn-group shadow-sm ms-2" role="group" aria-label="Sélecteur de vue">
+    <a href="?{% for k, v in request.GET.items %}{% if k != 'view' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}view=table" 
+       class="btn {% if current_view == 'table' %}btn-primary-soft fw-bold{% else %}btn-white{% endif %} btn-sm border" 
+       title="Vue Tableau">
+        <i class="bi bi-table me-1"></i> Tableau
+    </a>
+    <a href="?{% for k, v in request.GET.items %}{% if k != 'view' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}view=kanban" 
+       class="btn {% if current_view == 'kanban' %}btn-primary-soft fw-bold{% else %}btn-white{% endif %} btn-sm border" 
+       title="Vue Kanban">
+        <i class="bi bi-kanban me-1"></i> Kanban
+    </a>
+</div>

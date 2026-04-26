@@ -13,30 +13,63 @@ from django.db.models import Q, Sum, F
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.shortcuts import render
+
+from core.mixins import KanbanListMixin, ExportMixin
+from core.models import JournalActivite
+from core.utils import log_action
 from .models import MouvementStock
-from produits.models import MatierePremiere
+from produits.models import MatierePremiere, ProduitFini
+from produits.views import UnitValidationMixin
 
 
 # ─────────────────────────────────────────────
 # 1. LISTE COMPLÈTE DES MOUVEMENTS
 # ─────────────────────────────────────────────
-class MouvementListeView(LoginRequiredMixin, ListView):
+class MouvementListeView(LoginRequiredMixin, KanbanListMixin, ExportMixin, ListView):
     model               = MouvementStock
     template_name       = "mouvements/liste.html"
+    kanban_template_name = "mouvements/kanban.html"
     context_object_name = "mouvements"
     paginate_by         = 30
+    export_fields       = ['date_mouvement', 'type_mouvement', 'type_stock', 'nom_article', 'quantite', 'operateur__username']
+    export_headers      = ['Date', 'Type Mvt', 'Type Stock', 'Article', 'Quantité', 'Opérateur']
+
+    def _get_export_data(self, queryset):
+        """Surcharge pour gérer l'affichage de l'article (Matière ou Produit Fini)."""
+        rows = []
+        for obj in queryset:
+            article = obj.matiere.nom if obj.type_stock == 'MATIERE' and obj.matiere else ""
+            if not article and obj.produit_fini:
+                article = obj.produit_fini.nom
+                
+            rows.append([
+                obj.date_mouvement.strftime('%d/%m/%Y %H:%M'),
+                obj.get_type_mouvement_display(),
+                dict(MouvementStock.TYPE_STOCK_CHOICES).get(obj.type_stock, obj.type_stock),
+                article,
+                obj.quantite,
+                obj.operateur.username if obj.operateur else "-"
+            ])
+        return rows
 
     def get_queryset(self):
         qs = MouvementStock.objects.select_related(
-            "matiere", "operateur", "bon_commande"
+            "matiere", "produit_fini", "operateur", "bon_commande", "matiere__unite", "produit_fini__unite"
         )
         q = self.request.GET.get("q")
         if q:
             qs = qs.filter(
                 Q(matiere__nom__icontains=q) |
                 Q(matiere__reference__icontains=q) |
+                Q(produit_fini__nom__icontains=q) |
+                Q(produit_fini__reference__icontains=q) |
                 Q(numero_lot__icontains=q)
             )
+        
+        type_stock = self.request.GET.get("type_stock")
+        if type_stock:
+            qs = qs.filter(type_stock=type_stock)
+
         type_mvt = self.request.GET.get("type")
         if type_mvt:
             qs = qs.filter(type_mouvement=type_mvt)
@@ -48,184 +81,175 @@ class MouvementListeView(LoginRequiredMixin, ListView):
         date_fin = self.request.GET.get("date_fin")
         if date_fin:
             qs = qs.filter(date_mouvement__date__lte=date_fin)
+            
+        operateur = self.request.GET.get("operateur")
+        if operateur:
+            qs = qs.filter(operateur_id=operateur)
 
         return qs.order_by("-date_mouvement")
 
+    def get(self, request, *args, **kwargs):
+        export_type = request.GET.get('export')
+        if export_type == 'csv':
+            return self.render_to_csv(self.get_queryset(), filename_prefix="mouvements")
+        elif export_type == 'pdf':
+            return self.render_to_pdf(self.get_queryset(), title="Journal des Mouvements de Stock", filename_prefix="mouvements")
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["types"] = MouvementStock.TypeMouvement.choices
+        ctx["types_mvt"] = MouvementStock.TypeMouvement.choices
+        ctx["types_stock"] = MouvementStock.TYPE_STOCK_CHOICES
+        
+        # Calcul des KPIs sur le queryset filtré
+        qs = self.get_queryset()
+        ctx["movements_count"] = qs.count()
+        ctx["entree_count"] = qs.filter(type_mouvement=MouvementStock.TypeMouvement.ENTREE).count()
+        ctx["sortie_count"] = qs.filter(type_mouvement=MouvementStock.TypeMouvement.SORTIE).count()
+        ctx["ajustement_count"] = qs.filter(type_mouvement=MouvementStock.TypeMouvement.AJUSTEMENT).count()
+
+        from django.contrib.auth import get_user_model
+        ctx["operateurs"] = get_user_model().objects.all()
         return ctx
 
 
 # ─────────────────────────────────────────────
-# 2. CRÉER UN MOUVEMENT (ENTRÉE OU SORTIE)
+# 2. CRÉER UN MOUVEMENT (ENTRÉE, SORTIE, AJUSTEMENT)
 # ─────────────────────────────────────────────
-class MouvementCreerView(LoginRequiredMixin, CreateView):
+class MouvementCreerView(LoginRequiredMixin, UnitValidationMixin, CreateView):
     model         = MouvementStock
     template_name = "mouvements/form.html"
-    fields        = [
-        "matiere", "type_mouvement", "quantite", "quantite_avant",
-        "motif", "numero_lot", "date_peremption", "bon_commande"
-    ]
+    from .forms import MouvementStockForm
+    form_class    = MouvementStockForm
+
     success_url = reverse_lazy("mouvements:liste")
+
+    def get_initial(self):
+        initial = super().get_initial()
+        type_mvt = self.request.GET.get('type')
+        if type_mvt in dict(MouvementStock.TypeMouvement.choices):
+            initial['type_mouvement'] = type_mvt
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        import json
+        
+        # Mapping Stock
+        matieres_stock = {m.id: float(m.stock_actuel) for m in MouvementStock.matiere.field.related_model.objects.all()}
+        produits_stock = {p.id: float(p.stock_actuel) for p in MouvementStock.produit_fini.field.related_model.objects.all()}
+        
+        context['matieres_stock_json'] = json.dumps(matieres_stock)
+        context['produits_stock_json'] = json.dumps(produits_stock)
+        
+        return context
 
     def form_valid(self, form):
         form.instance.operateur = self.request.user
+        response = super().form_valid(form)
+        
+        article = self.object.matiere or self.object.produit_fini
+        log_action(
+            self.request,
+            JournalActivite.TypeAction.CREATION,
+            'MouvementStock',
+            self.object.pk,
+            f"Mouvement de stock ({self.object.get_type_mouvement_display()}) pour {article}"
+        )
+        
         messages.success(self.request, "Mouvement enregistré avec succès.")
-        return super().form_valid(form)
+        return response
 
     def form_invalid(self, form):
         messages.error(self.request, "Erreur dans le formulaire. Vérifiez les champs.")
         return super().form_invalid(form)
 
 
-# ─────────────────────────────────────────────
-# 3. LISTE DES ENTRÉES
-# ─────────────────────────────────────────────
-class EntreeListeView(LoginRequiredMixin, ListView):
-    model               = MouvementStock
-    template_name       = "mouvements/entrees/liste.html"
-    context_object_name = "mouvements"
-    paginate_by         = 30
 
-    def get_queryset(self):
-        return MouvementStock.objects.filter(
-            type_mouvement=MouvementStock.TypeMouvement.ENTREE
-        ).select_related("matiere", "operateur").order_by("-date_mouvement")
-
-
-# ─────────────────────────────────────────────
-# 4. LISTE DES SORTIES
-# ─────────────────────────────────────────────
-class SortieListeView(LoginRequiredMixin, ListView):
-    model               = MouvementStock
-    template_name       = "mouvements/sorties/liste.html"
-    context_object_name = "mouvements"
-    paginate_by         = 30
-
-    def get_queryset(self):
-        return MouvementStock.objects.filter(
-            type_mouvement=MouvementStock.TypeMouvement.SORTIE
-        ).select_related("matiere", "operateur").order_by("-date_mouvement")
 
 
 # ─────────────────────────────────────────────
 # 5. ÉTAT DU STOCK (tableau de bord)
 # ─────────────────────────────────────────────
-@login_required
-def etat_stock_view(request):
+class EtatStockView(LoginRequiredMixin, ExportMixin, ListView):
     """
     Affiche l'état actuel du stock pour chaque matière première.
     Calcule les alertes (stock <= seuil minimum).
+    Supporte l'export CSV et PDF via ExportMixin.
     """
-    matieres = MatierePremiere.objects.all().order_by("nom")
+    model = MatierePremiere
+    template_name = "mouvements/etat_stock.html"
+    context_object_name = "matieres_list"
+    export_fields = ['reference', 'nom', 'stock_recalc', 'unite__symbole', 'stock_minimum', 'stock_maximum', 'valeur_recalc']
+    export_headers = ['Référence', 'Désignation', 'Stock Actuel', 'Unité', 'Stock Min', 'Stock Max', 'Valeur (DH)']
 
-    stock_data = []
-    alertes = []
+    def get_queryset(self):
+        from django.db.models.functions import Coalesce
+        from decimal import Decimal
+        qs = MatierePremiere.objects.filter(actif=True).select_related('unite').annotate(
+            calc_entrees=Coalesce(Sum('mouvements__quantite', filter=Q(mouvements__type_mouvement='ENTREE')), Decimal('0')),
+            calc_sorties=Coalesce(Sum('mouvements__quantite', filter=Q(mouvements__type_mouvement='SORTIE')), Decimal('0')),
+            stock_recalc=F('calc_entrees') - F('calc_sorties'),
+            valeur_recalc=F('stock_recalc') * F('prix_unitaire')
+        )
+        
+        q = self.request.GET.get('q')
+        if q:
+            qs = qs.filter(Q(nom__icontains=q) | Q(reference__icontains=q))
+            
+        return qs.order_by('nom')
 
-    for matiere in matieres:
-        # Calcul du stock actuel via les mouvements
-        entrees = MouvementStock.objects.filter(
-            matiere=matiere,
-            type_mouvement=MouvementStock.TypeMouvement.ENTREE
-        ).aggregate(total=Sum("quantite"))["total"] or 0
+    def get(self, request, *args, **kwargs):
+        export_type = request.GET.get('export')
+        if export_type == 'csv':
+            return self.render_to_csv(self.get_queryset(), filename_prefix="etat_stock")
+        elif export_type == 'pdf':
+            return self.render_to_pdf(self.get_queryset(), title="État du Stock de Matières Premières", filename_prefix="etat_stock")
+        return super().get(request, *args, **kwargs)
 
-        sorties = MouvementStock.objects.filter(
-            matiere=matiere,
-            type_mouvement=MouvementStock.TypeMouvement.SORTIE
-        ).aggregate(total=Sum("quantite"))["total"] or 0
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        matieres = self.get_queryset()
+        
+        stock_data = []
+        alertes = []
+        
+        for m in matieres:
+            stock_actuel = m.stock_recalc
+            
+            # Pourcentage du stock max
+            pourcentage = 0
+            if m.stock_maximum and m.stock_maximum > 0:
+                pourcentage = round((float(stock_actuel) / float(m.stock_maximum)) * 100, 1)
 
-        stock_actuel = entrees - sorties
-
-        # Pourcentage du stock max
-        pourcentage = 0
-        if hasattr(matiere, 'stock_max') and matiere.stock_max and matiere.stock_max > 0:
-            pourcentage = round((stock_actuel / matiere.stock_max) * 100, 1)
-
-        # Statut de l'alerte
-        statut = "ok"
-        if hasattr(matiere, 'stock_min') and matiere.stock_min:
+            # Statut de l'alerte
+            statut = "ok"
             if stock_actuel <= 0:
                 statut = "rupture"
-                alertes.append({"matiere": matiere, "stock": stock_actuel, "niveau": "rupture"})
-            elif stock_actuel <= matiere.stock_min:
+                alertes.append({"matiere": m, "stock": stock_actuel, "niveau": "rupture"})
+            elif stock_actuel <= m.stock_minimum:
                 statut = "critique"
-                alertes.append({"matiere": matiere, "stock": stock_actuel, "niveau": "critique"})
+                alertes.append({"matiere": m, "stock": stock_actuel, "niveau": "critique"})
 
-        stock_data.append({
-            "matiere": matiere,
-            "stock_actuel": stock_actuel,
-            "pourcentage": pourcentage,
-            "statut": statut,
+            stock_data.append({
+                "matiere": m,
+                "stock_actuel": stock_actuel,
+                "pourcentage": pourcentage,
+                "statut": statut,
+            })
+
+        ctx.update({
+            "stock_data": stock_data,
+            "alertes": alertes,
+            "nb_alertes": len(alertes),
+            "date": timezone.now(),
         })
-
-    context = {
-        "stock_data": stock_data,
-        "alertes": alertes,
-        "nb_alertes": len(alertes),
-        "date": timezone.now(),
-    }
-    return render(request, "mouvements/etat_stock.html", context)
+        return ctx
 
 
 # ─────────────────────────────────────────────
 # 6. EXPORT CSV DE L'HISTORIQUE
 # ─────────────────────────────────────────────
-@login_required
-def export_csv_view(request):
-    """
-    Exporte tous les mouvements filtrés en fichier CSV téléchargeable.
-    """
-    response = HttpResponse(content_type="text/csv; charset=utf-8")
-    response["Content-Disposition"] = 'attachment; filename="mouvements_stock.csv"'
-    response.write('\ufeff')  # BOM pour Excel
-
-    writer = csv.writer(response, delimiter=";")
-    writer.writerow([
-        "Date", "Matière première", "Référence", "Type",
-        "Quantité", "Stock avant", "Stock après",
-        "Numéro lot", "Date péremption", "Motif", "Opérateur"
-    ])
-
-    qs = MouvementStock.objects.select_related(
-        "matiere", "operateur"
-    ).order_by("-date_mouvement")
-
-    # Appliquer les mêmes filtres que la liste
-    q = request.GET.get("q")
-    if q:
-        qs = qs.filter(
-            Q(matiere__nom__icontains=q) |
-            Q(matiere__reference__icontains=q)
-        )
-    type_mvt = request.GET.get("type")
-    if type_mvt:
-        qs = qs.filter(type_mouvement=type_mvt)
-
-    date_debut = request.GET.get("date_debut")
-    if date_debut:
-        qs = qs.filter(date_mouvement__date__gte=date_debut)
-
-    date_fin = request.GET.get("date_fin")
-    if date_fin:
-        qs = qs.filter(date_mouvement__date__lte=date_fin)
-
-    for mvt in qs:
-        writer.writerow([
-            mvt.date_mouvement.strftime("%d/%m/%Y %H:%M"),
-            mvt.matiere.nom,
-            mvt.matiere.reference,
-            mvt.get_type_mouvement_display(),
-            mvt.quantite,
-            mvt.quantite_avant,
-            mvt.quantite_apres,
-            mvt.numero_lot or "",
-            mvt.date_peremption.strftime("%d/%m/%Y") if mvt.date_peremption else "",
-            mvt.motif or "",
-            mvt.operateur.get_full_name() if mvt.operateur else "",
-        ])
-
-    return response
 
 
 # ─────────────────────────────────────────────

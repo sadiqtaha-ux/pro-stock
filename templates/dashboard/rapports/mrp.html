@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Rapport MRP & Besoins{% endblock %}
+{% block active_dashboard %}active{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:rapports' %}">Centre de Rapports</a></li>
+<li class="breadcrumb-item active">MRP</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold">Planification des Besoins (MRP)</h4>
+        <p class="text-muted mb-0 small">Analyse des besoins nets basés sur les nomenclatures et les stocks actuels.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'dashboard:export-rapport' 'mrp' 'csv' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Bloquants -->
+    <div class="col-md-6">
+        <div class="panel shadow-sm h-100">
+            <div class="panel-header bg-danger-soft">
+                <h6 class="mb-0 fw-bold text-danger">Matières Bloquantes (Rupture + Utilisation PF)</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Référence</th>
+                            <th>Matière</th>
+                            <th>Utilisé dans</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in bloquants %}
+                        <tr>
+                            <td>{{ m.reference }}</td>
+                            <td class="fw-bold">{{ m.nom }}</td>
+                            <td>
+                                {% for nom in m.utilise_dans.all|slice:":2" %}
+                                <span class="badge bg-light text-dark border">{{ nom.produit_fini.nom }}</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center py-3 text-muted">Aucun article bloquant.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- Besoins Calculés -->
+    <div class="col-md-6">
+        <div class="panel shadow-sm h-100">
+            <div class="panel-header bg-primary-soft">
+                <h6 class="mb-0 fw-bold text-primary">Besoins Nets Calculés</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Matière</th>
+                            <th>Période</th>
+                            <th class="text-end">Besoin Net</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for plan in besoins|slice:":10" %}
+                        <tr>
+                            <td>{{ plan.matiere.nom }}</td>
+                            <td class="text-muted">{{ plan.periode|date:"M Y" }}</td>
+                            <td class="text-end fw-bold">{{ plan.besoin_net|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center py-3 text-muted">Aucun besoin calculé.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel shadow-sm">
+    <div class="panel-header bg-light">
+        <h6 class="mb-0 fw-bold">Structure des Nomenclatures</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light">
+                <tr>
+                    <th>Produit Fini</th>
+                    <th>Composant</th>
+                    <th class="text-end">Quantité Requise</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in nomenclatures %}
+                <tr>
+                    <td class="fw-bold">{{ n.produit_fini.nom }}</td>
+                    <td>{{ n.matiere.nom }}</td>
+                    <td class="text-end">{{ n.quantite_requise }} {{ n.matiere.unite.symbole }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-center py-4 text-muted">Aucune nomenclature définie.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

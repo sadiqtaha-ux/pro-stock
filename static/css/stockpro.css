@@ -382,3 +382,192 @@ body {
 .fw-600 { font-weight: 600; }
 .fs-13 { font-size: 13px; }
 .card { border-radius: var(--border-radius); box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.04); }
+
+/* --- Boutons personnalisés --- */
+.btn-white {
+    background-color: #fff !important;
+    color: #495057 !important;
+    border-color: #dee2e6 !important;
+}
+.btn-white:hover {
+    background-color: #f8f9fa !important;
+    color: var(--primary) !important;
+}
+.btn-primary-soft {
+    background-color: rgba(13,110,253,0.08) !important;
+    color: var(--primary) !important;
+    border-color: rgba(13,110,253,0.2) !important;
+}
+/* ============================================================
+   NOUVEAU DASHBOARD (DISPOSITION)
+   ============================================================ */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1200px) {
+    .dashboard-grid, .dashboard-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+    .dashboard-grid, .dashboard-grid-3 { grid-template-columns: 1fr; }
+}
+
+/* KPI Card v2 */
+.kpi-card-v2 {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card-v2:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.kpi-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #adb5bd;
+}
+
+.kpi-main {
+    margin-bottom: 1rem;
+    flex-grow: 1;
+}
+
+.kpi-value-lg {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #1a1f2e;
+    line-height: 1.1;
+    display: block;
+}
+
+.kpi-subtitle {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.kpi-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    padding-top: 1rem;
+    border-top: 1px solid #f8f9fa;
+    margin-top: auto;
+}
+
+.kpi-metric-item {
+    text-align: center;
+    padding: 4px 0;
+}
+
+.kpi-metric-item:not(:last-child) {
+    border-right: 1px solid #f1f3f5;
+}
+
+.kpi-metric-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: block;
+    line-height: 1.2;
+}
+
+.kpi-metric-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    color: #adb5bd;
+    font-weight: 600;
+    display: block;
+}
+
+/* Grille 4 colonnes pour le magasin */
+.kpi-metrics-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* Couleurs spécifiques */
+.text-rupture { color: #dc3545 !important; }
+.text-critique { color: #fd7e14 !important; }
+.text-normal { color: #198754 !important; }
+.text-orange { color: #fd7e14 !important; }
+
+/* Alertes soft */
+.alert-danger-soft { background: rgba(220,53,69,0.08); color: #dc3545; border: 1px solid rgba(220,53,69,0.1); }
+.alert-success-soft { background: rgba(25,135,84,0.08); color: #198754; border: 1px solid rgba(25,135,84,0.1); }
+
+/* Graphiques */
+.chart-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.06);
+    height: 100%;
+}
+
+.chart-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.chart-card-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1a1f2e;
+    margin: 0;
+}
+
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 300px;
+}
+
+.chart-no-data {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.9);
+    z-index: 5;
+    color: #adb5bd;
+    font-size: 0.85rem;
+}
+
+.chart-no-data i { font-size: 2rem; margin-bottom: 0.5rem; }

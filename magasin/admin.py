@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 from django.db.models import Count, Q
 
-from .models import ZoneStockage, Rayon, Emplacement, PlanMagasin
+from .models import ZoneStockage, Rayon, Emplacement, PlanMagasin, NiveauRayon, AffectationStock
 
 
 class RayonInline(admin.TabularInline):
@@ -16,17 +16,24 @@ class RayonInline(admin.TabularInline):
     fields = ['code', 'libelle', 'orientation', 'nombre_niveaux', 'nombre_colonnes']
 
 
+class NiveauRayonInline(admin.TabularInline):
+    model = NiveauRayon
+    extra = 1
+    fields = ['numero', 'libelle', 'capacite_max', 'actif']
+
+
 @admin.register(ZoneStockage)
 class ZoneStockageAdmin(admin.ModelAdmin):
-    list_display = ['code', 'libelle', 'type_zone', 'badge_couleur', 'capacite_totale', 'est_actif']
-    list_filter = ['type_zone', 'est_actif']
-    search_fields = ['code', 'libelle']
+    list_display = ['code', 'nom', 'libelle', 'type_zone', 'badge_couleur', 'ordre', 'actif']
+    list_filter = ['type_zone', 'actif']
+    search_fields = ['code', 'nom', 'libelle']
     inlines = [RayonInline]
+    ordering = ['ordre', 'code']
 
     @admin.display(description=_('Couleur'))
     def badge_couleur(self, obj):
         return format_html(
-            '<span style="background:{};padding:4px 12px;border-radius:4px;">&nbsp;</span>',
+            '<span style="background:{};padding:4px 12px;border-radius:4px;border:1px solid #ddd;">&nbsp;</span>',
             obj.couleur
         )
 
@@ -39,10 +46,39 @@ class EmplacementInline(admin.TabularInline):
 
 @admin.register(Rayon)
 class RayonAdmin(admin.ModelAdmin):
-    list_display = ['code', 'libelle', 'zone', 'orientation', 'nombre_niveaux', 'nombre_colonnes', 'est_actif']
-    list_filter = ['zone', 'orientation', 'est_actif']
-    search_fields = ['code', 'libelle', 'zone__code']
-    inlines = [EmplacementInline]
+    list_display = ['code', 'nom', 'zone', 'type_stock', 'statut', 'badge_couleur', 'actif']
+    list_filter = ['zone', 'type_stock', 'statut', 'actif']
+    search_fields = ['code', 'nom', 'libelle', 'zone__code']
+    inlines = [NiveauRayonInline, EmplacementInline]
+
+    @admin.display(description=_('Couleur'))
+    def badge_couleur(self, obj):
+        return format_html(
+            '<span style="background:{};padding:4px 12px;border-radius:4px;border:1px solid #ddd;">&nbsp;</span>',
+            obj.couleur
+        )
+
+
+@admin.register(NiveauRayon)
+class NiveauRayonAdmin(admin.ModelAdmin):
+    list_display = ['rayon', 'numero', 'libelle', 'capacite_max', 'actif']
+    list_filter = ['rayon__zone', 'actif']
+    search_fields = ['rayon__code', 'libelle']
+
+
+@admin.register(AffectationStock)
+class AffectationStockAdmin(admin.ModelAdmin):
+    list_display = ['niveau', 'article_display', 'quantite_affectee', 'date_affectation', 'actif']
+    list_filter = ['actif', 'date_affectation', 'niveau__rayon__zone']
+    search_fields = ['matiere_premiere__nom', 'produit_fini__nom', 'niveau__rayon__code']
+
+    @admin.display(description=_('Article'))
+    def article_display(self, obj):
+        if obj.matiere_premiere:
+            return format_html('<span class="badge bg-info">MP</span> {}', obj.matiere_premiere)
+        if obj.produit_fini:
+            return format_html('<span class="badge bg-success">PF</span> {}', obj.produit_fini)
+        return "—"
 
 
 @admin.register(Emplacement)

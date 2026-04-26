@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Rapport Magasin{% endblock %}
+{% block active_dashboard %}active{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:rapports' %}">Centre de Rapports</a></li>
+<li class="breadcrumb-item active">Magasin & Zones</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold">Analyse Logistique</h4>
+        <p class="text-muted mb-0 small">Taux d'occupation des zones, répartition des emplacements et optimisation spatiale.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'dashboard:export-rapport' 'magasin' 'csv' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Total Emplacements</p>
+                <h4 class="fw-bold mb-0">{{ total }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Occupés</p>
+                <h4 class="fw-bold mb-0 text-primary">{{ occupes }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Libres</p>
+                <h4 class="fw-bold mb-0 text-success">{{ libres }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Bloqués</p>
+                <h4 class="fw-bold mb-0 text-danger">{{ bloques }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel shadow-sm">
+    <div class="panel-header bg-light">
+        <h6 class="mb-0 fw-bold">Occupation par Zone</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Zone</th>
+                    <th>Code</th>
+                    <th>Emplacements</th>
+                    <th>Occupation</th>
+                    <th style="width: 300px;">Progression</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for z in zones %}
+                <tr>
+                    <td class="fw-bold">{{ z.nom }}</td>
+                    <td><code>{{ z.code }}</code></td>
+                    <td>{{ z.nb_occ }} / {{ z.nb_total }}</td>
+                    <td>
+                        {% if z.nb_total > 0 %}
+                        {{ z.nb_occ|divide:z.nb_total|multiply:100|floatformat:1 }}%
+                        {% else %}
+                        0%
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar {% if z.nb_occ|divide:z.nb_total|multiply:100 > 90 %}bg-danger{% elif z.nb_occ|divide:z.nb_total|multiply:100 > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ z.nb_occ|divide:z.nb_total|multiply:100 }}%"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center py-4 text-muted">Aucune zone définie.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

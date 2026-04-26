@@ -1,100 +1,283 @@
 {% extends "base.html" %}
 {% load static %}
 {% load humanize %}
+{% load app_filters %}
 
-{% block title %}Tableau de bord{% endblock %}
+{% block title %}Tableau de bord - MediCare Industries{% endblock %}
 {% block active_dashboard %}active{% endblock %}
-{% block breadcrumb %}<li class="breadcrumb-item active">Tableau de bord principal</li>{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Tableau de bord</li>{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="mb-1 fw-bold">Vue exécutive</h4>
-            <p class="text-muted mb-0 fs-13">Aperçu en temps réel de votre stock pharmaceutique.</p>
+<div class="container-fluid p-0">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <h4 class="mb-1 fw-bold">MediCare Industries — Vue Exécutive</h4>
+            <p class="text-muted mb-0 small">Tableau de bord de pilotage rapide et actions prioritaires.</p>
         </div>
-        <div>
-            <button class="btn btn-primary" onclick="rafraichirKPIs()">
-                <i class="bi bi-arrow-clockwise me-2"></i>Rafraîchir
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+            <button class="btn btn-primary btn-sm shadow-sm" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Actualiser
             </button>
         </div>
     </div>
-</div>
 
-<!-- KPIs -->
-<div class="row g-3 mb-4" id="kpi-refresh-zone">
-    <!-- Valeur du stock -->
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-icon bg-primary-soft">
-                <i class="bi bi-wallet2"></i>
-            </div>
-            <div>
-                <div class="kpi-value" id="kpi-valeur_stock" data-format-number>{{ kpi_valeur_stock|default:0 }}</div>
-                <div class="kpi-label">Valeur du stock (DH)</div>
+    <!-- LIGNE 1 : KPIs EXÉCUTIFS (GRILLE 4x2) -->
+    <div class="row g-3 mb-4">
+        <!-- Matières Premières Total -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-primary-soft text-primary rounded-circle p-2 me-3">
+                            <i class="bi bi-box-seam fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Total MP</p>
+                            <h4 class="mb-0 fw-bold">{{ kpi_mp_total }}</h4>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Ruptures -->
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-icon bg-danger-soft">
-                <i class="bi bi-x-octagon"></i>
+        <!-- Produits Finis Total -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-purple-soft text-purple rounded-circle p-2 me-3">
+                            <i class="bi bi-package fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Total PF</p>
+                            <h4 class="mb-0 fw-bold">{{ kpi_pf_total }}</h4>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div>
-                <div class="kpi-value text-danger" id="kpi-nb_ruptures">{{ kpi_nb_ruptures|default:0 }}</div>
-                <div class="kpi-label">Ruptures de stock</div>
+        </div>
+        <!-- Ruptures Stock -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-danger-soft text-danger rounded-circle p-2 me-3">
+                            <i class="bi bi-exclamation-octagon fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Ruptures</p>
+                            <h4 class="mb-0 fw-bold text-danger">{{ kpi_ruptures }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Articles Critiques -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-warning-soft text-warning rounded-circle p-2 me-3">
+                            <i class="bi bi-graph-down-arrow fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Critiques</p>
+                            <h4 class="mb-0 fw-bold text-warning">{{ kpi_critiques }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commandes en retard -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-danger-soft text-danger rounded-circle p-2 me-3">
+                            <i class="bi bi-clock-history fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Commandes Retard</p>
+                            <h4 class="mb-0 fw-bold text-danger">{{ kpi_commandes_retard }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Propositions à valider -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-info-soft text-info rounded-circle p-2 me-3">
+                            <i class="bi bi-calendar-check fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Props. à valider</p>
+                            <h4 class="mb-0 fw-bold text-info">{{ kpi_propositions_valider }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Occupation Magasin -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-success-soft text-success rounded-circle p-2 me-3">
+                            <i class="bi bi-grid-3x3-gap fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Magasin</p>
+                            <h4 class="mb-0 fw-bold">{{ kpi_mag_occupation }}%</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Valeur Totale Stock -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-dark-soft text-dark rounded-circle p-2 me-3">
+                            <i class="bi bi-currency-dollar fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Valeur Stock</p>
+                            <h4 class="mb-0 fw-bold">{{ kpi_valeur_totale|floatformat:0|intcomma }} <small class="fs-10">DH</small></h4>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Alertes Stock -->
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-icon bg-warning-soft">
-                <i class="bi bi-exclamation-triangle"></i>
+    <!-- LIGNE 2 : ANALYSE GRAPHIQUE (COURTS) -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0 fw-bold">Flux Mouvements (30j)</h6>
+                </div>
+                <div class="card-body p-0 px-3 pb-3">
+                    <div style="height: 220px;">
+                        <canvas id="chart-mouvements"></canvas>
+                    </div>
+                </div>
             </div>
-            <div>
-                <div class="kpi-value text-warning" id="kpi-nb_alertes">{{ kpi_nb_alertes|default:0 }}</div>
-                <div class="kpi-label">Alertes de stock</div>
+        </div>
+        <div class="col-xl-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0 fw-bold">Statut Stock MP</h6>
+                </div>
+                <div class="card-body p-0 px-3 pb-3">
+                    <div style="height: 220px;">
+                        <canvas id="chart-stock-statut"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0 fw-bold">Statut Commandes</h6>
+                </div>
+                <div class="card-body p-0 px-3 pb-3">
+                    <div style="height: 220px;">
+                        <canvas id="chart-commandes-statut"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Commandes en attente -->
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-icon bg-success-soft">
-                <i class="bi bi-cart"></i>
-            </div>
-            <div>
-                <div class="kpi-value text-success" id="kpi-nb_commandes_attente">{{ kpi_commandes_en_attente|default:0 }}</div>
-                <div class="kpi-label">Commandes en attente</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Graphiques -->
-<div class="row mb-4">
-    <div class="col-md-8">
-        <div class="panel h-100">
-            <div class="panel-header">
-                <h5 class="panel-title">Évolution des Entrées / Sorties (30j)</h5>
-            </div>
-            <div class="panel-body" style="height: 300px;">
-                <canvas id="chart-mouvements"></canvas>
+    <!-- LIGNE 3 : ACTIONS URGENTES -->
+    <div class="row g-4 mb-4">
+        <!-- Ruptures MP -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-box me-2"></i>MP en rupture</h6>
+                    <a href="{% url 'produits:matiere-liste' %}?statut=rupture" class="text-muted small">Tout voir</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush small">
+                        {% for item in top_mp_rupture %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span class="text-truncate" style="max-width: 150px;">{{ item.nom }}</span>
+                            <span class="badge bg-danger-soft text-danger">0 {{ item.unite.symbole }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-center text-muted my-4">Aucune rupture.</p>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="panel h-100">
-            <div class="panel-header">
-                <h5 class="panel-title">Valorisation par Catégorie</h5>
+        <!-- Ruptures PF -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-package me-2"></i>PF en rupture</h6>
+                    <a href="{% url 'produits:produit-fini-liste' %}?statut=rupture" class="text-muted small">Tout voir</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush small">
+                        {% for item in top_pf_rupture %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span class="text-truncate" style="max-width: 150px;">{{ item.nom }}</span>
+                            <span class="badge bg-danger-soft text-danger">0 {{ item.unite.symbole }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-center text-muted my-4">Aucune rupture.</p>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
-            <div class="panel-body" style="height: 300px;">
-                <canvas id="chart-valorisation"></canvas>
+        </div>
+        <!-- Retards Commandes -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-warning"><i class="bi bi-truck me-2"></i>Retards BC</h6>
+                    <a href="{% url 'approvisionnement:commande-liste' %}?statut=retard" class="text-muted small">Tout voir</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush small">
+                        {% for bc in cmd_retard_liste %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span>{{ bc.reference }}</span>
+                            <span class="text-danger fw-bold">{{ bc.date_reception_prevue|date:"d/m" }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-center text-muted my-4">Aucun retard.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Propositions MRP -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-info"><i class="bi bi-cpu me-2"></i>Props. MRP</h6>
+                    <a href="{% url 'approvisionnement:commandes-a-valider' %}" class="text-muted small">Tout voir</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush small">
+                        {% for prop in mrp_propositions %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span class="text-truncate" style="max-width: 120px;">{{ prop.matiere.nom }}</span>
+                            <span class="fw-bold">{{ prop.quantite_proposee|floatformat:0 }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-center text-muted my-4">Aucune proposition.</p>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -104,40 +287,69 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Charger stats Mouvements
+    
+    // Config globale Chart.js
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = "#64748b";
+    
+    // 1. Évolution Mouvements
     fetch('{% url "dashboard:api-mouvements" %}')
         .then(res => res.json())
         .then(data => {
-            const labels = data.entrees.map(d => d.date);
-            const entrees = data.entrees.map(d => d.total);
-            const sorties = data.sorties.map(d => d.total);
-            
-            StockProCharts.creerGraphiqueLigne('chart-mouvements', {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Entrées',
-                        data: entrees,
-                        borderColor: StockProCharts.colors.success,
-                        backgroundColor: 'transparent',
-                        tension: 0.3
-                    },
-                    {
-                        label: 'Sorties',
-                        data: sorties,
-                        borderColor: StockProCharts.colors.danger,
-                        backgroundColor: 'transparent',
-                        tension: 0.3
-                    }
-                ]
+            new Chart(document.getElementById('chart-mouvements'), {
+                type: 'line',
+                data: {
+                    labels: data.entrees.map(d => d.date),
+                    datasets: [
+                        { label: 'Entrées', data: data.entrees.map(d => d.total), borderColor: '#10b981', backgroundColor: '#10b98122', fill: true, tension: 0.3 },
+                        { label: 'Sorties', data: data.sorties.map(d => d.total), borderColor: '#ef4444', backgroundColor: '#ef444422', fill: true, tension: 0.3 }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 12, usePointStyle: true } } },
+                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+                }
             });
         });
 
-    // Charger statistiques de valorisation
-    fetch('{% url "dashboard:api-valorisation" %}')
+    // 2. Statut Stock
+    fetch('{% url "dashboard:api-stock-statut" %}')
         .then(res => res.json())
         .then(data => {
-            StockProCharts.creerCamembert('chart-valorisation', data.labels, data.valeurs, data.couleurs);
+            new Chart(document.getElementById('chart-stock-statut'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{ data: data.valeurs, backgroundColor: data.couleurs, borderWidth: 0 }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true } } }
+                }
+            });
+        });
+
+    // 3. Statut Commandes
+    fetch('{% url "dashboard:api-commandes-statut" %}')
+        .then(res => res.json())
+        .then(data => {
+            new Chart(document.getElementById('chart-commandes-statut'), {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{ data: data.valeurs, backgroundColor: data.couleurs, borderRadius: 5 }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+                }
+            });
         });
 });
 </script>

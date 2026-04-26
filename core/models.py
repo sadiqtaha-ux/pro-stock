@@ -147,6 +147,15 @@ class JournalActivite(models.Model):
         DECONNEXION = 'LOGOUT', _('Déconnexion')
         EXPORT = 'EXPORT', _('Export')
         IMPRESSION = 'PRINT', _('Impression')
+        VALIDATION = 'VALIDATION', _('Validation')
+        REJET = 'REJET', _('Rejet')
+        ACTIVATION = 'ACTIVATION', _('Activation')
+        DESACTIVATION = 'DESACTIVATION', _('Désactivation')
+
+    class Niveau(models.TextChoices):
+        INFO = 'INFO', _('Information')
+        WARNING = 'WARNING', _('Avertissement')
+        ERROR = 'ERROR', _('Erreur')
 
     utilisateur = models.ForeignKey(
         Utilisateur,
@@ -159,6 +168,12 @@ class JournalActivite(models.Model):
         max_length=20,
         choices=TypeAction.choices,
         verbose_name=_('Action'),
+    )
+    niveau = models.CharField(
+        max_length=10,
+        choices=Niveau.choices,
+        default=Niveau.INFO,
+        verbose_name=_('Niveau'),
     )
     modele = models.CharField(
         max_length=100,

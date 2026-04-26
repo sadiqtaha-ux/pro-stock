@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+{% load app_filters %}
+
+{% block title %}Planificateur - Kanban{% endblock %}
+{% block active_appro %}active{% endblock %}
+{% block show_appro %}show{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-1 fw-bold">Planificateur Kanban — Propositions</h4>
+            <p class="text-muted mb-0 fs-13">Gérez vos propositions de commande par état.</p>
+        </div>
+        <div class="d-flex align-items-center">
+            {% include 'components/view_toggle.html' with current_view='kanban' %}
+            {% include 'components/export_dropdown.html' %}
+            <form method="post" class="ms-2">
+                {% csrf_token %}
+                <input type="hidden" name="force" value="0">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-play-circle me-1"></i>Lancer calcul
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-center">
+            <input type="hidden" name="view" value="kanban">
+            <div class="col-md-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Matière..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select name="methode" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Toutes méthodes</option>
+                    {% for val, label in methodes_choices %}
+                    <option value="{{ val }}" {% if request.GET.methode == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="fournisseur" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tous fournisseurs</option>
+                    {% for f in fournisseurs_actifs %}
+                    <option value="{{ f.id }}" {% if request.GET.fournisseur == f.id|stringformat:"i" %}selected{% endif %}>{{ f.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="urgence" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tout degré</option>
+                    <option value="1" {% if request.GET.urgence == "1" %}selected{% endif %}>Urgentes uniquement</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <a href="?view=kanban" class="btn btn-light btn-sm w-100 border text-muted">Réinitialiser les filtres</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="kanban-board d-flex gap-3 overflow-auto pb-3" style="min-height: 70vh;">
+    <!-- Colonne EN_ATTENTE -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-primary rounded-circle p-1 me-2"><i class="bi bi-lightbulb-fill text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Proposées</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ propositions|filter_attr:'statut:EN_ATTENTE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for p in propositions %}
+                {% if p.statut == 'EN_ATTENTE' %}
+                    {% include 'approvisionnement/planificateur/kanban_card.html' with prop=p %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne VALIDEE -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-info rounded-circle p-1 me-2"><i class="bi bi-check-circle-fill text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Validées</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ propositions|filter_attr:'statut:VALIDEE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for p in propositions %}
+                {% if p.statut == 'VALIDEE' %}
+                    {% include 'approvisionnement/planificateur/kanban_card.html' with prop=p %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne REJETEE -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-danger rounded-circle p-1 me-2"><i class="bi bi-x-circle-fill text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Rejetées</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ propositions|filter_attr:'statut:REJETEE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for p in propositions %}
+                {% if p.statut == 'REJETEE' %}
+                    {% include 'approvisionnement/planificateur/kanban_card.html' with prop=p %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne CONVERTIE -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-success rounded-circle p-1 me-2"><i class="bi bi-file-earmark-check-fill text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Converties</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ propositions|filter_attr:'statut:CONVERTIE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for p in propositions %}
+                {% if p.statut == 'CONVERTIE' %}
+                    {% include 'approvisionnement/planificateur/kanban_card.html' with prop=p %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .kanban-board { min-height: 500px; }
+    .kanban-items { min-height: 100px; padding: 2px; }
+    .kanban-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+    .kanban-card.border-danger { border-width: 2px !important; }
+</style>
+{% endblock %}

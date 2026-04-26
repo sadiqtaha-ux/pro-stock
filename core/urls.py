@@ -20,7 +20,9 @@ urlpatterns = [
     # Gestion utilisateurs
     path('utilisateurs/', views.UtilisateurListeView.as_view(), name='utilisateurs-liste'),
     path('utilisateurs/nouveau/', views.UtilisateurCreerView.as_view(), name='utilisateurs-creer'),
+    path('utilisateurs/<int:pk>/', views.UtilisateurDetailView.as_view(), name='utilisateurs-detail'),
     path('utilisateurs/<int:pk>/modifier/', views.UtilisateurModifierView.as_view(), name='utilisateurs-modifier'),
+    path('utilisateurs/<int:pk>/toggle-actif/', views.UtilisateurToggleActifView.as_view(), name='utilisateurs-toggle-actif'),
 
     # Notifications
     path('notifications/', views.NotificationsView.as_view(), name='notifications'),

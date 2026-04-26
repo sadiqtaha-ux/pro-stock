@@ -1,6 +1,38 @@
 {% extends 'base.html' %}
 {% block title %}Nouveau plan MRP{% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const matieresMap = {{ matieres_decimales_json|safe }};
+    const matiereSelect = document.querySelector('[name="matiere"]');
+    const qtyFields = [
+        '[name="besoin_brut"]',
+        '[name="stock_debut_periode"]',
+        '[name="besoin_net"]',
+        '[name="quantite_proposee"]',
+        '[name="stock_fin_periode"]'
+    ];
+    
+    function updateSteps() {
+        const id = matiereSelect.value;
+        const allowDecimals = id ? matieresMap[id] : true;
+        const stepValue = allowDecimals ? "0.0001" : "1";
+        
+        qtyFields.forEach(sel => {
+            const el = document.querySelector(sel);
+            if (el) el.setAttribute('step', stepValue);
+        });
+    }
+    
+    if (matiereSelect) {
+        matiereSelect.addEventListener('change', updateSteps);
+        updateSteps(); // Initial call
+    }
+});
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-4">

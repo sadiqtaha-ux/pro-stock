@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Détails Utilisateur - {{ u.username }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:utilisateurs-liste' %}">Utilisateurs</a></li>
+<li class="breadcrumb-item active">{{ u.username }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center"
+             style="width:64px;height:64px;font-size:1.5rem;">
+            {{ u.first_name|first|upper }}{{ u.last_name|first|upper }}
+        </div>
+        <div>
+            <h4 class="mb-1 fw-bold">{{ u.get_full_name|default:u.username }}</h4>
+            <span class="badge bg-light text-dark border">{{ u.get_role_display }}</span>
+            {% if u.is_superuser %}<span class="badge bg-danger ms-1">Superadmin</span>{% endif %}
+            {% if u.is_staff %}<span class="badge bg-primary ms-1">Staff</span>{% endif %}
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'core:utilisateurs-modifier' u.pk %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+        <form method="post" action="{% url 'core:utilisateurs-toggle-actif' u.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-{% if u.est_actif %}danger{% else %}success{% endif %} btn-sm">
+                <i class="bi bi-power me-1"></i>{% if u.est_actif %}Désactiver{% else %}Activer{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Infos principales -->
+    <div class="col-md-4">
+        <div class="panel h-100">
+            <div class="panel-header border-bottom mb-3">
+                <h6 class="mb-0 fw-bold">Informations générales</h6>
+            </div>
+            <div class="list-group list-group-flush">
+                <div class="list-group-item px-0">
+                    <div class="small text-muted">Identifiant</div>
+                    <div class="fw-medium">@{{ u.username }}</div>
+                </div>
+                <div class="list-group-item px-0">
+                    <div class="small text-muted">Email</div>
+                    <div class="fw-medium">{{ u.email|default:"—" }}</div>
+                </div>
+                <div class="list-group-item px-0">
+                    <div class="small text-muted">Statut</div>
+                    <div>
+                        {% if u.est_actif %}
+                            <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Compte actif</span>
+                        {% else %}
+                            <span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>Compte désactivé</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="list-group-item px-0">
+                    <div class="small text-muted">Date d'inscription</div>
+                    <div class="fw-medium">{{ u.date_joined|date:"d F Y" }}</div>
+                </div>
+                <div class="list-group-item px-0">
+                    <div class="small text-muted">Dernière connexion</div>
+                    <div class="fw-medium">{{ u.date_derniere_connexion|date:"d/m/Y H:i"|default:"Jamais" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activités récentes -->
+    <div class="col-md-8">
+        <div class="panel h-100">
+            <div class="panel-header border-bottom mb-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">Activités récentes</h6>
+                <a href="{% url 'core:journal' %}?utilisateur={{ u.id }}" class="small">Voir tout le journal</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle fs-13">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Action</th>
+                            <th>Modèle</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in activites %}
+                        <tr>
+                            <td class="text-muted">{{ log.date_action|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if log.action == 'CREATE' %}
+                                    <span class="text-success">Création</span>
+                                {% elif log.action == 'UPDATE' %}
+                                    <span class="text-warning">Modif.</span>
+                                {% elif log.action == 'DELETE' %}
+                                    <span class="text-danger">Suppr.</span>
+                                {% else %}
+                                    {{ log.get_action_display }}
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-light text-dark border fw-normal">{{ log.modele }}</span></td>
+                            <td class="text-truncate" style="max-width: 250px;">{{ log.description }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">Aucune activité récente.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

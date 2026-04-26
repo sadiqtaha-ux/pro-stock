@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Alertes et Notifications" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">{% trans "Alertes" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 fw-bold">{% trans "Centre d'Alertes" %}</h4>
+            <p class="text-muted mb-0 small">{% trans "Suivez les urgences stock, approvisionnement et magasin en temps réel." %}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <span class="badge {% if total_alertes > 0 %}bg-danger{% else %}bg-success{% endif %} fs-6 px-3 py-2">
+                {{ total_alertes }} {% trans "alerte" %}{{ total_alertes|pluralize }}
+            </span>
+        </div>
+    </div>
+
+    {% if alertes %}
+    <div class="row">
+        <!-- Filtres rapides -->
+        <div class="col-12 mb-3">
+            <div class="d-flex gap-2 overflow-auto pb-2">
+                <button class="btn btn-sm btn-outline-secondary active filter-btn" data-filter="all">{% trans "Toutes" %}</button>
+                <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="danger">{% trans "Critiques" %}</button>
+                <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="warning">{% trans "Avertissements" %}</button>
+                <button class="btn btn-sm btn-outline-info filter-btn" data-filter="info">{% trans "Informations" %}</button>
+                <hr class="vr mx-2">
+                <button class="btn btn-sm btn-outline-primary filter-btn" data-filter="stock">{% trans "Stock" %}</button>
+                <button class="btn btn-sm btn-outline-primary filter-btn" data-filter="appro">{% trans "Appro" %}</button>
+                <button class="btn btn-sm btn-outline-primary filter-btn" data-filter="magasin">{% trans "Magasin" %}</button>
+            </div>
+        </div>
+
+        <!-- Liste des alertes -->
+        <div class="col-12">
+            <div class="row g-3" id="alertes-container">
+                {% for alerte in alertes %}
+                <div class="col-md-6 col-lg-4 alerte-item" data-level="{{ alerte.level }}" data-category="{{ alerte.category }}">
+                    <div class="card h-100 border-start border-4 border-{{ alerte.level }} shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-{{ alerte.level }}-subtle text-{{ alerte.level }} border border-{{ alerte.level }}-subtle mb-2">
+                                    {{ alerte.type }}
+                                </span>
+                                <small class="text-muted" title="{{ alerte.date|date:'d/m/Y H:i' }}">
+                                    {{ alerte.date|timesince }}
+                                </small>
+                            </div>
+                            <h6 class="card-title fw-bold mb-2">{{ alerte.title }}</h6>
+                            <p class="card-text small text-muted mb-3">
+                                {{ alerte.message }}
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 pt-0 pb-3">
+                            <a href="{{ alerte.url }}" class="btn btn-sm btn-outline-{{ alerte.level }} w-100">
+                                {% trans "Gérer l'alerte" %} <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card shadow-sm border-0 py-5">
+        <div class="card-body text-center">
+            <div class="mb-3">
+                <i class="bi bi-check-circle text-success opacity-25" style="font-size: 5rem;"></i>
+            </div>
+            <h5 class="fw-bold">{% trans "Tout est sous contrôle" %}</h5>
+            <p class="text-muted">{% trans "Aucune alerte active pour le moment." %}</p>
+            <a href="{% url 'dashboard:index' %}" class="btn btn-primary mt-2">
+                {% trans "Retour au tableau de bord" %}
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .alerte-item { transition: transform 0.2s; }
+    .alerte-item:hover { transform: translateY(-3px); }
+    .fs-13 { font-size: 13px; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const items = document.querySelectorAll('.alerte-item');
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // UI
+            filterButtons.forEach(b => b.classList.remove('active', 'btn-secondary', 'btn-danger', 'btn-warning', 'btn-info', 'btn-primary'));
+            filterButtons.forEach(b => b.classList.add('btn-outline-secondary', 'btn-outline-danger', 'btn-outline-warning', 'btn-outline-info', 'btn-outline-primary'));
+            this.classList.add('active');
+            
+            const filter = this.getAttribute('data-filter');
+
+            items.forEach(item => {
+                if (filter === 'all') {
+                    item.style.display = 'block';
+                } else {
+                    const level = item.getAttribute('data-level');
+                    const category = item.getAttribute('data-category');
+                    if (level === filter || category === filter) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

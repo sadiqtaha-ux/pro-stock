@@ -12,9 +12,12 @@
         <h4 class="mb-1 fw-bold">Gestion des utilisateurs</h4>
         <p class="text-muted mb-0 fs-13">Administration des comptes et des droits d'accès.</p>
     </div>
-    <a href="{% url 'core:utilisateur-creer' %}" class="btn btn-primary btn-sm">
-        <i class="bi bi-person-plus me-1"></i>Nouvel utilisateur
-    </a>
+    <div class="d-flex gap-2">
+        {% include 'components/export_dropdown.html' %}
+        <a href="{% url 'core:utilisateurs-creer' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-person-plus me-1"></i>Nouvel utilisateur
+        </a>
+    </div>
 </div>
 
 <!-- KPIs -->
@@ -85,8 +88,10 @@
                     <th>Utilisateur</th>
                     <th>Rôle</th>
                     <th>Email</th>
+                    <th>Staff</th>
                     <th>Statut</th>
                     <th>Dernière connexion</th>
+                    <th>Créé le</th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
@@ -130,6 +135,14 @@
                         </a>
                         {% else %}—{% endif %}
                     </td>
+                    <!-- Staff -->
+                    <td>
+                        {% if utilisateur.is_staff %}
+                            <i class="bi bi-shield-check text-primary" title="Accès Staff"></i>
+                        {% else %}
+                            <i class="bi bi-person text-muted" title="Utilisateur Standard"></i>
+                        {% endif %}
+                    </td>
                     <!-- Statut -->
                     <td>
                         {% if utilisateur.est_actif %}
@@ -142,17 +155,34 @@
                     <td class="small text-muted">
                         {{ utilisateur.date_derniere_connexion|date:"d/m/Y H:i"|default:"Jamais" }}
                     </td>
+                    <!-- Créé le -->
+                    <td class="small text-muted">
+                        {{ utilisateur.date_joined|date:"d/m/Y" }}
+                    </td>
                     <!-- Actions -->
                     <td class="text-end">
-                        <a href="{% url 'core:utilisateur-modifier' utilisateur.pk %}"
-                           class="btn btn-sm btn-outline-secondary" title="Modifier">
-                            <i class="bi bi-pencil"></i>
-                        </a>
+                        <div class="btn-group">
+                            <a href="{% url 'core:utilisateurs-detail' utilisateur.pk %}"
+                               class="btn btn-sm btn-outline-info" title="Voir détails">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'core:utilisateurs-modifier' utilisateur.pk %}"
+                               class="btn btn-sm btn-outline-secondary" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="post" action="{% url 'core:utilisateurs-toggle-actif' utilisateur.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-{% if utilisateur.est_actif %}danger{% else %}success{% endif %}" 
+                                        title="{% if utilisateur.est_actif %}Désactiver{% else %}Activer{% endif %}">
+                                    <i class="bi bi-power"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center py-5 text-muted">
+                    <td colspan="8" class="text-center py-5 text-muted">
                         <i class="bi bi-people fs-1 d-block mb-2"></i>
                         Aucun utilisateur trouvé
                         {% if request.GET.q %} pour "<strong>{{ request.GET.q }}</strong>"{% endif %}

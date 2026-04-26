@@ -1,0 +1,29 @@
+{% comment %}
+Carte pour la vue Kanban Matière Première.
+{% endcomment %}
+<div class="card kanban-card border shadow-sm" onclick="location.href='{% url 'produits:matiere-detail' matiere.pk %}'">
+    <div class="card-body p-3">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="text-muted fs-11 fw-bold">{{ matiere.reference }}</span>
+            <span class="badge bg-light text-dark border fs-10">{{ matiere.get_categorie_display }}</span>
+        </div>
+        <h6 class="card-title mb-2 fs-14 fw-bold">{{ matiere.nom }}</h6>
+        
+        <div class="d-flex align-items-center mb-2">
+            <div class="flex-grow-1">
+                <div class="progress" style="height: 4px;">
+                    {% with val=matiere.taux_remplissage %}
+                    <div class="progress-bar {% if val < 20 %}bg-danger{% elif val < 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                         role="progressbar" style="width: {{ val }}%" aria-valuenow="{{ val }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    {% endwith %}
+                </div>
+            </div>
+            <span class="ms-2 fs-11 fw-bold">{{ matiere.stock_actuel|floatformat:2 }} {{ matiere.unite.symbole }}</span>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+            <span class="fs-10 text-muted">ABC: <strong>{{ matiere.classe_abc|default:"-" }}</strong></span>
+            <span class="fs-10 text-muted">Méthode: <strong>{{ matiere.methode_approvisionnement }}</strong></span>
+        </div>
+    </div>
+</div>

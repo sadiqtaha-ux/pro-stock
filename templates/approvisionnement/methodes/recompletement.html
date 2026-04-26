@@ -69,8 +69,8 @@
             </td>
             <td>
               {% if m.stock_actuel <= m.point_commande %}
-              <a href="{% url 'approvisionnement:commande-create' %}?matiere={{ m.pk }}" class="btn btn-sm btn-danger">
-                <i class="bi bi-cart-plus"></i> Commander
+              <a href="{% url 'approvisionnement:commandes-a-valider' %}?q={{ m.reference }}" class="btn btn-sm btn-danger">
+                  <i class="bi bi-cart-plus me-1"></i> Planifier
               </a>
               {% endif %}
             </td>

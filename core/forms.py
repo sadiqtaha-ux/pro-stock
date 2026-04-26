@@ -143,6 +143,20 @@ class UtilisateurCreationForm(UserCreationForm):
             'est_actif',
             Submit('submit', _('Créer l\'utilisateur'), css_class='btn btn-primary'),
         )
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        # Gestion du rôle d'administration
+        if user.role == Utilisateur.Role.ADMIN:
+            user.is_staff = True
+        else:
+            user.is_staff = False
+        
+        # Synchronisation est_actif / is_active
+        user.is_active = user.est_actif
+        
+        if commit:
+            user.save()
+        return user
 
 
 class UtilisateurModificationForm(forms.ModelForm):
@@ -160,3 +174,31 @@ class UtilisateurModificationForm(forms.ModelForm):
             'service': forms.TextInput(attrs={'class': 'form-control'}),
             'telephone': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            if not field.widget.attrs.get('class'):
+                field.widget.attrs['class'] = 'form-control'
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Row(Column('username', css_class='col-md-6'), Column('role', css_class='col-md-6')),
+            Row(Column('first_name', css_class='col-md-6'), Column('last_name', css_class='col-md-6')),
+            Row(Column('email', css_class='col-md-6'), Column('telephone', css_class='col-md-6')),
+            'service',
+            Row(Column('est_actif', css_class='col-md-6'), Column('is_staff', css_class='col-md-6')),
+            Submit('submit', _('Enregistrer les modifications'), css_class='btn btn-success'),
+        )
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        # Gestion automatique du staff si role ADMIN
+        if user.role == Utilisateur.Role.ADMIN:
+            user.is_staff = True
+        
+        # Synchronisation est_actif / is_active
+        user.is_active = user.est_actif
+        
+        if commit:
+            user.save()
+        return user

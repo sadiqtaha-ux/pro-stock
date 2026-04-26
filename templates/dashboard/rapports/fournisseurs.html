@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Rapport Fournisseurs{% endblock %}
+{% block active_dashboard %}active{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:rapports' %}">Centre de Rapports</a></li>
+<li class="breadcrumb-item active">Fournisseurs</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold">Performance Fournisseurs</h4>
+        <p class="text-muted mb-0 small">Analyse du panel, volumes d'achats et fiabilité des livraisons.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'dashboard:export-rapport' 'fournisseurs' 'csv' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Fournisseurs Actifs</p>
+                <h4 class="fw-bold mb-0 text-success">{{ fournisseurs_actifs }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">À Surveiller</p>
+                <h4 class="fw-bold mb-0 text-warning">{{ fournisseurs_surveiller }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Total Commandes</p>
+                <h4 class="fw-bold mb-0">{{ fournisseurs.count }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light">
+                <tr>
+                    <th>Fournisseur</th>
+                    <th>Statut</th>
+                    <th class="text-end">Commandes</th>
+                    <th class="text-end">Volume (DH)</th>
+                    <th class="text-end">Retards</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in fournisseurs %}
+                <tr>
+                    <td class="fw-bold">{{ f.nom }}</td>
+                    <td>
+                        {% if f.statut == 'ACTIF' %}
+                        <span class="badge bg-success-soft text-success">Actif</span>
+                        {% elif f.statut == 'A_SURVEILLER' %}
+                        <span class="badge bg-warning-soft text-warning">À Surveiller</span>
+                        {% else %}
+                        <span class="badge bg-secondary-soft text-secondary">Inactif</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">{{ f.nb_cmd }}</td>
+                    <td class="text-end fw-medium">{{ f.val_cmd|default:0|floatformat:0|intcomma }} DH</td>
+                    <td class="text-end">
+                        {% if f.nb_retards > 0 %}
+                        <span class="text-danger fw-bold">{{ f.nb_retards }}</span>
+                        {% else %}
+                        <span class="text-success">0</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center py-4 text-muted">Aucun fournisseur trouvé.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

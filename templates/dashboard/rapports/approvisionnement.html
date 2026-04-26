@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Rapport Approvisionnement{% endblock %}
+{% block active_dashboard %}active{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:rapports' %}">Centre de Rapports</a></li>
+<li class="breadcrumb-item active">Approvisionnement</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold">Statistiques Approvisionnement</h4>
+        <p class="text-muted mb-0 small">Suivi des ordres d'achat, retards de livraison et besoins imminents.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'dashboard:export-rapport' 'appro' 'csv' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Montant Engagé</p>
+                <h4 class="fw-bold mb-0 text-primary">{{ montant_engage|floatformat:0|intcomma }} DH</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Commandes Ouvertes</p>
+                <h4 class="fw-bold mb-0">{{ commandes_ouvertes.count }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Retards</p>
+                <h4 class="fw-bold mb-0 text-danger">{{ commandes_retard.count }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 py-2">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-1">Articles < ROP</p>
+                <h4 class="fw-bold mb-0 text-warning">{{ sous_rop.count }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Retards -->
+    <div class="col-md-6">
+        <div class="panel shadow-sm h-100">
+            <div class="panel-header bg-danger-soft">
+                <h6 class="mb-0 fw-bold text-danger">Livraisons en Retard</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Référence</th>
+                            <th>Fournisseur</th>
+                            <th>Prévu le</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bc in commandes_retard %}
+                        <tr>
+                            <td>{{ bc.reference }}</td>
+                            <td>{{ bc.fournisseur.nom }}</td>
+                            <td class="text-danger fw-bold">{{ bc.date_reception_prevue|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center py-3 text-muted">Aucun retard détecté.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- Propositions -->
+    <div class="col-md-6">
+        <div class="panel shadow-sm h-100">
+            <div class="panel-header bg-info-soft">
+                <h6 class="mb-0 fw-bold text-info">Propositions MRP Prioritaires</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Matière</th>
+                            <th>Quantité</th>
+                            <th>Urgence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prop in propositions|slice:":10" %}
+                        <tr>
+                            <td>{{ prop.matiere.nom }}</td>
+                            <td class="fw-bold">{{ prop.quantite_proposee }}</td>
+                            <td>
+                                {% if prop.urgence %}
+                                <span class="badge bg-danger">Haute</span>
+                                {% else %}
+                                <span class="badge bg-info">Standard</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center py-3 text-muted">Aucune proposition.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+{% load app_filters %}
+
+{% block title %}Emplacements - Kanban{% endblock %}
+{% block active_magasin %}active{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h4 class="mb-1 fw-bold">Vue Kanban — Emplacements</h4>
+        <p class="text-muted mb-0 fs-13">Occupation du magasin par état de disponibilité.</p>
+    </div>
+    <div class="col-auto d-flex align-items-center">
+        {% include 'components/view_toggle.html' with current_view='kanban' %}
+        {% include 'components/export_dropdown.html' %}
+        <a href="{% url 'magasin:emplacement-creer' %}" class="btn btn-primary btn-sm ms-2">
+            <i class="bi bi-plus-lg me-1"></i>Nouveau
+        </a>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-center">
+            <input type="hidden" name="view" value="kanban">
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Recherche..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="zone" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Toutes les zones</option>
+                    {% for z in zones %}
+                    <option value="{{ z.id }}" {% if request.GET.zone == z.id|stringformat:"i" %}selected{% endif %}>{{ z.code }} - {{ z.libelle }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 ms-auto">
+                <a href="?view=kanban" class="btn btn-light btn-sm w-100 border text-muted">Réinitialiser les filtres</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="kanban-board d-flex gap-3 overflow-auto pb-3" style="min-height: 70vh;">
+    <!-- Colonne LIBRE -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-success rounded-circle p-1 me-2"><i class="bi bi-unlock-fill text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Libres</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ emplacements|filter_attr:'statut:LIBRE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for e in emplacements %}
+                {% if e.statut == 'LIBRE' %}
+                    {% include 'magasin/emplacement/kanban_card.html' with emp=e %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne OCCUPE -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-primary rounded-circle p-1 me-2"><i class="bi bi-lock-fill text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Occupés</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ emplacements|filter_attr:'statut:OCCUPE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for e in emplacements %}
+                {% if e.statut == 'OCCUPE' %}
+                    {% include 'magasin/emplacement/kanban_card.html' with emp=e %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne SATURE -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-warning rounded-circle p-1 me-2"><i class="bi bi-exclamation-square-fill text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Saturés</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ emplacements|filter_attr:'statut:SATURE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for e in emplacements %}
+                {% if e.statut == 'SATURE' %}
+                    {% include 'magasin/emplacement/kanban_card.html' with emp=e %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne BLOQUE -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-danger rounded-circle p-1 me-2"><i class="bi bi-slash-circle-fill text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Bloqués</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ emplacements|filter_attr:'statut:BLOQUE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for e in emplacements %}
+                {% if e.statut == 'BLOQUE' %}
+                    {% include 'magasin/emplacement/kanban_card.html' with emp=e %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .kanban-board { min-height: 500px; }
+    .kanban-items { min-height: 100px; padding: 2px; }
+    .kanban-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+</style>
+{% endblock %}

@@ -6,12 +6,94 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.db.models import Q, Sum, F
+from django.db.models import Q, Sum, F, Count
 from decimal import Decimal
 
+from core.mixins import KanbanListMixin, ExportMixin
+from core.models import JournalActivite
+from core.utils import log_action
+
 from .models import BonCommande, PlanMRP, PropositionCommande
-from produits.models import MatierePremiere, Fournisseur
+from produits.models import MatierePremiere, Fournisseur, ProduitFini
+from produits.views import UnitValidationMixin
 from .planificateur import lancer_planification
+from .services import ExplosionBesoinsMRP
+import json
+
+
+# ============================================================
+# SIMULATEUR MRP (Explosion de Nomenclature)
+# ============================================================
+
+class SimulateurMRPView(LoginRequiredMixin, TemplateView):
+    """
+    Vue visuelle pour le calcul MRP basé sur un produit fini et une quantité.
+    """
+    template_name = "approvisionnement/mrp/simulateur.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        produit_id = self.request.GET.get("produit")
+        quantite   = self.request.GET.get("quantite", 1)
+        
+        ctx["produits_finis"] = ProduitFini.objects.filter(actif=True).order_by("nom")
+        
+        if produit_id:
+            produit = get_object_or_404(ProduitFini, pk=produit_id)
+            ctx["produit_selectionne"] = produit
+            ctx["quantite_cible"]      = float(quantite)
+            
+            # Explosion des besoins
+            ctx["resultats"] = ExplosionBesoinsMRP.calculer(produit, quantite)
+            
+            # Statistiques globales
+            ctx["nb_bloquants"] = sum(1 for r in ctx["resultats"] if r["bloquant"])
+            ctx["nb_a_commander"] = sum(1 for r in ctx["resultats"] if r["quantite_proposee"] > 0)
+            ctx["nb_mrp"] = sum(1 for r in ctx["resultats"] if r["statut"] != "NON_MRP")
+            ctx["nb_non_mrp"] = sum(1 for r in ctx["resultats"] if r["statut"] == "NON_MRP")
+            
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        """
+        Action pour transformer les besoins en propositions de commande.
+        """
+        produit_id = request.POST.get("produit_id")
+        quantites  = request.POST.getlist("quantites_prop")
+        matieres   = request.POST.getlist("matiere_ids")
+        
+        compteur = 0
+        for m_id, qte in zip(matieres, quantites):
+            qte_val = float(qte or 0)
+            if qte_val > 0:
+                m = get_object_or_404(MatierePremiere, pk=m_id)
+                PropositionCommande.objects.create(
+                    matiere=m,
+                    methode="MRP",
+                    quantite_proposee=qte_val,
+                    statut=PropositionCommande.Statut.EN_ATTENTE,
+                    urgence=(m.stock_actuel <= 0),
+                    detail_calcul={
+                        "origine": "SIMULATEUR_MRP",
+                        "produit_fini": produit_id,
+                        "regle": f"Généré depuis simulateur MRP pour PF ID {produit_id}"
+                    }
+                )
+                log_action(
+                    request,
+                    JournalActivite.TypeAction.CREATION,
+                    'PropositionCommande',
+                    None,
+                    f"Proposition MRP créée via simulateur pour {m.nom}"
+                )
+                compteur += 1
+        
+        if compteur > 0:
+            messages.success(request, f"{compteur} propositions de commande ont été créées.")
+            return redirect("approvisionnement:commandes-a-valider")
+        
+        messages.info(request, "Aucune proposition créée.")
+        return redirect(request.path + f"?produit={produit_id}")
 
 
 class ApproDashboardView(LoginRequiredMixin, TemplateView):
@@ -21,8 +103,8 @@ class ApproDashboardView(LoginRequiredMixin, TemplateView):
         ctx = super().get_context_data(**kwargs)
 
         # ── KPIs ──────────────────────────────────────────────
-        ctx["commandes_en_cours"] = BonCommande.objects.filter(
-            statut__in=[BonCommande.Statut.BROUILLON, BonCommande.Statut.ENVOYE]
+        ctx["commandes_en_cours"] = PropositionCommande.objects.filter(
+            statut=PropositionCommande.Statut.EN_ATTENTE
         ).count()
 
         ctx["nb_ruptures"] = MatierePremiere.objects.filter(
@@ -60,17 +142,23 @@ class ApproDashboardView(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-class BonCommandeListeView(LoginRequiredMixin, ListView):
+class BonCommandeListeView(LoginRequiredMixin, KanbanListMixin, ExportMixin, ListView):
     model               = BonCommande
     template_name       = "approvisionnement/commande/liste.html"
+    kanban_template_name = "approvisionnement/commande/kanban.html"
     context_object_name = "commandes"
     paginate_by         = 25
+    export_fields       = ['reference', 'matiere__nom', 'fournisseur__nom', 'quantite_commandee', 'prix_unitaire', 'montant_total', 'statut', 'date_creation']
+    export_headers      = ['Référence', 'Matière', 'Fournisseur', 'Qté Commandée', 'P.U.', 'Montant Total', 'Statut', 'Date Création']
 
     def get_queryset(self):
-        qs = BonCommande.objects.select_related("matiere", "fournisseur", "cree_par")
+        qs = BonCommande.objects.select_related("matiere", "fournisseur", "cree_par", "matiere__unite")
+        
+        # Filtres de base
         statut = self.request.GET.get("statut")
         if statut:
             qs = qs.filter(statut=statut)
+            
         q = self.request.GET.get("q")
         if q:
             qs = qs.filter(
@@ -78,33 +166,50 @@ class BonCommandeListeView(LoginRequiredMixin, ListView):
                 Q(matiere__nom__icontains=q) |
                 Q(fournisseur__nom__icontains=q)
             )
+            
         methode = self.request.GET.get("methode")
         if methode:
             qs = qs.filter(methode_declenchement=methode)
+            
         fournisseur_id = self.request.GET.get("fournisseur")
         if fournisseur_id:
             qs = qs.filter(fournisseur_id=fournisseur_id)
+            
+        # Filtres de dates
         date_from = self.request.GET.get("date_from")
         if date_from:
             qs = qs.filter(date_creation__date__gte=date_from)
+            
         date_to = self.request.GET.get("date_to")
         if date_to:
             qs = qs.filter(date_creation__date__lte=date_to)
+            
+        # Filtres spécifiques
+        retard = self.request.GET.get("retard")
+        if retard == "1":
+            from django.utils import timezone
+            qs = qs.exclude(statut__in=[BonCommande.Statut.RECU, BonCommande.Statut.ANNULE]).filter(
+                date_reception_prevue__lt=timezone.now().date()
+            )
+            
         return qs.order_by("-date_creation")
+
+    def get(self, request, *args, **kwargs):
+        export_type = request.GET.get('export')
+        if export_type == 'csv':
+            return self.render_to_csv(self.get_queryset(), filename_prefix="commandes")
+        elif export_type == 'pdf':
+            return self.render_to_pdf(self.get_queryset(), title="Registre des Commandes d'Achat", filename_prefix="commandes")
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["statuts"] = BonCommande.Statut.choices
+        ctx["statuts_choices"] = BonCommande.Statut.choices
         ctx["methodes_choices"] = BonCommande.MethodeDeclenchement.choices
         ctx["fournisseurs"] = Fournisseur.objects.filter(actif=True).order_by("nom")
         ctx["montant_total_en_cours"] = BonCommande.objects.filter(
             statut__in=[BonCommande.Statut.ENVOYE, BonCommande.Statut.CONFIRME]
         ).aggregate(total=Sum("montant_total"))["total"] or 0
-        # Compte les filtres actifs (hors pagination)
-        ctx["active_filters_count"] = sum(
-            1 for k, v in self.request.GET.items()
-            if k != "page" and v
-        )
         return ctx
 
 
@@ -114,25 +219,7 @@ class BonCommandeDetailView(LoginRequiredMixin, DetailView):
     context_object_name = "commande"
 
 
-class BonCommandeCreerView(LoginRequiredMixin, CreateView):
-    model         = BonCommande
-    template_name = "approvisionnement/commande/form.html"
-    fields        = [
-        "matiere", "fournisseur", "quantite_commandee", "prix_unitaire",
-        "methode_declenchement", "statut",
-        "date_reception_prevue", "notes"
-    ]
-
-    def form_valid(self, form):
-        form.instance.cree_par = self.request.user
-        messages.success(self.request, _("Bon de commande créé avec succès."))
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse_lazy("approvisionnement:commande-detail", kwargs={"pk": self.object.pk})
-
-
-class BonCommandeModifierView(LoginRequiredMixin, UpdateView):
+class BonCommandeModifierView(LoginRequiredMixin, UnitValidationMixin, UpdateView):
     model         = BonCommande
     template_name = "approvisionnement/commande/form.html"
     fields        = [
@@ -142,8 +229,16 @@ class BonCommandeModifierView(LoginRequiredMixin, UpdateView):
     ]
 
     def form_valid(self, form):
+        response = super().form_valid(form)
+        log_action(
+            self.request,
+            JournalActivite.TypeAction.MODIFICATION,
+            'BonCommande',
+            self.object.pk,
+            f"Modification du bon de commande {self.object.reference}"
+        )
         messages.success(self.request, _("Bon de commande mis à jour."))
-        return super().form_valid(form)
+        return response
 
     def get_success_url(self):
         return reverse_lazy("approvisionnement:commande-detail", kwargs={"pk": self.object.pk})
@@ -159,7 +254,7 @@ class PlanMRPListeView(LoginRequiredMixin, ListView):
         return PlanMRP.objects.select_related("matiere").order_by("-periode")
 
 
-class PlanMRPCreerView(LoginRequiredMixin, CreateView):
+class PlanMRPCreerView(LoginRequiredMixin, UnitValidationMixin, CreateView):
     model         = PlanMRP
     template_name = "approvisionnement/mrp/form.html"
     fields        = [
@@ -173,42 +268,6 @@ class PlanMRPCreerView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class ReapproFixeView(LoginRequiredMixin, TemplateView):
-    template_name = "approvisionnement/methodes/reappro_fixe.html"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx["matieres"] = MatierePremiere.objects.filter(
-            methode_approvisionnement="REAPPRO_FIXE", actif=True
-        ).select_related("unite", "fournisseur_principal")
-        return ctx
-
-
-class PointCommandeView(LoginRequiredMixin, TemplateView):
-    template_name = "approvisionnement/methodes/point_commande.html"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx["matieres_en_alerte"] = MatierePremiere.objects.filter(
-            methode_approvisionnement="POINT_COMMANDE",
-            actif=True,
-            stock_actuel__lte=F("point_commande"),
-        ).select_related("unite", "fournisseur_principal")
-        ctx["toutes_matieres"] = MatierePremiere.objects.filter(
-            methode_approvisionnement="POINT_COMMANDE", actif=True
-        ).select_related("unite")
-        return ctx
-
-
-class RecompletementView(LoginRequiredMixin, TemplateView):
-    template_name = "approvisionnement/methodes/recompletement.html"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx["matieres"] = MatierePremiere.objects.filter(
-            methode_approvisionnement="RECOMPLETEMENT", actif=True
-        ).select_related("unite", "fournisseur_principal")
-        return ctx
 class SuggestionListeView(LoginRequiredMixin, TemplateView):
     template_name = "approvisionnement/suggestions/liste.html"
 
@@ -264,196 +323,105 @@ from django.views import View
 from django.shortcuts import render
 
 
-class BonCommandeStep1View(LoginRequiredMixin, View):
-    """Étape 1 : choisir la matière et la méthode de déclenchement."""
-    template_name = "approvisionnement/commande/form_step1.html"
-
-    def get(self, request):
-        matieres = MatierePremiere.objects.filter(
-            actif=True
-        ).select_related("unite", "fournisseur_principal").order_by("reference")
-
-        matiere_id = request.GET.get("matiere")
-        matiere_preselectionnee = None
-        if matiere_id:
-            matiere_preselectionnee = MatierePremiere.objects.filter(
-                pk=matiere_id
-            ).select_related("unite", "fournisseur_principal").first()
-
-        return render(request, self.template_name, {
-            "matieres":               matieres,
-            "methodes":               BonCommande.MethodeDeclenchement.choices,
-            "matiere_preselectionnee": matiere_preselectionnee,
-            "step":                   1,
-            "step_total":             2,
-            "step_range":             range(1, 3),
-        })
-
-    def post(self, request):
-        from django.urls import reverse
-        matiere_id = request.POST.get("matiere")
-        methode    = request.POST.get("methode_declenchement")
-
-        if not matiere_id or not methode:
-            messages.error(request, "Veuillez sélectionner une matière et une méthode.")
-            return redirect("approvisionnement:commande-step1")
-
-        return redirect(
-            reverse("approvisionnement:commande-step2") +
-            f"?matiere={matiere_id}&methode={methode}"
-        )
-
-
-class BonCommandeStep2View(LoginRequiredMixin, View):
-    """Étape 2 : saisie des paramètres pré-remplis selon la méthode."""
-    template_name = "approvisionnement/commande/form_step2.html"
-
-    def _get_suggestion(self, matiere, methode):
-        stock  = float(matiere.stock_actuel)
-        s_max  = float(matiere.stock_maximum)
-        s_min  = float(matiere.stock_minimum)
-        qec    = float(matiere.qec)
-        pc     = float(matiere.point_commande)
-
-        if methode == "POINT_COMMANDE":
-            quantite_suggeree = qec if qec > 0 else max(0, s_max - stock)
-            note = (f"Stock actuel ({stock}) ≤ Point de commande ({pc}). "
-                    f"Quantité économique de commande : {qec}")
-        elif methode == "REAPPRO_FIXE":
-            quantite_suggeree = qec if qec > 0 else max(0, s_max - stock)
-            note = f"Quantité fixe paramétrée (QEC) : {qec}"
-        elif methode == "RECOMPLETEMENT":
-            quantite_suggeree = max(0, s_max - stock)
-            note = (f"Recomplètement jusqu'au niveau cible S = {s_max}. "
-                    f"Stock actuel = {stock}. Quantité = S − stock = {quantite_suggeree:.3f}")
-        elif methode == "MRP":
-            quantite_suggeree = 0
-            note = "Quantité calculée par le Plan MRP."
-        else:
-            quantite_suggeree = max(0, s_max - stock)
-            note = "Quantité saisie manuellement."
-
-        return {
-            "quantite_suggeree": round(quantite_suggeree, 4),
-            "note_calcul":       note,
-        }
-
-    def get(self, request):
-        from django.urls import reverse
-        matiere_id = request.GET.get("matiere")
-        methode    = request.GET.get("methode")
-
-        if not matiere_id or not methode:
-            return redirect("approvisionnement:commande-step1")
-
-        matiere = get_object_or_404(
-            MatierePremiere.objects.select_related("unite", "fournisseur_principal"),
-            pk=matiere_id, actif=True
-        )
-        suggestion    = self._get_suggestion(matiere, methode)
-        fournisseurs  = Fournisseur.objects.filter(actif=True).order_by("nom")
-        methode_label = dict(BonCommande.MethodeDeclenchement.choices).get(methode, methode)
-
-        alerte_niveau = "normal"
-        if matiere.est_en_rupture:
-            alerte_niveau = "rupture"
-        elif matiere.est_en_alerte:
-            alerte_niveau = "alerte"
-
-        import datetime
-        today = datetime.date.today().isoformat()
-
-        return render(request, self.template_name, {
-            "matiere":       matiere,
-            "methode":       methode,
-            "methode_label": methode_label,
-            "suggestion":    suggestion,
-            "fournisseurs":  fournisseurs,
-            "statuts":       BonCommande.Statut.choices,
-            "alerte_niveau": alerte_niveau,
-            "today":         today,
-            "step":          2,
-            "step_total":    2,
-            "step_range":    range(1, 3),
-        })
-
-    def post(self, request):
-        from django.urls import reverse
-        matiere_id  = request.POST.get("matiere_id")
-        methode     = request.POST.get("methode_declenchement")
-        matiere     = get_object_or_404(MatierePremiere, pk=matiere_id)
-        fournisseur = get_object_or_404(Fournisseur, pk=request.POST.get("fournisseur"))
-        try:
-            commande = BonCommande.objects.create(
-                matiere               = matiere,
-                fournisseur           = fournisseur,
-                quantite_commandee    = request.POST.get("quantite_commandee"),
-                prix_unitaire         = request.POST.get("prix_unitaire") or 0,
-                methode_declenchement = methode,
-                statut                = request.POST.get("statut", "BROUILLON"),
-                date_reception_prevue = request.POST.get("date_reception_prevue") or None,
-                notes                 = request.POST.get("notes", ""),
-                cree_par              = request.user,
-            )
-            messages.success(request, f"Bon de commande {commande.reference} créé avec succès.")
-            return redirect(reverse("approvisionnement:commande-detail", kwargs={"pk": commande.pk}))
-        except Exception as e:
-            messages.error(request, f"Erreur lors de la création : {e}")
-            return redirect("approvisionnement:commande-step1")
-
-
-# ============================================================
-# PLANIFICATEUR
-# ============================================================
-
-class PlanificateurView(LoginRequiredMixin, TemplateView):
+class PlanificateurView(LoginRequiredMixin, KanbanListMixin, ExportMixin, ListView):
     """
     Vue principale du planificateur.
-    GET  → affiche les propositions PROPOSÉES.
-    POST → lance le calcul via lancer_planification().
+    GET  → affiche les propositions (En attente, Validées, Rejetées, Converties).
+    POST → lance le calcul via PlanificateurService.
     """
-    template_name = "approvisionnement/planificateur/index.html"
+    model               = PropositionCommande
+    template_name       = "approvisionnement/planificateur/index.html"
+    kanban_template_name = "approvisionnement/planificateur/kanban.html"
+    context_object_name = "propositions"
+    paginate_by         = 25
+    export_fields       = ['matiere__nom', 'methode', 'quantite_proposee', 'quantite_validee', 'urgence', 'statut', 'date_besoin']
+    export_headers      = ['Matière', 'Méthode', 'Qté Proposée', 'Qté Validée', 'Urgent', 'Statut', 'Date Besoin']
+
+    def get_queryset(self):
+        qs = PropositionCommande.objects.select_related(
+            "matiere", "matiere__unite", "fournisseur"
+        )
+        
+        # Filtres
+        q = self.request.GET.get("q")
+        if q:
+            qs = qs.filter(Q(matiere__nom__icontains=q) | Q(matiere__reference__icontains=q))
+            
+        statut = self.request.GET.get("statut")
+        if statut:
+            qs = qs.filter(statut=statut)
+        else:
+            if self.request.GET.get('view') != 'kanban':
+                qs = qs.filter(statut=PropositionCommande.Statut.EN_ATTENTE)
+                
+        methode = self.request.GET.get("methode")
+        if methode:
+            qs = qs.filter(methode=methode)
+            
+        urgence = self.request.GET.get("urgence")
+        if urgence == "1":
+            qs = qs.filter(urgence=True)
+            
+        fournisseur = self.request.GET.get("fournisseur")
+        if fournisseur:
+            qs = qs.filter(fournisseur_id=fournisseur)
+            
+        return qs.order_by("-urgence", "date_besoin")
+
+    def get(self, request, *args, **kwargs):
+        export_type = request.GET.get('export')
+        if export_type == 'csv':
+            return self.render_to_csv(self.get_queryset(), filename_prefix="propositions_appro")
+        elif export_type == 'pdf':
+            return self.render_to_pdf(self.get_queryset(), title="Propositions d'Approvisionnement", filename_prefix="propositions_appro")
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-
-        ctx["propositions"] = PropositionCommande.objects.select_related(
-            "matiere", "matiere__unite", "matiere__fournisseur_principal"
-        ).filter(
-            statut=PropositionCommande.Statut.PROPOSEE
-        ).order_by("-urgence", "date_besoin")
-
-        ctx["nb_urgentes"]   = ctx["propositions"].filter(urgence=True).count()
-        ctx["nb_normales"]   = ctx["propositions"].filter(urgence=False).count()
-        ctx["nb_converties"] = PropositionCommande.objects.filter(
-            statut=PropositionCommande.Statut.CONVERTIE
-        ).count()
-        ctx["nb_rejetees"]   = PropositionCommande.objects.filter(
-            statut=PropositionCommande.Statut.REJETEE
-        ).count()
         ctx["fournisseurs_actifs"] = Fournisseur.objects.filter(actif=True).order_by("nom")
-
+        ctx["statuts_choices"] = PropositionCommande.Statut.choices
+        ctx["methodes_choices"] = [
+            ("POINT_COMMANDE", "Point de commande"),
+            ("REAPPRO_FIXE", "Réappro fixe"),
+            ("RECOMPLETEMENT", "Recomplètement"),
+            ("MRP", "MRP"),
+        ]
+        
+        all_props = PropositionCommande.objects.all()
+        ctx["nb_proposees"]  = all_props.filter(statut=PropositionCommande.Statut.EN_ATTENTE).count()
+        ctx["nb_urgentes"]   = all_props.filter(statut=PropositionCommande.Statut.EN_ATTENTE, urgence=True).count()
+        ctx["nb_converties"] = all_props.filter(statut=PropositionCommande.Statut.CONVERTIE).count()
+        
         return ctx
 
     def post(self, request, *args, **kwargs):
-        force   = request.POST.get("force") == "1"
-        results = lancer_planification(force=force)
+        from .services import PlanificateurService
+        results = PlanificateurService.run_planificateur(utilisateur=request.user)
 
-        nb_err = len(results["erreurs"])
+        nb_err = len(results["errors"])
         if nb_err:
             messages.warning(
                 request,
-                f"{results['creees']} proposition(s) créée(s), "
-                f"{results['ignorees']} ignorée(s), "
-                f"{nb_err} erreur(s) : " + " | ".join(results["erreurs"])
+                f"{results['created']} proposition(s) créée(s), "
+                f"{results['updated']} mise(s) à jour, "
+                f"{results['skipped']} ignorée(s), "
+                f"{nb_err} erreur(s) : " + " | ".join(results["errors"])
             )
         else:
             messages.success(
                 request,
-                f"Planification terminée : {results['creees']} nouvelle(s) "
-                f"proposition(s), {results['ignorees']} ignorée(s)."
+                f"Planification terminée : {results['created']} nouvelle(s) "
+                f"proposition(s), {results['updated']} mise(s) à jour, {results['skipped']} ignorée(s)."
             )
-        return redirect("approvisionnement:planificateur")
+        
+        log_action(
+            request,
+            JournalActivite.TypeAction.CREATION,
+            'Planificateur',
+            None,
+            f"Lancement du planificateur : {results['created']} propositions créées"
+        )
+        return redirect("approvisionnement:commandes-a-valider")
 
 
 class PropositionValiderView(LoginRequiredMixin, View):
@@ -463,7 +431,7 @@ class PropositionValiderView(LoginRequiredMixin, View):
     """
     def post(self, request, pk):
         proposition = get_object_or_404(
-            PropositionCommande, pk=pk, statut=PropositionCommande.Statut.PROPOSEE
+            PropositionCommande, pk=pk, statut=PropositionCommande.Statut.EN_ATTENTE
         )
         matiere = proposition.matiere
 
@@ -475,7 +443,7 @@ class PropositionValiderView(LoginRequiredMixin, View):
             fournisseur = matiere.fournisseur_principal
         else:
             messages.error(request, "Aucun fournisseur défini pour cette matière.")
-            return redirect("approvisionnement:planificateur")
+            return redirect("approvisionnement:commandes-a-valider")
 
         # Quantité
         quantite_str = request.POST.get("quantite_validee", "").strip()
@@ -514,6 +482,13 @@ class PropositionValiderView(LoginRequiredMixin, View):
             f"Bon de commande {bon.reference} créé. "
             f"Vous pouvez maintenant le modifier et l'envoyer."
         )
+        log_action(
+            request,
+            JournalActivite.TypeAction.VALIDATION,
+            'PropositionCommande',
+            proposition.pk,
+            f"Validation de la proposition pour {matiere.nom} -> BC {bon.reference}"
+        )
         return redirect("approvisionnement:commande-detail", pk=bon.pk)
 
 
@@ -521,11 +496,18 @@ class PropositionRejeterView(LoginRequiredMixin, View):
     """Rejeter une proposition avec une note obligatoire."""
     def post(self, request, pk):
         proposition = get_object_or_404(
-            PropositionCommande, pk=pk, statut=PropositionCommande.Statut.PROPOSEE
+            PropositionCommande, pk=pk, statut=PropositionCommande.Statut.EN_ATTENTE
         )
         proposition.statut        = PropositionCommande.Statut.REJETEE
         proposition.note_acheteur = request.POST.get("note_rejet", "")
         proposition.save()
+        log_action(
+            request,
+            JournalActivite.TypeAction.REJET,
+            'PropositionCommande',
+            proposition.pk,
+            f"Rejet de la proposition pour {proposition.matiere.nom}. Motif: {proposition.note_acheteur}"
+        )
         messages.info(request, "Proposition rejetée.")
-        return redirect("approvisionnement:planificateur")
-
+        return redirect("approvisionnement:commandes-a-valider")
+

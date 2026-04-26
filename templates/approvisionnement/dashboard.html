@@ -20,9 +20,9 @@
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-kanban me-1"></i>Vue Kanban
             </a>
-            <a href="{% url 'approvisionnement:commande-step1' %}"
+            <a href="{% url 'approvisionnement:commandes-a-valider' %}"
                class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-lg me-1"></i>Nouvelle commande
+                <i class="bi bi-play-circle me-1"></i>Lancer Planificateur
             </a>
         </div>
     </div>
@@ -42,7 +42,7 @@
                         <div class="fs-4 fw-bold text-warning">{{ commandes_en_cours }}</div>
                     </div>
                     {% if commandes_en_cours > 0 %}
-                    <a href="{% url 'approvisionnement:commande-liste' %}?statut=BROUILLON"
+                    <a href="{% url 'approvisionnement:commandes-a-valider' %}"
                        class="btn btn-sm btn-outline-warning flex-shrink-0">Voir</a>
                     {% endif %}
                 </div>
@@ -61,8 +61,8 @@
                         <div class="fs-4 fw-bold text-danger">{{ nb_ruptures }}</div>
                     </div>
                     {% if nb_ruptures > 0 %}
-                    <a href="{% url 'approvisionnement:commande-step1' %}"
-                       class="btn btn-sm btn-outline-danger flex-shrink-0">Commander</a>
+                    <a href="{% url 'approvisionnement:commandes-a-valider' %}"
+                       class="btn btn-sm btn-outline-danger flex-shrink-0">Planifier</a>
                     {% endif %}
                 </div>
             </div>

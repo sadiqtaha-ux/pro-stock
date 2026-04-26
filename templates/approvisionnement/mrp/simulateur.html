@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Simulateur MRP - Explosion de Nomenclature{% endblock %}
+{% block active_approvisionnement %}active{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h4 class="mb-1 fw-bold">Simulateur MRP</h4>
+        <p class="text-muted mb-0 fs-13">Calculez les besoins en matières premières par explosion de nomenclature.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Configuration de la simulation -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="card-title mb-0 fw-bold">Paramètres de production</h6>
+            </div>
+            <div class="card-body">
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Produit Fini</label>
+                        <select name="produit" class="form-select select2" required>
+                            <option value="">Sélectionner un produit...</option>
+                            {% for p in produits_finis %}
+                            <option value="{{ p.pk }}" {% if produit_selectionne.pk == p.pk %}selected{% endif %}>
+                                [{{ p.reference }}] {{ p.nom }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">Quantité à produire</label>
+                        <div class="input-group">
+                            <input type="number" name="quantite" class="form-control" value="{{ quantite_cible|default:100 }}" min="1" step="any">
+                            <span class="input-group-text">{{ produit_selectionne.unite.symbole|default:"U" }}</span>
+                        </div>
+                        <div class="form-text fs-11 text-muted">La simulation décomposera ce volume selon la nomenclature.</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-cpu me-2"></i>Calculer les besoins
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if produit_selectionne %}
+        <div class="card border-0 shadow-sm mt-4 bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 fw-bold">Résumé Simulation</h6>
+                    <span class="badge bg-white text-primary">{{ produit_selectionne.reference }}</span>
+                </div>
+                <div class="row text-center g-2">
+                    <div class="col-6">
+                        <div class="p-2 rounded bg-white bg-opacity-10">
+                            <div class="fs-18 fw-bold">{{ resultats|length }}</div>
+                            <div class="fs-10 text-uppercase opacity-75">Composants</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 rounded bg-white bg-opacity-10">
+                            <div class="fs-18 fw-bold {% if nb_bloquants > 0 %}text-warning{% endif %}">{{ nb_bloquants }}</div>
+                            <div class="fs-10 text-uppercase opacity-75">Manquants</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Résultats de l'explosion -->
+    <div class="col-md-8">
+        {% if not produit_selectionne %}
+        <div class="card border-0 shadow-sm py-5 text-center bg-light bg-opacity-50 border-dashed">
+            <div class="card-body">
+                <i class="bi bi-diagram-3 display-1 text-muted mb-3 d-block"></i>
+                <h5>En attente de simulation</h5>
+                <p class="text-muted">Sélectionnez un produit fini et une quantité cible pour voir l'explosion des besoins.</p>
+            </div>
+        </div>
+        {% else %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="produit_id" value="{{ produit_selectionne.pk }}">
+            
+            <!-- Composants Planifiés par MRP -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-primary border-bottom border-2">
+                    <h6 class="card-title mb-0 fw-bold text-primary"><i class="bi bi-cpu me-2"></i>Composants Planifiés par MRP</h6>
+                    <button type="submit" class="btn btn-sm btn-primary" {% if nb_a_commander == 0 %}disabled{% endif %}>
+                        <i class="bi bi-cart-plus me-2"></i>Générer les propositions
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-3 border-0 small">Composant</th>
+                                <th class="border-0 small text-center">Besoin Ajusté</th>
+                                <th class="border-0 small text-center">Stock Actuel</th>
+                                <th class="border-0 small text-center">Statut</th>
+                                <th class="border-0 small text-end pe-3">Prop. Commande</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in resultats %}
+                                {% if r.statut != 'NON_MRP' %}
+                                <tr class="{% if r.bloquant %}bg-danger bg-opacity-10{% endif %}">
+                                    <td class="ps-3">
+                                        <div class="fw-semibold">{{ r.matiere.nom }}</div>
+                                        <div class="text-muted fs-11">Besoin brut: {{ r.besoin_brut|format_qty }} {{ r.unite }}</div>
+                                        <input type="hidden" name="matiere_ids" value="{{ r.matiere.pk }}">
+                                    </td>
+                                    <td class="text-center fw-bold">{{ r.besoin_ajuste|format_qty }} {{ r.unite }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center justify-content-center gap-2">
+                                            <div style="width: 60px;">
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar {% if r.statut == 'SUFFISANT' %}bg-success{% elif r.statut == 'A_COMMANDER' %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                         role="progressbar" style="width: {{ r.stock_ratio }}%"></div>
+                                                </div>
+                                            </div>
+                                            <span class="small fw-bold">{{ r.stock_actuel|format_qty }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if r.statut == 'SUFFISANT' %}
+                                            <span class="badge bg-success-soft text-success"><i class="bi bi-check-circle me-1"></i>Suffisant</span>
+                                        {% elif r.statut == 'A_COMMANDER' %}
+                                            <span class="badge bg-warning-soft text-warning"><i class="bi bi-exclamation-circle me-1"></i>À commander</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-soft text-danger"><i class="bi bi-x-circle me-1"></i>Rupture</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="pe-3" style="width: 150px;">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="quantites_prop" class="form-control fw-bold border-primary text-end" 
+                                                   value="{{ r.quantite_proposee|format_qty }}" step="any"
+                                                   {% if r.quantite_proposee == 0 %}readonly class="bg-light text-muted"{% endif %}>
+                                            <span class="input-group-text bg-white border-primary fs-10">{{ r.unite }}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if nb_mrp == 0 %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted fst-italic">
+                                    Aucun composant de cette nomenclature n'est géré par la méthode MRP.
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </form>
+
+        <!-- Composants NON Planifiés par MRP (Informatif) -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0 fw-bold text-secondary"><i class="bi bi-info-circle me-2"></i>Composants gérés hors MRP</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-muted">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-3 border-0 small">Composant</th>
+                                <th class="border-0 small text-center">Méthode Approv.</th>
+                                <th class="border-0 small text-center">Besoin Théorique</th>
+                                <th class="border-0 small text-center">Stock Actuel</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in resultats %}
+                                {% if r.statut == 'NON_MRP' %}
+                                <tr>
+                                    <td class="ps-3">
+                                        <div class="fw-semibold text-dark">{{ r.matiere.nom }}</div>
+                                        <div class="fs-11">Besoin brut: {{ r.besoin_brut|format_qty }} {{ r.unite }}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary">{{ r.matiere.get_methode_approvisionnement_display }}</span>
+                                    </td>
+                                    <td class="text-center fw-bold">{{ r.besoin_ajuste|format_qty }} {{ r.unite }}</td>
+                                    <td class="text-center">
+                                        <span class="{% if r.stock_actuel <= 0 %}text-danger{% else %}text-success{% endif %} fw-bold">
+                                            {{ r.stock_actuel|format_qty }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if nb_non_mrp == 0 %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 fst-italic">
+                                    Tous les composants sont gérés par le MRP.
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer bg-white border-top py-2">
+                    <p class="mb-0 fs-11 text-muted text-center">
+                        Ces composants sont affichés à titre informatif. Leurs réapprovisionnements sont déclenchés par leurs méthodes respectives.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
+    .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
+    .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
+    .fs-18 { font-size: 1.125rem; }
+    .fs-10 { font-size: 0.625rem; }
+    .fs-11 { font-size: 0.6875rem; }
+    .border-dashed { border: 2px dashed #dee2e6; }
+</style>
+{% endblock %}

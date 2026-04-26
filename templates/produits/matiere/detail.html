@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load humanize %}
+{% load app_filters %}
 {% block title %}{{ matiere.reference }} — {{ matiere.nom }}{% endblock %}
 {% block active_produits %}active{% endblock %}
 {% block show_produits %}show{% endblock %}
@@ -20,9 +21,9 @@
         <a href="{% url 'produits:matiere-update' matiere.pk %}" class="btn btn-warning btn-sm">
             <i class="bi bi-pencil me-1"></i>Modifier
         </a>
-        <a href="{% url 'approvisionnement:commande-create' %}?matiere={{ matiere.pk }}"
+        <a href="{% url 'approvisionnement:commandes-a-valider' %}?q={{ matiere.reference }}"
            class="btn btn-primary btn-sm">
-            <i class="bi bi-cart-plus me-1"></i>Commander
+            <i class="bi bi-cart-plus me-1"></i>Vérifier les besoins
         </a>
         {% if peut_administrer %}
         <a href="{% url 'produits:matiere-delete' matiere.pk %}" class="btn btn-outline-danger btn-sm">
@@ -43,6 +44,16 @@
                     <span class="badge bg-secondary">{{ matiere.get_categorie_display }}</span>
                     <span class="badge bg-primary">{{ matiere.get_methode_approvisionnement_display }}</span>
                     <span class="badge bg-info text-dark">{{ matiere.get_zone_stockage_display }}</span>
+                    {# Badge classe ABC #}
+                    {% if matiere.classe_abc == 'A' %}
+                        <span class="badge bg-danger" title="Classe A — Article critique">ABC-A</span>
+                    {% elif matiere.classe_abc == 'B' %}
+                        <span class="badge bg-warning text-dark" title="Classe B — Article intermédiaire">ABC-B</span>
+                    {% elif matiere.classe_abc == 'C' %}
+                        <span class="badge bg-success" title="Classe C — Faible valeur">ABC-C</span>
+                    {% else %}
+                        <span class="badge bg-light text-muted border" title="Classe ABC non calculée">ABC-?</span>
+                    {% endif %}
                     {% if matiere.actif %}
                         <span class="badge bg-success">Actif</span>
                     {% else %}
@@ -82,11 +93,11 @@
                     </li>
                     <li class="list-group-item d-flex justify-content-between px-0">
                         <span class="text-muted">QEC</span>
-                        <span>{{ matiere.qec }} {{ matiere.unite.symbole }}</span>
+                        <span>{{ matiere.qec|format_qty }} {{ matiere.unite.symbole }}</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between px-0">
                         <span class="text-muted">Point de commande</span>
-                        <span>{{ matiere.point_commande }} {{ matiere.unite.symbole }}</span>
+                        <span>{{ matiere.point_commande|format_qty }} {{ matiere.unite.symbole }}</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between px-0">
                         <span class="text-muted">Taux de rebut</span>
@@ -100,6 +111,63 @@
                 {% endif %}
             </div>
         </div>
+
+        {# ── Panneau recommandation ABC ───────────────────────────────── #}
+        {% with rec=recommandation %}
+        {% if rec %}
+        <div class="panel mt-3">
+            <div class="panel-header d-flex align-items-center gap-2">
+                <i class="bi bi-stars text-warning"></i>
+                <h6 class="panel-title mb-0 fw-semibold">Analyse ABC</h6>
+                {% if rec.niveau_confiance == 'eleve' %}
+                    <span class="badge bg-success ms-auto small">Confiance élevée</span>
+                {% elif rec.niveau_confiance == 'moyen' %}
+                    <span class="badge bg-warning text-dark ms-auto small">Confiance moyenne</span>
+                {% else %}
+                    <span class="badge bg-secondary ms-auto small">Confiance faible</span>
+                {% endif %}
+            </div>
+            <div class="panel-body">
+                {# Classe #}
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="text-center">
+                        {% if matiere.classe_abc == 'A' %}
+                            <div class="display-6 fw-bold text-danger">A</div>
+                            <div class="small text-danger">Critique</div>
+                        {% elif matiere.classe_abc == 'B' %}
+                            <div class="display-6 fw-bold text-warning">B</div>
+                            <div class="small text-warning">Intermédiaire</div>
+                        {% elif matiere.classe_abc == 'C' %}
+                            <div class="display-6 fw-bold text-success">C</div>
+                            <div class="small text-success">Faible valeur</div>
+                        {% else %}
+                            <div class="display-6 fw-bold text-muted">—</div>
+                            <div class="small text-muted">Non classé</div>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        {% if rec.message_historique_insuffisant %}
+                        <div class="small text-muted fst-italic">{{ rec.message_historique_insuffisant }}</div>
+                        {% else %}
+                        <div class="small fw-semibold mb-1">Méthode recommandée</div>
+                        <div class="fw-medium small">{{ rec.methode_recommandee }}</div>
+                        <div class="small text-muted mt-1">{{ rec.justification|truncatechars:120 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="text-muted small">
+                    <i class="bi bi-bar-chart me-1"></i>
+                    {{ rec.nb_mouvements_sorties }} sortie(s) sur 12 mois
+                    &nbsp;|
+                    <a href="{% url 'produits:matiere-parametres' matiere.pk %}" class="ms-1">
+                        Reconfigurer la méthode
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
     </div>
 
     <!-- ── Colonne droite ── -->
@@ -111,12 +179,11 @@
                 <h5 class="panel-title mb-0"><i class="bi bi-boxes me-2"></i>Stock actuel</h5>
             </div>
             <div class="panel-body">
-                <div class="text-center mb-3">
                     <div class="display-5 fw-bold
                         {% if matiere.est_en_rupture %}text-danger
                         {% elif matiere.est_en_alerte %}text-warning
                         {% else %}text-success{% endif %}">
-                        {{ matiere.stock_actuel }}
+                        {{ matiere.stock_actuel|format_qty }}
                         <small class="fs-5 text-muted">{{ matiere.unite.symbole }}</small>
                     </div>
                     <div class="mt-2">
@@ -143,7 +210,7 @@
                     <div class="d-flex justify-content-between small text-muted mt-1">
                         <span>0</span>
                         <span>{{ matiere.taux_remplissage }}%</span>
-                        <span>{{ matiere.stock_maximum }} {{ matiere.unite.symbole }}</span>
+                        <span>{{ matiere.stock_maximum|format_qty }} {{ matiere.unite.symbole }}</span>
                     </div>
                 </div>
 
@@ -152,19 +219,19 @@
                     <div class="col-3">
                         <div class="bg-light rounded p-2">
                             <div class="small text-muted">Seuil min</div>
-                            <div class="fw-bold">{{ matiere.stock_minimum }}</div>
+                            <div class="fw-bold">{{ matiere.stock_minimum|format_qty }}</div>
                         </div>
                     </div>
                     <div class="col-3">
                         <div class="bg-light rounded p-2">
                             <div class="small text-muted">Stock sécu</div>
-                            <div class="fw-bold">{{ matiere.stock_securite }}</div>
+                            <div class="fw-bold">{{ matiere.stock_securite|format_qty }}</div>
                         </div>
                     </div>
                     <div class="col-3">
                         <div class="bg-light rounded p-2">
                             <div class="small text-muted">Stock max</div>
-                            <div class="fw-bold">{{ matiere.stock_maximum }}</div>
+                            <div class="fw-bold">{{ matiere.stock_maximum|format_qty }}</div>
                         </div>
                     </div>
                     <div class="col-3">
@@ -204,7 +271,7 @@
                                     <span class="badge bg-warning text-dark">Ajust.</span>
                                 {% endif %}
                             </td>
-                            <td class="fw-medium">{{ mvt.quantite }} {{ matiere.unite.symbole }}</td>
+                            <td class="fw-medium">{{ mvt.quantite|format_qty }} {{ matiere.unite.symbole }}</td>
                             <td class="small">{{ mvt.operateur.get_full_name|default:mvt.operateur.username }}</td>
                         </tr>
                         {% empty %}
@@ -237,7 +304,7 @@
                         <tr>
                             <td class="fw-medium small">{{ bc.reference|default:"—" }}</td>
                             <td class="small">{{ bc.fournisseur.nom|default:"—" }}</td>
-                            <td>{{ bc.quantite_commandee }}</td>
+                            <td>{{ bc.quantite_commandee|format_qty }}</td>
                             <td>
                                 {% if bc.statut == 'BROUILLON' %}<span class="badge bg-secondary">Brouillon</span>
                                 {% elif bc.statut == 'ENVOYE' %}<span class="badge bg-primary">Envoyé</span>

@@ -1,0 +1,1006 @@
+[
+  {
+    "model": "produits.unitesmesure",
+    "pk": 16,
+    "fields": {
+      "nom": "Piece",
+      "symbole": "pcs",
+      "autorise_decimales": false
+    }
+  },
+  {
+    "model": "produits.unitesmesure",
+    "pk": 17,
+    "fields": {
+      "nom": "Flacon",
+      "symbole": "fl",
+      "autorise_decimales": false
+    }
+  },
+  {
+    "model": "produits.unitesmesure",
+    "pk": 18,
+    "fields": {
+      "nom": "Carton",
+      "symbole": "carton",
+      "autorise_decimales": false
+    }
+  },
+  {
+    "model": "produits.unitesmesure",
+    "pk": 19,
+    "fields": {
+      "nom": "Palette",
+      "symbole": "palette",
+      "autorise_decimales": false
+    }
+  },
+  {
+    "model": "produits.fournisseur",
+    "pk": 1,
+    "fields": {
+      "nom": "PharmaChem Maroc",
+      "email": "contact@pharmachem.ma",
+      "contact": "Service Commercial",
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.fournisseur",
+    "pk": 2,
+    "fields": {
+      "nom": "EuroExcipients SAS",
+      "email": "sales@euroexcipients.eu",
+      "contact": "Sales Dept",
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.fournisseur",
+    "pk": 3,
+    "fields": {
+      "nom": "PackMed Industrie",
+      "email": "commandes@packmed.ma",
+      "contact": "Nadia Tazi",
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.fournisseur",
+    "pk": 4,
+    "fields": {
+      "nom": "Solvex North Africa",
+      "email": "supply@solvex.ma",
+      "contact": "Logistique",
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.fournisseur",
+    "pk": 5,
+    "fields": {
+      "nom": "ColdBio Logistics",
+      "email": "contact@coldbio.ma",
+      "contact": "Service Froid",
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.fournisseur",
+    "pk": 6,
+    "fields": {
+      "nom": "Global API Trading",
+      "email": "api@globalapi.com",
+      "contact": "Import Dept",
+      "statut": "A_SURVEILLER",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.zonestockage",
+    "pk": 1,
+    "fields": {
+      "code": "Z-MP",
+      "nom": "Matieres premieres",
+      "libelle": "Zone MP Ambiante",
+      "type_zone": "MATIERES_PREMIERES",
+      "temperature_min": 15,
+      "temperature_max": 25,
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.zonestockage",
+    "pk": 2,
+    "fields": {
+      "code": "Z-FR",
+      "nom": "Zone froide",
+      "libelle": "Chambre Froide",
+      "type_zone": "FROIDE",
+      "temperature_min": 2,
+      "temperature_max": 8,
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.zonestockage",
+    "pk": 3,
+    "fields": {
+      "code": "Z-SEC",
+      "nom": "Zone seche",
+      "libelle": "Zone Humidite Controlee",
+      "type_zone": "SECHE",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.zonestockage",
+    "pk": 4,
+    "fields": {
+      "code": "Z-QU",
+      "nom": "Quarantaine",
+      "libelle": "Zone de Quarantaine",
+      "type_zone": "QUARANTAINE",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.zonestockage",
+    "pk": 5,
+    "fields": {
+      "code": "Z-PF",
+      "nom": "Produits finis",
+      "libelle": "Zone Produits Finis",
+      "type_zone": "PRODUITS_FINIS",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.zonestockage",
+    "pk": 6,
+    "fields": {
+      "code": "Z-REC",
+      "nom": "Reception",
+      "libelle": "Zone de Reception",
+      "type_zone": "RECEPTION",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.rayon",
+    "pk": 1,
+    "fields": {
+      "zone": 1,
+      "code": "R-MP-01",
+      "nom": "Principes actifs",
+      "libelle": "Rayon Principes Actifs",
+      "type_stock": "MATIERE_PREMIERE",
+      "nombre_niveaux": 4,
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.rayon",
+    "pk": 2,
+    "fields": {
+      "zone": 1,
+      "code": "R-MP-02",
+      "nom": "Excipients",
+      "libelle": "Rayon Excipients",
+      "type_stock": "MATIERE_PREMIERE",
+      "nombre_niveaux": 4,
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.rayon",
+    "pk": 3,
+    "fields": {
+      "zone": 1,
+      "code": "R-MP-03",
+      "nom": "Solvants",
+      "libelle": "Rayon Solvants",
+      "type_stock": "MATIERE_PREMIERE",
+      "nombre_niveaux": 3,
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.rayon",
+    "pk": 4,
+    "fields": {
+      "zone": 2,
+      "code": "R-FR-01",
+      "nom": "Produits froids",
+      "libelle": "Rayon Produits Froids",
+      "type_stock": "MIXTE",
+      "nombre_niveaux": 3,
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.rayon",
+    "pk": 5,
+    "fields": {
+      "zone": 3,
+      "code": "R-SEC-01",
+      "nom": "Articles sensibles humidite",
+      "libelle": "Rayon Articles Sensibles",
+      "type_stock": "MATIERE_PREMIERE",
+      "nombre_niveaux": 3,
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.rayon",
+    "pk": 6,
+    "fields": {
+      "zone": 4,
+      "code": "R-QU-01",
+      "nom": "Quarantaine reception",
+      "libelle": "Rayon Quarantaine",
+      "type_stock": "MIXTE",
+      "nombre_niveaux": 2,
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.rayon",
+    "pk": 7,
+    "fields": {
+      "zone": 5,
+      "code": "R-PF-01",
+      "nom": "Produits finis medicaments",
+      "libelle": "Rayon PF Medicaments",
+      "type_stock": "PRODUIT_FINI",
+      "nombre_niveaux": 4,
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.rayon",
+    "pk": 8,
+    "fields": {
+      "zone": 5,
+      "code": "R-PF-02",
+      "nom": "Produits finis lots speciaux",
+      "libelle": "Rayon PF Speciaux",
+      "type_stock": "PRODUIT_FINI",
+      "nombre_niveaux": 3,
+      "statut": "ACTIF",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "magasin.niveaurayon",
+    "pk": 1,
+    "fields": { "rayon": 1, "numero": 1, "libelle": "Niveau 1", "actif": true, "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.niveaurayon",
+    "pk": 2,
+    "fields": { "rayon": 1, "numero": 2, "libelle": "Niveau 2", "actif": true, "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.niveaurayon",
+    "pk": 3,
+    "fields": { "rayon": 2, "numero": 1, "libelle": "Niveau 1", "actif": true, "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.niveaurayon",
+    "pk": 4,
+    "fields": { "rayon": 2, "numero": 2, "libelle": "Niveau 2", "actif": true, "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.niveaurayon",
+    "pk": 5,
+    "fields": { "rayon": 3, "numero": 1, "libelle": "Niveau 1", "actif": true, "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.niveaurayon",
+    "pk": 6,
+    "fields": { "rayon": 4, "numero": 1, "libelle": "Niveau 1", "actif": true, "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.niveaurayon",
+    "pk": 7, "fields": { "rayon": 7, "numero": 1, "libelle": "Niveau 1", "actif": true, "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.niveaurayon",
+    "pk": 8, "fields": { "rayon": 7, "numero": 2, "libelle": "Niveau 2", "actif": true, "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.niveaurayon",
+    "pk": 9, "fields": { "rayon": 8, "numero": 1, "libelle": "Niveau 1", "actif": true, "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 1,
+    "fields": {
+      "reference": "MP-API-001",
+      "nom": "Paracetamol Pur",
+      "categorie": "PRINCIPE_ACTIF",
+      "unite": 8,
+      "stock_actuel": "120.0000",
+      "stock_minimum": "50.0000",
+      "stock_maximum": "500.0000",
+      "stock_securite": "20.0000",
+      "methode_approvisionnement": "MRP",
+      "delai_livraison_jours": 14,
+      "fournisseur_principal": 1,
+      "classe_abc": "A",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 2,
+    "fields": {
+      "reference": "MP-API-002",
+      "nom": "Ibuprofene USP",
+      "categorie": "PRINCIPE_ACTIF",
+      "unite": 8,
+      "stock_actuel": "18.0000",
+      "stock_minimum": "30.0000",
+      "stock_maximum": "300.0000",
+      "stock_securite": "20.0000",
+      "point_commande": "60.0000",
+      "qec": "120.0000",
+      "methode_approvisionnement": "POINT_COMMANDE",
+      "delai_livraison_jours": 30,
+      "fournisseur_principal": 6,
+      "classe_abc": "A",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 3,
+    "fields": {
+      "reference": "MP-EXC-001",
+      "nom": "Lactose monohydrate",
+      "categorie": "EXCIPIENT",
+      "unite": 8,
+      "stock_actuel": "420.0000",
+      "stock_minimum": "100.0000",
+      "stock_maximum": "800.0000",
+      "stock_securite": "60.0000",
+      "methode_approvisionnement": "RECOMPLETEMENT",
+      "periode_reappro_jours": 15,
+      "delai_livraison_jours": 21,
+      "fournisseur_principal": 2,
+      "classe_abc": "B",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 4,
+    "fields": {
+      "reference": "MP-EXC-002",
+      "nom": "Amidon de mais",
+      "categorie": "EXCIPIENT",
+      "unite": 8,
+      "stock_actuel": "75.0000",
+      "stock_minimum": "80.0000",
+      "stock_maximum": "600.0000",
+      "stock_securite": "40.0000",
+      "point_commande": "120.0000",
+      "qec": "200.0000",
+      "methode_approvisionnement": "POINT_COMMANDE",
+      "delai_livraison_jours": 21,
+      "fournisseur_principal": 2,
+      "classe_abc": "B",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 5,
+    "fields": {
+      "reference": "MP-EXC-003",
+      "nom": "Cellulose microcristalline",
+      "categorie": "EXCIPIENT",
+      "unite": 8,
+      "stock_actuel": "250.0000",
+      "stock_minimum": "120.0000",
+      "stock_maximum": "700.0000",
+      "stock_securite": "80.0000",
+      "qec": "150.0000",
+      "methode_approvisionnement": "REAPPRO_FIXE",
+      "periode_reappro_jours": 30,
+      "delai_livraison_jours": 21,
+      "fournisseur_principal": 2,
+      "classe_abc": "B",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 6,
+    "fields": {
+      "reference": "MP-SOL-001",
+      "nom": "Ethanol 96",
+      "categorie": "EXCIPIENT",
+      "unite": 10,
+      "stock_actuel": "0.0000",
+      "stock_minimum": "50.0000",
+      "stock_maximum": "400.0000",
+      "stock_securite": "30.0000",
+      "point_commande": "100.0000",
+      "qec": "200.0000",
+      "methode_approvisionnement": "POINT_COMMANDE",
+      "delai_livraison_jours": 7,
+      "fournisseur_principal": 4,
+      "classe_abc": "B",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 7,
+    "fields": {
+      "reference": "MP-SOL-002",
+      "nom": "Eau purifiee",
+      "categorie": "EXCIPIENT",
+      "unite": 10,
+      "stock_actuel": "900.0000",
+      "stock_minimum": "200.0000",
+      "stock_maximum": "1500.0000",
+      "stock_securite": "100.0000",
+      "methode_approvisionnement": "RECOMPLETEMENT",
+      "periode_reappro_jours": 10,
+      "delai_livraison_jours": 7,
+      "fournisseur_principal": 4,
+      "classe_abc": "C",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 8,
+    "fields": {
+      "reference": "MP-PACK-001",
+      "nom": "Blister aluminium PVC",
+      "categorie": "CONDITIONNEMENT",
+      "unite": 16,
+      "stock_actuel": "3500.0000",
+      "stock_minimum": "1000.0000",
+      "stock_maximum": "10000.0000",
+      "stock_securite": "500.0000",
+      "methode_approvisionnement": "MRP",
+      "delai_livraison_jours": 10,
+      "fournisseur_principal": 3,
+      "lot_minimum": "1000.0000",
+      "multiple_lot": "100.0000",
+      "classe_abc": "C",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 9,
+    "fields": {
+      "reference": "MP-PACK-002",
+      "nom": "Boite carton standard",
+      "categorie": "CONDITIONNEMENT",
+      "unite": 16,
+      "stock_actuel": "800.0000",
+      "stock_minimum": "1000.0000",
+      "stock_maximum": "12000.0000",
+      "stock_securite": "500.0000",
+      "methode_approvisionnement": "MRP",
+      "delai_livraison_jours": 10,
+      "fournisseur_principal": 3,
+      "lot_minimum": "1000.0000",
+      "multiple_lot": "100.0000",
+      "classe_abc": "C",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 10,
+    "fields": {
+      "reference": "MP-PACK-003",
+      "nom": "Notice patient FR/AR",
+      "categorie": "CONDITIONNEMENT",
+      "unite": 16,
+      "stock_actuel": "1500.0000",
+      "stock_minimum": "1200.0000",
+      "stock_maximum": "15000.0000",
+      "stock_securite": "500.0000",
+      "qec": "3000.0000",
+      "methode_approvisionnement": "REAPPRO_FIXE",
+      "periode_reappro_jours": 30,
+      "delai_livraison_jours": 10,
+      "fournisseur_principal": 3,
+      "classe_abc": "C",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 11,
+    "fields": {
+      "reference": "MP-COLD-001",
+      "nom": "Reactif thermosensible A",
+      "categorie": "PRINCIPE_ACTIF",
+      "unite": 9,
+      "stock_actuel": "300.0000",
+      "stock_minimum": "100.0000",
+      "stock_maximum": "1000.0000",
+      "stock_securite": "50.0000",
+      "methode_approvisionnement": "MRP",
+      "delai_livraison_jours": 5,
+      "fournisseur_principal": 5,
+      "lot_minimum": "100.0000",
+      "multiple_lot": "10.0000",
+      "classe_abc": "B",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 12,
+    "fields": {
+      "reference": "MP-QA-001",
+      "nom": "Gants nitrile QC",
+      "categorie": "CONDITIONNEMENT",
+      "unite": 13,
+      "stock_actuel": "24.0000",
+      "stock_minimum": "20.0000",
+      "stock_maximum": "100.0000",
+      "stock_securite": "10.0000",
+      "qec": "20.0000",
+      "methode_approvisionnement": "REAPPRO_FIXE",
+      "periode_reappro_jours": 30,
+      "delai_livraison_jours": 10,
+      "fournisseur_principal": 3,
+      "classe_abc": "C",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 13,
+    "fields": {
+      "reference": "MP-API-003",
+      "nom": "Aspirine BP",
+      "categorie": "PRINCIPE_ACTIF",
+      "unite": 8,
+      "stock_actuel": "50.0000",
+      "stock_minimum": "20.0000",
+      "stock_maximum": "200.0000",
+      "stock_securite": "10.0000",
+      "methode_approvisionnement": "MRP",
+      "fournisseur_principal": 1,
+      "classe_abc": "A",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 14,
+    "fields": {
+      "reference": "MP-API-004",
+      "nom": "Metformine HCl",
+      "categorie": "PRINCIPE_ACTIF",
+      "unite": 8,
+      "stock_actuel": "80.0000",
+      "stock_minimum": "40.0000",
+      "stock_maximum": "400.0000",
+      "methode_approvisionnement": "MRP",
+      "fournisseur_principal": 1,
+      "classe_abc": "A",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 15,
+    "fields": {
+      "reference": "MP-EXC-004",
+      "nom": "Magnesium stearate",
+      "categorie": "EXCIPIENT",
+      "unite": 8,
+      "stock_actuel": "15.0000",
+      "stock_minimum": "10.0000",
+      "stock_maximum": "100.0000",
+      "methode_approvisionnement": "POINT_COMMANDE",
+      "point_commande": "20.0000",
+      "fournisseur_principal": 2,
+      "classe_abc": "C",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 16,
+    "fields": {
+      "reference": "MP-EXC-005",
+      "nom": "Talc",
+      "categorie": "EXCIPIENT",
+      "unite": 8,
+      "stock_actuel": "100.0000",
+      "stock_minimum": "30.0000",
+      "stock_maximum": "300.0000",
+      "methode_approvisionnement": "RECOMPLETEMENT",
+      "fournisseur_principal": 2,
+      "classe_abc": "C",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 17,
+    "fields": {
+      "reference": "MP-PACK-004",
+      "nom": "Flacon verre 100mL",
+      "categorie": "CONDITIONNEMENT",
+      "unite": 17,
+      "stock_actuel": "500.0000",
+      "stock_minimum": "200.0000",
+      "stock_maximum": "2000.0000",
+      "methode_approvisionnement": "MRP",
+      "fournisseur_principal": 3,
+      "classe_abc": "B",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 18,
+    "fields": {
+      "reference": "MP-PACK-005",
+      "nom": "Bouchon plastique",
+      "categorie": "CONDITIONNEMENT",
+      "unite": 16,
+      "stock_actuel": "1000.0000",
+      "stock_minimum": "400.0000",
+      "stock_maximum": "4000.0000",
+      "methode_approvisionnement": "MRP",
+      "fournisseur_principal": 3,
+      "classe_abc": "C",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 19,
+    "fields": {
+      "reference": "MP-PACK-006",
+      "nom": "Film etirable",
+      "categorie": "CONDITIONNEMENT",
+      "unite": 15,
+      "stock_actuel": "10.0000",
+      "stock_minimum": "5.0000",
+      "stock_maximum": "50.0000",
+      "methode_approvisionnement": "REAPPRO_FIXE",
+      "fournisseur_principal": 3,
+      "classe_abc": "C",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.matierepremiere",
+    "pk": 20,
+    "fields": {
+      "reference": "MP-QA-002",
+      "nom": "Masques chirurgicaux",
+      "categorie": "CONDITIONNEMENT",
+      "unite": 16,
+      "stock_actuel": "50.0000",
+      "stock_minimum": "20.0000",
+      "stock_maximum": "200.0000",
+      "methode_approvisionnement": "REAPPRO_FIXE",
+      "fournisseur_principal": 3,
+      "classe_abc": "C",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.produitfini",
+    "pk": 1,
+    "fields": {
+      "reference": "PF-PARA-500",
+      "nom": "Paracetamol 500mg boite 16",
+      "categorie": "MEDICAMENT",
+      "unite": 13,
+      "stock_actuel": "1200.0000",
+      "stock_minimum": "300.0000",
+      "stock_maximum": "5000.0000",
+      "statut": "DISPONIBLE",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.produitfini",
+    "pk": 2,
+    "fields": {
+      "reference": "PF-IBU-400",
+      "nom": "Ibuprofene 400mg boite 20",
+      "categorie": "MEDICAMENT",
+      "unite": 13,
+      "stock_actuel": "150.0000",
+      "stock_minimum": "200.0000",
+      "stock_maximum": "3000.0000",
+      "statut": "QUARANTAINE",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.produitfini",
+    "pk": 3,
+    "fields": {
+      "reference": "PF-SIROP-100",
+      "nom": "Sirop pediatrique 100mL",
+      "categorie": "MEDICAMENT",
+      "unite": 17,
+      "stock_actuel": "0.0000",
+      "stock_minimum": "120.0000",
+      "stock_maximum": "2000.0000",
+      "statut": "DISPONIBLE",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.produitfini",
+    "pk": 4,
+    "fields": {
+      "reference": "PF-COLD-01",
+      "nom": "Kit thermosensible A",
+      "categorie": "CONSOMMABLE",
+      "unite": 13,
+      "stock_actuel": "80.0000",
+      "stock_minimum": "50.0000",
+      "stock_maximum": "500.0000",
+      "statut": "DISPONIBLE",
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.nomenclature",
+    "pk": 1,
+    "fields": {
+      "produit_fini": 1,
+      "nom": "Nomenclature V1 PARA-500",
+      "version": "V1",
+      "actif": true,
+      "date_creation": "2026-04-26T12:00:00Z",
+      "date_modification": "2026-04-26T12:00:00Z"
+    }
+  },
+  {
+    "model": "produits.lignenomenclature",
+    "pk": 1,
+    "fields": { "nomenclature": 1, "matiere": 1, "quantite_par_unite": "0.008000", "taux_perte": "0.0200" }
+  },
+  {
+    "model": "produits.lignenomenclature",
+    "pk": 2,
+    "fields": { "nomenclature": 1, "matiere": 3, "quantite_par_unite": "0.004000", "taux_perte": "0.0100" }
+  },
+  {
+    "model": "produits.lignenomenclature",
+    "pk": 3,
+    "fields": { "nomenclature": 1, "matiere": 5, "quantite_par_unite": "0.002000", "taux_perte": "0.0100" }
+  },
+  {
+    "model": "produits.lignenomenclature",
+    "pk": 4,
+    "fields": { "nomenclature": 1, "matiere": 8, "quantite_par_unite": "1.000000", "taux_perte": "0.0000" }
+  },
+  {
+    "model": "produits.lignenomenclature",
+    "pk": 5,
+    "fields": { "nomenclature": 1, "matiere": 9, "quantite_par_unite": "1.000000", "taux_perte": "0.0000" }
+  },
+  {
+    "model": "produits.lignenomenclature",
+    "pk": 6, "fields": { "nomenclature": 1, "matiere": 10, "quantite_par_unite": "1.000000", "taux_perte": "0.0000" }
+  },
+  {
+    "model": "magasin.affectationstock",
+    "pk": 1,
+    "fields": { "niveau": 1, "matiere_premiere": 1, "quantite_affectee": "120.0000", "actif": true, "date_affectation": "2026-04-26T12:00:00Z", "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.affectationstock",
+    "pk": 2,
+    "fields": { "niveau": 2, "matiere_premiere": 2, "quantite_affectee": "18.0000", "actif": true, "date_affectation": "2026-04-26T12:00:00Z", "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.affectationstock",
+    "pk": 3,
+    "fields": { "niveau": 3, "matiere_premiere": 3, "quantite_affectee": "420.0000", "actif": true, "date_affectation": "2026-04-26T12:00:00Z", "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.affectationstock",
+    "pk": 4,
+    "fields": { "niveau": 4, "matiere_premiere": 4, "quantite_affectee": "75.0000", "actif": true, "date_affectation": "2026-04-26T12:00:00Z", "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.affectationstock",
+    "pk": 5,
+    "fields": { "niveau": 5, "matiere_premiere": 6, "quantite_affectee": "0.0000", "actif": true, "date_affectation": "2026-04-26T12:00:00Z", "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.affectationstock",
+    "pk": 6,
+    "fields": { "niveau": 6, "matiere_premiere": 11, "quantite_affectee": "300.0000", "actif": true, "date_affectation": "2026-04-26T12:00:00Z", "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.affectationstock",
+    "pk": 7,
+    "fields": { "niveau": 7, "produit_fini": 1, "quantite_affectee": "1200.0000", "actif": true, "date_affectation": "2026-04-26T12:00:00Z", "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.affectationstock",
+    "pk": 8, "fields": { "niveau": 8, "produit_fini": 2, "quantite_affectee": "150.0000", "actif": true, "date_affectation": "2026-04-26T12:00:00Z", "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "magasin.affectationstock",
+    "pk": 9, "fields": { "niveau": 9, "produit_fini": 3, "quantite_affectee": "0.0000", "actif": true, "date_affectation": "2026-04-26T12:00:00Z", "date_creation": "2026-04-26T12:00:00Z", "date_modification": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "mouvements.mouvementstock",
+    "pk": 1,
+    "fields": { "matiere": 1, "type_stock": "MP", "type_mouvement": "ENTREE", "quantite": "150.0000", "quantite_avant": "0.0000", "quantite_apres": "150.0000", "motif": "Reception fournisseur", "operateur": 2, "date_mouvement": "2026-04-01T12:00:00Z" }
+  },
+  {
+    "model": "mouvements.mouvementstock",
+    "pk": 2,
+    "fields": { "matiere": 1, "type_stock": "MP", "type_mouvement": "SORTIE", "quantite": "30.0000", "quantite_avant": "150.0000", "quantite_apres": "120.0000", "motif": "Production PF-PARA-500", "operateur": 2, "date_mouvement": "2026-04-05T12:00:00Z" }
+  },
+  {
+    "model": "mouvements.mouvementstock",
+    "pk": 3,
+    "fields": { "matiere": 3, "type_stock": "MP", "type_mouvement": "ENTREE", "quantite": "500.0000", "quantite_avant": "0.0000", "quantite_apres": "500.0000", "motif": "Reception fournisseur", "operateur": 2, "date_mouvement": "2026-04-06T12:00:00Z" }
+  },
+  {
+    "model": "mouvements.mouvementstock",
+    "pk": 4,
+    "fields": { "matiere": 3, "type_stock": "MP", "type_mouvement": "SORTIE", "quantite": "80.0000", "quantite_avant": "500.0000", "quantite_apres": "420.0000", "motif": "Production", "operateur": 2, "date_mouvement": "2026-04-10T12:00:00Z" }
+  },
+  {
+    "model": "mouvements.mouvementstock",
+    "pk": 5,
+    "fields": { "matiere": 6, "type_stock": "MP", "type_mouvement": "SORTIE", "quantite": "50.0000", "quantite_avant": "50.0000", "quantite_apres": "0.0000", "motif": "Utilisation formulation", "operateur": 2, "date_mouvement": "2026-04-11T12:00:00Z" }
+  },
+  {
+    "model": "mouvements.mouvementstock",
+    "pk": 6,
+    "fields": { "matiere": 6, "type_stock": "MP", "type_mouvement": "AJUSTEMENT", "quantite": "0.0000", "quantite_avant": "0.0000", "quantite_apres": "0.0000", "motif": "Inventaire : stock epuise", "operateur": 2, "date_mouvement": "2026-04-13T12:00:00Z" }
+  },
+  {
+    "model": "mouvements.mouvementstock",
+    "pk": 7,
+    "fields": { "produit_fini": 1, "type_stock": "PF", "type_mouvement": "ENTREE", "quantite": "500.0000", "quantite_avant": "820.0000", "quantite_apres": "1320.0000", "motif": "Production terminee", "operateur": 2, "date_mouvement": "2026-04-15T12:00:00Z" }
+  },
+  {
+    "model": "mouvements.mouvementstock",
+    "pk": 8,
+    "fields": { "produit_fini": 1, "type_stock": "PF", "type_mouvement": "SORTIE", "quantite": "120.0000", "quantite_avant": "1320.0000", "quantite_apres": "1200.0000", "motif": "Livraison client", "operateur": 2, "date_mouvement": "2026-04-16T12:00:00Z" }
+  },
+  {
+    "model": "mouvements.mouvementstock",
+    "pk": 9,
+    "fields": { "produit_fini": 3, "type_stock": "PF", "type_mouvement": "SORTIE", "quantite": "40.0000", "quantite_avant": "40.0000", "quantite_apres": "0.0000", "motif": "Livraison client", "operateur": 2, "date_mouvement": "2026-04-17T12:00:00Z" }
+  },
+  {
+    "model": "approvisionnement.propositioncommande",
+    "pk": 1,
+    "fields": { "matiere": 2, "fournisseur": 6, "methode": "POINT_COMMANDE", "quantite_proposee": "120.0000", "statut": "EN_ATTENTE", "date_generation": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "approvisionnement.propositioncommande",
+    "pk": 2,
+    "fields": { "matiere": 6, "fournisseur": 4, "methode": "POINT_COMMANDE", "quantite_proposee": "200.0000", "statut": "EN_ATTENTE", "date_generation": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "approvisionnement.propositioncommande",
+    "pk": 3,
+    "fields": { "matiere": 3, "fournisseur": 2, "methode": "RECOMPLETEMENT", "quantite_proposee": "380.0000", "statut": "EN_ATTENTE", "date_generation": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "approvisionnement.propositioncommande",
+    "pk": 4,
+    "fields": { "matiere": 5, "fournisseur": 2, "methode": "REAPPRO_FIXE", "quantite_proposee": "150.0000", "statut": "EN_ATTENTE", "date_generation": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "approvisionnement.propositioncommande",
+    "pk": 5,
+    "fields": { "matiere": 10, "fournisseur": 3, "methode": "REAPPRO_FIXE", "quantite_proposee": "3000.0000", "statut": "EN_ATTENTE", "date_generation": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "approvisionnement.propositioncommande",
+    "pk": 6,
+    "fields": { "matiere": 9, "fournisseur": 3, "methode": "MRP", "quantite_proposee": "3000.0000", "statut": "EN_ATTENTE", "date_generation": "2026-04-26T12:00:00Z" }
+  },
+  {
+    "model": "approvisionnement.boncommande",
+    "pk": 1,
+    "fields": { "reference": "BC-2026-001", "matiere": 9, "fournisseur": 3, "quantite_commandee": "10000.0000", "prix_unitaire": "1.8500", "statut": "ENVOYE", "cree_par": 2, "date_creation": "2026-04-12T12:00:00Z" }
+  },
+  {
+    "model": "approvisionnement.boncommande",
+    "pk": 2,
+    "fields": { "reference": "BC-2026-002", "matiere": 6, "fournisseur": 4, "quantite_commandee": "500.0000", "prix_unitaire": "19.6000", "statut": "CONFIRME", "cree_par": 2, "date_creation": "2026-04-14T12:00:00Z" }
+  },
+  {
+    "model": "approvisionnement.boncommande",
+    "pk": 3,
+    "fields": { "reference": "BC-2026-003", "matiere": 2, "fournisseur": 6, "quantite_commandee": "100.0000", "prix_unitaire": "420.0000", "statut": "ENVOYE", "cree_par": 2, "date_creation": "2026-03-20T12:00:00Z", "date_reception_prevue": "2026-04-19" }
+  }
+]

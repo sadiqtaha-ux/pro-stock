@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+{% load app_filters %}
+
+{% block title %}Journal d'activité - Kanban{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h4 class="mb-1 fw-bold">Vue Kanban — Journal d'Activité</h4>
+        <p class="text-muted mb-0 fs-13">Audit trail classé par type d'action.</p>
+    </div>
+    <div class="col-auto d-flex align-items-center">
+        {% include 'components/view_toggle.html' with current_view='kanban' %}
+        {% include 'components/export_dropdown.html' %}
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-end">
+            <input type="hidden" name="view" value="kanban">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted">Recherche</label>
+                <input type="text" name="q" class="form-control form-control-sm" placeholder="Description, modèle..." value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Utilisateur</label>
+                <select name="utilisateur" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tous</option>
+                    {% for u in utilisateurs %}
+                    <option value="{{ u.id }}" {% if request.GET.utilisateur == u.id|stringformat:"i" %}selected{% endif %}>{{ u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Modèle</label>
+                <select name="modele" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tous les modèles</option>
+                    {% for m in modeles %}
+                    <option value="{{ m }}" {% if request.GET.modele == m %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Date Début</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request.GET.date_from }}">
+            </div>
+            <div class="col-md-auto ms-auto">
+                <button type="submit" class="btn btn-sm btn-primary px-3">Filtrer</button>
+                <a href="?view=kanban" class="btn btn-sm btn-light border px-3">Réinitialiser les filtres</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="kanban-board d-flex gap-3 overflow-auto pb-3" style="min-height: 70vh;">
+    <!-- Colonne CREATION -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-success rounded-circle p-1 me-2"><i class="bi bi-plus-lg text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Créations</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ activites|filter_attr:'action:CREATE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for a in activites %}
+                {% if a.action == 'CREATE' %}
+                    {% include 'core/journal/kanban_card.html' with log=a %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne MODIFICATION -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-warning rounded-circle p-1 me-2"><i class="bi bi-pencil text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Modifications</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ activites|filter_attr:'action:UPDATE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for a in activites %}
+                {% if a.action == 'UPDATE' %}
+                    {% include 'core/journal/kanban_card.html' with log=a %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne SUPPRESSION -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-danger rounded-circle p-1 me-2"><i class="bi bi-trash text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Suppressions</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ activites|filter_attr:'action:DELETE'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for a in activites %}
+                {% if a.action == 'DELETE' %}
+                    {% include 'core/journal/kanban_card.html' with log=a %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne SYSTEM (LOGIN/LOGOUT/EXPORT/...) -->
+    <div class="kanban-col flex-shrink-0" style="width: 280px;">
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-info rounded-circle p-1 me-2"><i class="bi bi-gear text-white"></i></span>
+            <h6 class="mb-0 fw-bold">Système & Autres</h6>
+            <span class="ms-auto badge bg-light text-dark border">
+                {{ activites|filter_attr:'action:LOGIN,LOGOUT,EXPORT,PRINT'|length }}
+            </span>
+        </div>
+        <div class="kanban-items d-flex flex-column gap-2">
+            {% for a in activites %}
+                {% if a.action != 'CREATE' and a.action != 'UPDATE' and a.action != 'DELETE' %}
+                    {% include 'core/journal/kanban_card.html' with log=a %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .kanban-board { min-height: 500px; }
+    .kanban-items { min-height: 100px; padding: 2px; }
+    .kanban-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+</style>
+{% endblock %}

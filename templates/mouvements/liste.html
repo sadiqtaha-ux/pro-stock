@@ -1,228 +1,225 @@
 {% extends "base.html" %}
-{% block title %}Mouvements de stock{% endblock %}
+{% load static %}
+{% load humanize %}
+{% load app_filters %}
+
+{% block title %}Historique des Mouvements | MediCare Industries{% endblock %}
 {% block active_mouvements %}active{% endblock %}
 {% block show_mouvements %}show{% endblock %}
-{% block breadcrumb %}<li class="breadcrumb-item active">Mouvements de stock</li>{% endblock %}
 
 {% block content %}
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-
-.mvt-page { font-family: 'DM Sans', sans-serif; padding: 2rem; background: #f8f9fb; min-height: 100vh; }
-
-.mvt-hero {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0e7490 100%);
-  border-radius: 20px; padding: 2.5rem; margin-bottom: 2rem;
-  position: relative; overflow: hidden;
-}
-.mvt-hero::before {
-  content: ''; position: absolute; top: -50px; right: -50px;
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(14,116,144,0.3) 0%, transparent 70%);
-  border-radius: 50%;
-}
-.mvt-hero h1 {
-  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.2rem;
-  color: #fff; margin: 0 0 0.3rem; letter-spacing: -1px; position: relative; z-index: 1;
-}
-.mvt-hero p { color: rgba(255,255,255,0.6); margin: 0; position: relative; z-index: 1; font-size: 0.9rem; }
-.btn-nouveau {
-  background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; color: #fff;
-  padding: 0.75rem 1.8rem; border-radius: 12px; font-family: 'Syne', sans-serif;
-  font-weight: 600; font-size: 0.95rem; text-decoration: none;
-  display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;
-  box-shadow: 0 4px 20px rgba(14,165,233,0.4); position: relative; z-index: 1;
-}
-.btn-nouveau:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(14,165,233,0.5); color: #fff; }
-
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
-.stat-card {
-  background: #fff; border-radius: 16px; padding: 1.4rem 1.6rem;
-  border: 1px solid #e8ecf0; display: flex; align-items: center; gap: 1rem;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
-.stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
-.stat-icon.green { background: #dcfce7; color: #16a34a; }
-.stat-icon.red { background: #fee2e2; color: #dc2626; }
-.stat-icon.blue { background: #dbeafe; color: #2563eb; }
-.stat-icon.amber { background: #fef3c7; color: #d97706; }
-.stat-val { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.6rem; color: #0f172a; line-height: 1; }
-.stat-lbl { font-size: 0.78rem; color: #94a3b8; margin-top: 3px; font-weight: 500; }
-
-.filter-card { background: #fff; border-radius: 16px; padding: 1.5rem; border: 1px solid #e8ecf0; margin-bottom: 1.5rem; }
-.filter-card .form-control, .filter-card .form-select {
-  border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 1rem;
-  font-size: 0.88rem; transition: border-color 0.2s, box-shadow 0.2s; background: #f8fafc;
-}
-.filter-card .form-control:focus, .filter-card .form-select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.1); background: #fff; }
-.filter-card label { font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
-.btn-filter { background: #0f172a; color: #fff; border: none; border-radius: 10px; padding: 0.6rem 1.4rem; font-weight: 600; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
-.btn-filter:hover { background: #1e293b; color: #fff; }
-.btn-reset { background: #f1f5f9; color: #64748b; border: none; border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 500; font-size: 0.88rem; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-.btn-reset:hover { background: #e2e8f0; color: #475569; }
-.btn-csv { background: #f0fdf4; color: #16a34a; border: 1.5px solid #bbf7d0; border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.88rem; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-.btn-csv:hover { background: #dcfce7; color: #15803d; }
-
-.table-card { background: #fff; border-radius: 16px; border: 1px solid #e8ecf0; overflow: hidden; }
-.table-card table { margin: 0; }
-.table-card thead tr th { background: #f8fafc; color: #64748b; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 1rem 1.2rem; border-bottom: 1.5px solid #e8ecf0; border-top: none; }
-.table-card tbody tr { transition: background 0.15s; }
-.table-card tbody tr:hover { background: #f8fafc; }
-.table-card tbody td { padding: 1rem 1.2rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.88rem; }
-.table-card tbody tr:last-child td { border-bottom: none; }
-
-.badge-entree { background: #dcfce7; color: #15803d; border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
-.badge-sortie { background: #fee2e2; color: #dc2626; border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
-.matiere-nom { font-weight: 600; color: #0f172a; font-size: 0.9rem; }
-.matiere-ref { font-size: 0.75rem; color: #94a3b8; }
-.qty-entree { color: #16a34a; font-weight: 700; font-size: 0.95rem; }
-.qty-sortie { color: #dc2626; font-weight: 700; font-size: 0.95rem; }
-.qty-unit { font-size: 0.75rem; color: #94a3b8; margin-left: 2px; }
-.lot-badge { background: #f1f5f9; color: #475569; border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; font-weight: 500; }
-
-.empty-state { text-align: center; padding: 5rem 2rem; }
-.empty-state .empty-icon { width: 80px; height: 80px; background: #f1f5f9; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; color: #94a3b8; margin-bottom: 1.5rem; }
-.empty-state h5 { font-family: 'Syne', sans-serif; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; }
-.empty-state p { color: #94a3b8; font-size: 0.9rem; }
-
-.mvt-pagination { padding: 1.2rem 1.5rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-.page-link { border-radius: 8px !important; border: 1.5px solid #e2e8f0 !important; color: #475569 !important; font-size: 0.85rem; margin: 0 2px; }
-.page-item.active .page-link { background: #0f172a !important; border-color: #0f172a !important; color: #fff !important; }
-
-@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-.mvt-hero { animation: fadeUp 0.4s ease; }
-.stats-row { animation: fadeUp 0.4s ease 0.1s both; }
-.filter-card { animation: fadeUp 0.4s ease 0.2s both; }
-.table-card { animation: fadeUp 0.4s ease 0.3s both; }
-</style>
-
-<div class="mvt-page">
-  <div class="mvt-hero d-flex justify-content-between align-items-center">
-    <div>
-      <h1>📦 Mouvements de stock</h1>
-      <p>Historique complet des entrées et sorties — MediCare Industries</p>
+<!-- Header & Actions -->
+<div class="row g-3 mb-4 align-items-center">
+    <div class="col-md-6">
+        <h4 class="mb-1 fw-bold">Journal des Mouvements</h4>
+        <p class="text-muted mb-0 fs-13">Traçabilité complète des flux de matières et produits.</p>
     </div>
-    <a href="{% url 'mouvements:create' %}" class="btn-nouveau">
-      <i class="bi bi-plus-lg"></i> Nouveau mouvement
-    </a>
-  </div>
-
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-icon blue"><i class="bi bi-list-ul"></i></div>
-      <div><div class="stat-val">{{ page_obj.paginator.count|default:"0" }}</div><div class="stat-lbl">Total mouvements</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon green"><i class="bi bi-arrow-down-circle-fill"></i></div>
-      <div><div class="stat-val" style="color:#16a34a">Entrées</div><div class="stat-lbl">Réceptions fournisseurs</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon red"><i class="bi bi-arrow-up-circle-fill"></i></div>
-      <div><div class="stat-val" style="color:#dc2626">Sorties</div><div class="stat-lbl">Consommations production</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon amber"><i class="bi bi-calendar-check"></i></div>
-      <div><div class="stat-val" style="font-size:1rem;">{% now "d/m/Y" %}</div><div class="stat-lbl">Aujourd'hui</div></div>
-    </div>
-  </div>
-
-  <div class="filter-card">
-    <form method="get" class="row g-3 align-items-end">
-      <div class="col-md-3">
-        <label>Recherche</label>
-        <input type="text" name="q" value="{{ request.GET.q }}" class="form-control" placeholder="Matière, lot...">
-      </div>
-      <div class="col-md-2">
-        <label>Type</label>
-        <select name="type" class="form-select">
-          <option value="">Tous</option>
-          {% for val, label in types %}
-            <option value="{{ val }}" {% if request.GET.type == val %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label>Date début</label>
-        <input type="date" name="date_debut" value="{{ request.GET.date_debut }}" class="form-control">
-      </div>
-      <div class="col-md-2">
-        <label>Date fin</label>
-        <input type="date" name="date_fin" value="{{ request.GET.date_fin }}" class="form-control">
-      </div>
-      <div class="col-md-3 d-flex gap-2">
-        <button type="submit" class="btn-filter"><i class="bi bi-search"></i> Filtrer</button>
-        <a href="{% url 'mouvements:liste' %}" class="btn-reset"><i class="bi bi-x"></i> Reset</a>
-        <a href="{% url 'mouvements:export-csv' %}?{{ request.GET.urlencode }}" class="btn-csv"><i class="bi bi-download"></i> CSV</a>
-      </div>
-    </form>
-  </div>
-
-  <div class="table-card">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Date</th><th>Matière première</th><th>Type</th>
-          <th class="text-end">Quantité</th><th class="text-end">Avant</th>
-          <th class="text-end">Après</th><th>Lot</th><th>Motif</th><th>Opérateur</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for mvt in mouvements %}
-        <tr>
-          <td>
-            <div style="font-weight:600;color:#1e293b;font-size:0.85rem;">{{ mvt.date_mouvement|date:"d/m/Y" }}</div>
-            <div style="font-size:0.75rem;color:#94a3b8;">{{ mvt.date_mouvement|date:"H:i" }}</div>
-          </td>
-          <td>
-            <div class="matiere-nom">{{ mvt.matiere.nom }}</div>
-            <div class="matiere-ref">{{ mvt.matiere.reference }}</div>
-          </td>
-          <td>
-            {% if mvt.type_mouvement == "ENTREE" %}
-              <span class="badge-entree"><i class="bi bi-arrow-down-circle-fill"></i> Entrée</span>
-            {% else %}
-              <span class="badge-sortie"><i class="bi bi-arrow-up-circle-fill"></i> Sortie</span>
-            {% endif %}
-          </td>
-          <td class="text-end">
-            {% if mvt.type_mouvement == "ENTREE" %}<span class="qty-entree">+{{ mvt.quantite }}</span>
-            {% else %}<span class="qty-sortie">-{{ mvt.quantite }}</span>{% endif %}
-            <span class="qty-unit">{{ mvt.matiere.unite }}</span>
-          </td>
-          <td class="text-end" style="color:#94a3b8;font-size:0.85rem;">{{ mvt.quantite_avant }}</td>
-          <td class="text-end" style="font-weight:600;font-size:0.85rem;">{{ mvt.quantite_apres }}</td>
-          <td>{% if mvt.numero_lot %}<span class="lot-badge">{{ mvt.numero_lot }}</span>{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
-          <td><small style="color:#64748b;">{{ mvt.motif|default:"—"|truncatechars:25 }}</small></td>
-          <td><small style="color:#94a3b8;">{% if mvt.operateur %}{{ mvt.operateur.get_full_name|default:mvt.operateur.username }}{% else %}—{% endif %}</small></td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="9">
-          <div class="empty-state">
-            <div class="empty-icon">📭</div>
-            <h5>Aucun mouvement trouvé</h5>
-            <p>Commencez par enregistrer une entrée ou une sortie de stock.</p>
-            <a href="{% url 'mouvements:create' %}" class="btn-nouveau" style="display:inline-flex;margin-top:1rem;">
-              <i class="bi bi-plus-lg"></i> Premier mouvement
+    <div class="col-md-6 text-md-end">
+        <div class="d-flex justify-content-md-end gap-2">
+            {% include 'components/view_toggle.html' with current_view='table' %}
+            {% include 'components/export_dropdown.html' %}
+            <a href="{% url 'mouvements:create' %}" class="btn btn-primary shadow-sm btn-sm px-3">
+                <i class="bi bi-plus-lg me-1"></i> Nouveau mouvement
             </a>
-          </div>
-        </td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Summary -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="kpi-card shadow-sm border-0">
+            <div class="kpi-icon bg-primary-soft">
+                <i class="bi bi-arrow-left-right"></i>
+            </div>
+            <div>
+                <div class="kpi-value">{{ movements_count|default:mouvements.count }}</div>
+                <div class="kpi-label">Total Mouvements</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card shadow-sm border-0">
+            <div class="kpi-icon bg-success-soft">
+                <i class="bi bi-box-arrow-in-down"></i>
+            </div>
+            <div>
+                <div class="kpi-value text-success">+{{ entree_count|default:"0" }}</div>
+                <div class="kpi-label">Entrées récentes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card shadow-sm border-0">
+            <div class="kpi-icon bg-danger-soft">
+                <i class="bi bi-box-arrow-up"></i>
+            </div>
+            <div>
+                <div class="kpi-value text-danger">-{{ sortie_count|default:"0" }}</div>
+                <div class="kpi-label">Sorties récentes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card shadow-sm border-0">
+            <div class="kpi-icon bg-warning-soft">
+                <i class="bi bi-sliders"></i>
+            </div>
+            <div>
+                <div class="kpi-value text-warning">{{ ajustement_count|default:"0" }}</div>
+                <div class="kpi-label">Ajustements</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barre de filtres -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-3 align-items-end">
+            <input type="hidden" name="view" value="table">
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 10px;">Recherche</label>
+                <div class="input-group input-group-sm shadow-none">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-0 bg-light" placeholder="Article, lot, référence..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 10px;">Type de Stock</label>
+                <select name="type_stock" class="form-select form-select-sm border-0 bg-light">
+                    <option value="">Tous</option>
+                    {% for val, label in types_stock %}
+                    <option value="{{ val }}" {% if request.GET.type_stock == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 10px;">Type Mouvement</label>
+                <select name="type" class="form-select form-select-sm border-0 bg-light">
+                    <option value="">Tous les types</option>
+                    {% for val, label in types_mvt %}
+                    <option value="{{ val }}" {% if request.GET.type == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 10px;">Date début</label>
+                <input type="date" name="date_debut" class="form-control form-control-sm border-0 bg-light" value="{{ request.GET.date_debut }}">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 10px;">Date fin</label>
+                <input type="date" name="date_fin" class="form-control form-control-sm border-0 bg-light" value="{{ request.GET.date_fin }}">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-sm btn-primary w-100 shadow-sm">Filtrer</button>
+            </div>
+            <div class="col-md-auto">
+                <a href="?view=table" class="btn btn-sm btn-light border w-100">Réinitialiser les filtres</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table Section -->
+<div class="panel shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 text-muted text-uppercase small py-3" style="font-size: 10px;">Date & Heure</th>
+                    <th class="text-muted text-uppercase small py-3" style="font-size: 10px;">Article & Type</th>
+                    <th class="text-center text-muted text-uppercase small py-3" style="font-size: 10px;">Mouvement</th>
+                    <th class="text-end text-muted text-uppercase small py-3" style="font-size: 10px;">Quantité</th>
+                    <th class="text-end text-muted text-uppercase small py-3" style="font-size: 10px;">Stock Après</th>
+                    <th class="text-center text-muted text-uppercase small py-3" style="font-size: 10px;">Lot / Traçabilité</th>
+                    <th class="text-muted text-uppercase small py-3" style="font-size: 10px;">Opérateur</th>
+                    <th class="pe-4 text-end text-muted text-uppercase small py-3" style="font-size: 10px;">Motif / Réf.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mvt in mouvements %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="fw-bold fs-13 text-dark">{{ mvt.date_mouvement|date:"d/m/Y" }}</div>
+                        <small class="text-muted fs-11">{{ mvt.date_mouvement|date:"H:i" }}</small>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-dark">
+                            {% if mvt.matiere %}{{ mvt.matiere.nom }}{% else %}{{ mvt.produit_fini.nom }}{% endif %}
+                        </div>
+                        <span class="badge {% if mvt.type_stock == 'MP' %}bg-primary-soft text-primary{% else %}bg-purple-soft text-purple{% endif %} fs-10" style="padding: 2px 8px; border-radius: 4px;">
+                            {{ mvt.get_type_stock_display }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        {% if mvt.type_mouvement == 'ENTREE' %}
+                            <span class="badge bg-success-soft text-success rounded-pill px-3 py-2 border border-success border-opacity-10"><i class="bi bi-arrow-down-short me-1"></i> Entrée</span>
+                        {% elif mvt.type_mouvement == 'SORTIE' %}
+                            <span class="badge bg-danger-soft text-danger rounded-pill px-3 py-2 border border-danger border-opacity-10"><i class="bi bi-arrow-up-short me-1"></i> Sortie</span>
+                        {% elif mvt.type_mouvement == 'AJUSTEMENT' %}
+                            <span class="badge bg-warning-soft text-warning rounded-pill px-3 py-2 border border-warning border-opacity-10"><i class="bi bi-sliders me-1"></i> Ajustement</span>
+                        {% else %}
+                            <span class="badge bg-info-soft text-info rounded-pill px-3 py-2 border border-info border-opacity-10"><i class="bi bi-arrow-left-right me-1"></i> Transfert</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <span class="fw-bold fs-15 {% if mvt.type_mouvement == 'ENTREE' %}text-success{% elif mvt.type_mouvement == 'SORTIE' %}text-danger{% else %}text-dark{% endif %}">
+                            {% if mvt.type_mouvement == 'ENTREE' %}+{% elif mvt.type_mouvement == 'SORTIE' %}-{% endif %}
+                            {{ mvt.quantite|format_qty }}
+                        </span>
+                        <small class="text-muted fs-11 ms-1">{% if mvt.matiere %}{{ mvt.matiere.unite.symbole }}{% else %}{{ mvt.produit_fini.unite.symbole }}{% endif %}</small>
+                    </td>
+                    <td class="text-end">
+                        <div class="fw-bold text-dark">{{ mvt.quantite_apres|format_qty }}</div>
+                        <small class="text-muted fs-11">Avant: {{ mvt.quantite_avant|format_qty }}</small>
+                    </td>
+                    <td class="text-center">
+                        {% if mvt.numero_lot %}
+                        <span class="badge bg-white text-dark border fw-normal shadow-xs px-2 py-1"><i class="bi bi-tag-fill text-muted me-1"></i>{{ mvt.numero_lot }}</span>
+                        {% else %}<span class="text-muted opacity-50 small">—</span>{% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-xs bg-light rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 10px; font-weight: bold; color: #666;">
+                                {{ mvt.operateur.username|slice:":1"|upper }}
+                            </div>
+                            <span class="text-dark small fw-medium">{{ mvt.operateur.username|default:"—" }}</span>
+                        </div>
+                    </td>
+                    <td class="pe-4 text-end">
+                        <div class="d-flex flex-column align-items-end">
+                            {% if mvt.bon_commande %}
+                            <a href="{% url 'approvisionnement:commande-detail' mvt.bon_commande.pk %}" class="btn btn-xs btn-outline-primary py-0 px-2 fs-10 fw-bold mb-1">
+                                {{ mvt.bon_commande.reference }}
+                            </a>
+                            {% endif %}
+                            {% if mvt.motif %}
+                            <span class="small text-muted text-truncate" style="max-width: 150px;" title="{{ mvt.motif }}">{{ mvt.motif }}</span>
+                            {% elif not mvt.bon_commande %}
+                            <span class="text-muted opacity-50 small">—</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <div class="py-4">
+                            <i class="bi bi-clock-history fs-1 text-muted opacity-25 d-block mb-3"></i>
+                            <p class="text-muted mb-0">Aucun mouvement enregistré pour le moment.</p>
+                            <a href="{% url 'mouvements:create' %}" class="btn btn-link btn-sm mt-2">Créer le premier mouvement</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% if is_paginated %}
-    <div class="mvt-pagination">
-      <small style="color:#94a3b8;">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</small>
-      <nav><ul class="pagination pagination-sm mb-0">
-        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>{% endif %}
-        {% for num in page_obj.paginator.page_range %}
-          {% if page_obj.number == num %}<li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}<li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>{% endif %}
-        {% endfor %}
-        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>{% endif %}
-      </ul></nav>
+    <div class="panel-footer py-3 border-top bg-light bg-opacity-50">
+        {% include "components/pagination.html" %}
     </div>
     {% endif %}
-  </div>
 </div>
 {% endblock %}

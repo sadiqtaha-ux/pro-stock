@@ -1,209 +1,169 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
 {% block title %}Commandes d'achat{% endblock %}
 {% block active_appro %}active{% endblock %}
 {% block show_appro %}show{% endblock %}
+
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'approvisionnement:dashboard' %}">Approvisionnement</a></li>
 <li class="breadcrumb-item active">Commandes</li>
 {% endblock %}
 
 {% block content %}
-<div class="row mb-3 align-items-center">
+<div class="row mb-4 align-items-center">
     <div class="col">
-        <h4 class="mb-1 fw-bold">Commandes d'achat</h4>
-        <p class="text-muted mb-0 fs-13">
-            Gérez vos bons de commande et suivez leur avancement.
-        </p>
+        <h4 class="mb-1 fw-bold">Suivi des Commandes d'Achat</h4>
+        <p class="text-muted mb-0 fs-13">Gérez vos bons de commande et suivez les délais de livraison.</p>
     </div>
-    <div class="col-auto d-flex gap-2">
-        <!-- Toggle vue liste / kanban -->
-        <div class="btn-group btn-group-sm" role="group">
-            <a href="{% url 'approvisionnement:commande-liste' %}"
-               class="btn btn-outline-secondary active"
-               title="Vue liste">
-                <i class="bi bi-list-ul"></i>
-            </a>
-            <a href="{% url 'approvisionnement:commande-kanban' %}"
-               class="btn btn-outline-secondary"
-               title="Vue Kanban">
-                <i class="bi bi-kanban"></i>
-            </a>
-        </div>
-        <a href="{% url 'approvisionnement:commande-create' %}" class="btn btn-sm btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nouvelle commande
+    <div class="col-auto d-flex align-items-center">
+        {% include 'components/view_toggle.html' with current_view='table' %}
+        {% include 'components/export_dropdown.html' %}
+        <a href="{% url 'approvisionnement:commandes-a-valider' %}" class="btn btn-primary btn-sm ms-2">
+            <i class="bi bi-play-circle me-1"></i> Lancer Planificateur
         </a>
     </div>
 </div>
 
 <!-- Barre de filtres -->
-<form method="get" class="row g-2 mb-3 align-items-end" id="filter-form">
-    <div class="col-md-3">
-        <input type="text" name="q" class="form-control form-control-sm"
-               placeholder="Réf, matière, fournisseur…" value="{{ request.GET.q }}">
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-end">
+            <input type="hidden" name="view" value="table">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted">Recherche</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Réf, matière, fournisseur..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Statut</label>
+                <select name="statut" class="form-select form-select-sm">
+                    <option value="">Tous les statuts</option>
+                    {% for val, label in statuts_choices %}
+                    <option value="{{ val }}" {% if request.GET.statut == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Fournisseur</label>
+                <select name="fournisseur" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    {% for f in fournisseurs %}
+                    <option value="{{ f.pk }}" {% if request.GET.fournisseur == f.pk|stringformat:"s" %}selected{% endif %}>{{ f.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Retard</label>
+                <select name="retard" class="form-select form-select-sm">
+                    <option value="">Tous les délais</option>
+                    <option value="1" {% if request.GET.retard == "1" %}selected{% endif %}>En retard uniquement</option>
+                </select>
+            </div>
+            <div class="col-md-auto ms-auto">
+                <button type="submit" class="btn btn-sm btn-primary px-3">Filtrer</button>
+                <a href="?view=table" class="btn btn-sm btn-light border px-3">Réinitialiser les filtres</a>
+            </div>
+        </form>
     </div>
-    <div class="col-md-2">
-        <select name="statut" class="form-select form-select-sm">
-            <option value="">Tous les statuts</option>
-            {% for val, label in statuts %}
-            <option value="{{ val }}" {% if request.GET.statut == val %}selected{% endif %}>
-                {{ label }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-2">
-        <select name="methode" class="form-select form-select-sm">
-            <option value="">Toutes les méthodes</option>
-            {% for val, label in methodes_choices %}
-            <option value="{{ val }}" {% if request.GET.methode == val %}selected{% endif %}>
-                {{ label }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-2">
-        <select name="fournisseur" class="form-select form-select-sm">
-            <option value="">Tous les fournisseurs</option>
-            {% for f in fournisseurs %}
-            <option value="{{ f.pk }}"
-                    {% if request.GET.fournisseur == f.pk|stringformat:"s" %}selected{% endif %}>
-                {{ f.nom }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-1">
-        <button type="submit" class="btn btn-sm btn-primary w-100">
-            <i class="bi bi-funnel"></i>
-            {% if active_filters_count > 0 %}
-            <span class="badge bg-light text-primary ms-1">{{ active_filters_count }}</span>
-            {% endif %}
-        </button>
-    </div>
-    {% if active_filters_count > 0 %}
-    <div class="col-md-1">
-        <a href="{% url 'approvisionnement:commande-liste' %}"
-           class="btn btn-sm btn-outline-secondary w-100" title="Réinitialiser">
-            <i class="bi bi-x-lg"></i>
-        </a>
-    </div>
-    {% endif %}
-</form>
+</div>
 
-<!-- KPI rapide -->
 {% if montant_total_en_cours %}
-<div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2">
-    <i class="bi bi-info-circle"></i>
-    <span>Montant total des commandes en cours : <strong>{{ montant_total_en_cours|floatformat:2 }} DH</strong></span>
+<div class="alert alert-info-soft py-2 px-3 mb-4 d-flex align-items-center gap-3 border">
+    <div class="rounded-circle bg-info p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+        <i class="bi bi-wallet2 text-white"></i>
+    </div>
+    <div>
+        <span class="text-muted fs-12 d-block">Valeur totale engagée (en cours)</span>
+        <span class="fw-bold fs-15 text-dark">{{ montant_total_en_cours|floatformat:2 }} DH</span>
+    </div>
 </div>
 {% endif %}
 
 <div class="panel">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 table-stockpro">
+        <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Référence</th>
-                    <th>Matière</th>
+                    <th class="ps-4">Référence</th>
+                    <th>Matière Première</th>
                     <th>Fournisseur</th>
-                    <th>Méthode</th>
-                    <th>Quantité</th>
-                    <th>Montant</th>
-                    <th>Livraison prévue</th>
-                    <th>Statut</th>
-                    <th class="text-end">Actions</th>
+                    <th class="text-center">Quantité</th>
+                    <th class="text-end">Montant</th>
+                    <th class="text-center">Livraison</th>
+                    <th class="text-center">Statut</th>
+                    <th class="text-end pe-4">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for cmd in commandes %}
-                <tr>
-                    <td class="fw-medium">
-                        {% if cmd.reference %}{{ cmd.reference }}{% else %}#{{ cmd.pk }}{% endif %}
-                    </td>
-                    <td>
-                        <span class="d-block">{{ cmd.matiere.nom|truncatechars:35 }}</span>
-                        <small class="text-muted">{{ cmd.matiere.reference }}</small>
-                    </td>
-                    <td>{{ cmd.fournisseur.nom|default:"—" }}</td>
-                    <td>
-                        <span class="badge bg-secondary bg-opacity-10 text-secondary">
-                            {{ cmd.get_methode_declenchement_display }}
-                        </span>
-                    </td>
-                    <td>{{ cmd.quantite_commandee }} {{ cmd.matiere.unite.symbole }}</td>
-                    <td>{{ cmd.montant_total|floatformat:2|default:"—" }} DH</td>
-                    <td>
-                        {% if cmd.date_reception_prevue %}
-                            {{ cmd.date_reception_prevue|date:"d/m/Y" }}
-                        {% else %}—{% endif %}
-                    </td>
-                    <td>
-                        {% if cmd.statut == 'BROUILLON' %}
-                            <span class="badge bg-secondary">Brouillon</span>
-                        {% elif cmd.statut == 'ENVOYE' %}
-                            <span class="badge bg-primary">Envoyé</span>
-                        {% elif cmd.statut == 'CONFIRME' %}
-                            <span class="badge bg-info text-dark">Confirmé</span>
-                        {% elif cmd.statut == 'RECU' %}
-                            <span class="badge bg-success">Reçu</span>
-                        {% elif cmd.statut == 'ANNULE' %}
-                            <span class="badge bg-danger">Annulé</span>
-                        {% else %}
-                            <span class="badge bg-warning text-dark">{{ cmd.statut }}</span>
+                <tr class="{% if cmd.est_en_retard %}table-danger-soft{% endif %}">
+                    <td class="ps-4">
+                        <span class="fw-bold">{{ cmd.reference|default:"#REF" }}</span>
+                        {% if cmd.est_en_retard %}
+                        <span class="badge bg-danger ms-1" title="En retard"><i class="bi bi-exclamation-triangle"></i></span>
                         {% endif %}
                     </td>
-                    <td class="text-end">
-                        <a href="{% url 'approvisionnement:commande-detail' cmd.pk %}"
-                           class="btn btn-sm btn-outline-info" title="Voir">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <a href="{% url 'approvisionnement:commande-update' cmd.pk %}"
-                           class="btn btn-sm btn-outline-secondary ms-1" title="Modifier">
-                            <i class="bi bi-pencil"></i>
-                        </a>
+                    <td>
+                        <div class="fw-semibold">{{ cmd.matiere.nom|truncatechars:35 }}</div>
+                        <small class="text-muted">{{ cmd.get_methode_declenchement_display }}</small>
+                    </td>
+                    <td>{{ cmd.fournisseur.nom|default:"—" }}</td>
+                    <td class="text-center">
+                        <span class="fw-bold">{{ cmd.quantite_commandee|floatformat:2 }}</span>
+                        <small class="text-muted ms-1">{{ cmd.matiere.unite.symbole }}</small>
+                    </td>
+                    <td class="text-end fw-bold">{{ cmd.montant_total|floatformat:2 }} DH</td>
+                    <td class="text-center">
+                        {% if cmd.date_reception_prevue %}
+                            <span class="{% if cmd.est_en_retard %}text-danger fw-bold{% endif %}">
+                                {{ cmd.date_reception_prevue|date:"d/m/Y" }}
+                            </span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if cmd.statut == 'BROUILLON' %}
+                            <span class="badge bg-secondary-soft text-secondary rounded-pill">Brouillon</span>
+                        {% elif cmd.statut == 'ENVOYE' %}
+                            <span class="badge bg-primary-soft text-primary rounded-pill">Envoyé</span>
+                        {% elif cmd.statut == 'CONFIRME' %}
+                            <span class="badge bg-info-soft text-info rounded-pill">Confirmé</span>
+                        {% elif cmd.statut == 'RECU' %}
+                            <span class="badge bg-success-soft text-success rounded-pill">Reçu</span>
+                        {% elif cmd.statut == 'ANNULE' %}
+                            <span class="badge bg-danger-soft text-danger rounded-pill">Annulé</span>
+                        {% else %}
+                            <span class="badge bg-warning-soft text-warning rounded-pill">{{ cmd.statut }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <div class="btn-group">
+                            <a href="{% url 'approvisionnement:commande-detail' cmd.pk %}" class="btn btn-sm btn-white border" title="Voir">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'approvisionnement:commande-update' cmd.pk %}" class="btn btn-sm btn-white border ms-1" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="text-center py-5 text-muted">
-                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                        Aucune commande {% if active_filters_count > 0 %}correspondant aux filtres{% else %}pour le moment{% endif %}.
-                        {% if active_filters_count > 0 %}
-                        <br><a href="{% url 'approvisionnement:commande-liste' %}" class="btn btn-sm btn-outline-secondary mt-2">
-                            <i class="bi bi-x-lg me-1"></i>Effacer les filtres
-                        </a>
-                        {% endif %}
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                        Aucune commande ne correspond à vos critères.
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-
-    <!-- Pagination -->
     {% if is_paginated %}
-    <div class="d-flex justify-content-center py-3">
-        <nav>
-            <ul class="pagination pagination-sm mb-0">
-                {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
-                {% endif %}
-                <li class="page-item disabled">
-                    <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-                </li>
-                {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
+    <div class="panel-footer py-3">
+        {% include "components/pagination.html" %}
     </div>
     {% endif %}
 </div>

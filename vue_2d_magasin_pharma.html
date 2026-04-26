@@ -1,0 +1,219 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-sans);}
+.wrap{padding:1rem;}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap;}
+.toolbar-title{font-size:15px;font-weight:500;color:var(--color-text-primary);flex:1;}
+.legend{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary);}
+.leg-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+.canvas-wrap{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);background:var(--color-background-secondary);overflow:hidden;}
+canvas{display:block;cursor:pointer;}
+.info-panel{margin-top:1rem;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);background:var(--color-background-primary);padding:1rem;min-height:90px;}
+.info-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px;}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;}
+.info-kpi{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px 12px;}
+.info-kpi-label{font-size:10px;color:var(--color-text-secondary);margin-bottom:2px;}
+.info-kpi-val{font-size:16px;font-weight:500;color:var(--color-text-primary);}
+.info-hint{font-size:12px;color:var(--color-text-tertiary);}
+.btn-filter{font-size:11px;padding:4px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;}
+.btn-filter.active{background:#E6F1FB;color:#0C447C;border-color:#85B7EB;}
+</style>
+
+<div class="wrap">
+  <div class="toolbar">
+    <span class="toolbar-title">Plan du magasin — MediCare Industries</span>
+    <button class="btn-filter active" onclick="setFilter('all',this)">Tout</button>
+    <button class="btn-filter" onclick="setFilter('critique',this)">Critique</button>
+    <button class="btn-filter" onclick="setFilter('alerte',this)">Alerte</button>
+    <button class="btn-filter" onclick="setFilter('normal',this)">Normal</button>
+  </div>
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#E24B4A;"></div>Stock critique (&lt;20%)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#EF9F27;"></div>Stock bas (20–50%)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#639922;"></div>Stock normal (50–80%)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#185FA5;"></div>Stock plein (&gt;80%)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#B4B2A9;border:0.5px solid #888780;"></div>Allée / vide</div>
+  </div>
+  <div style="margin-top:0.75rem;" class="canvas-wrap">
+    <canvas id="wh" width="820" height="520"></canvas>
+  </div>
+  <div class="info-panel" id="info-panel">
+    <div class="info-hint" id="info-hint">Cliquez sur un emplacement pour afficher les détails du produit stocké.</div>
+  </div>
+</div>
+
+<script>
+const W=820,H=520;
+const slots=[
+  {id:'A1',x:30,y:60,w:80,h:50,zone:'froide',name:'Paracétamol API',ref:'API-001',qty:180,max:1200,unit:'kg',methode:'Point de commande',pc:300,qec:800,fournisseur:'ChemPharma Casa'},
+  {id:'A2',x:30,y:120,w:80,h:50,zone:'froide',name:'Amoxicilline trihydratée',ref:'API-002',qty:95,max:600,unit:'kg',methode:'MRP',pc:150,qec:400,fournisseur:'EuroPharma Import'},
+  {id:'A3',x:30,y:180,w:80,h:50,zone:'froide',name:'Ibuprofène API',ref:'API-003',qty:520,max:800,unit:'kg',methode:'Point de commande',pc:200,qec:500,fournisseur:'ChemPharma Casa'},
+  {id:'A4',x:30,y:240,w:80,h:50,zone:'froide',name:'Gélatine pharm.',ref:'API-004',qty:40,max:300,unit:'kg',methode:'Recomplètement',pc:80,qec:200,fournisseur:'GelTech Rabat'},
+
+  {id:'B1',x:170,y:60,w:80,h:50,zone:'temperee',name:'Amidon de maïs',ref:'EXC-001',qty:1800,max:3000,unit:'kg',methode:'Réappro. fixe',pc:600,qec:1500,fournisseur:'AgroStar Meknès'},
+  {id:'B2',x:170,y:120,w:80,h:50,zone:'temperee',name:'Stéarate de magnésium',ref:'EXC-002',qty:280,max:500,unit:'kg',methode:'Réappro. fixe',pc:120,qec:300,fournisseur:'AgroStar Meknès'},
+  {id:'B3',x:170,y:180,w:80,h:50,zone:'temperee',name:'Cellulose MCC',ref:'EXC-003',qty:420,max:600,unit:'kg',methode:'Recomplètement',pc:150,qec:350,fournisseur:'CelluTech Casa'},
+  {id:'B4',x:170,y:240,w:80,h:50,zone:'temperee',name:'Lactose monohydraté',ref:'EXC-004',qty:90,max:800,unit:'kg',methode:'Recomplètement',pc:200,qec:500,fournisseur:'AgroStar Meknès'},
+  {id:'B5',x:170,y:300,w:80,h:50,zone:'temperee',name:'Sirop de sorbitol',ref:'EXC-005',qty:650,max:1000,unit:'L',methode:'Point de commande',pc:250,qec:600,fournisseur:'SweetChem Fès'},
+
+  {id:'C1',x:310,y:60,w:80,h:50,zone:'seche',name:'Blisters PVC/Alu',ref:'COND-001',qty:48000,max:200000,unit:'u',methode:'Réappro. fixe',pc:50000,qec:100000,fournisseur:'PackPharma Tanger'},
+  {id:'C2',x:310,y:120,w:80,h:50,zone:'seche',name:'Flacons verre ambré',ref:'COND-002',qty:32000,max:60000,unit:'u',methode:'MRP',pc:15000,qec:30000,fournisseur:'VerroPack Casa'},
+  {id:'C3',x:310,y:180,w:80,h:50,zone:'seche',name:'Bouchons PE',ref:'COND-003',qty:55000,max:80000,unit:'u',methode:'Réappro. fixe',pc:20000,qec:40000,fournisseur:'PackPharma Tanger'},
+  {id:'C4',x:310,y:240,w:80,h:50,zone:'seche',name:'Boîtes carton',ref:'COND-004',qty:8500,max:50000,unit:'u',methode:'Réappro. fixe',pc:12000,qec:25000,fournisseur:'CartoPack Meknès'},
+  {id:'C5',x:310,y:300,w:80,h:50,zone:'seche',name:'Étiquettes adhésives',ref:'COND-005',qty:120000,max:300000,unit:'u',methode:'Réappro. fixe',pc:80000,qec:150000,fournisseur:'LabelPrint Fès'},
+  {id:'C6',x:310,y:360,w:80,h:50,zone:'seche',name:'Notices imprimées',ref:'COND-006',qty:95000,max:300000,unit:'u',methode:'MRP',pc:70000,qec:120000,fournisseur:'LabelPrint Fès'},
+
+  {id:'D1',x:450,y:60,w:80,h:50,zone:'seche',name:'Capsules gélatine',ref:'COND-007',qty:85000,max:500000,unit:'u',methode:'MRP',pc:100000,qec:200000,fournisseur:'GelTech Rabat'},
+  {id:'D2',x:450,y:120,w:80,h:50,zone:'temperee',name:'Eau purifiée (bidon)',ref:'EXC-006',qty:400,max:500,unit:'L',methode:'Recomplètement',pc:100,qec:300,fournisseur:'AquaPharma Meknès'},
+  {id:'D3',x:450,y:180,w:80,h:50,zone:'temperee',name:'Talc pharmaceutique',ref:'EXC-007',qty:60,max:200,unit:'kg',methode:'Réappro. fixe',pc:50,qec:150,fournisseur:'MineralChem Casa'},
+  {id:'D4',x:450,y:240,w:80,h:50,zone:'froide',name:'Colorants certifiés',ref:'API-005',qty:12,max:80,unit:'kg',methode:'Point de commande',pc:20,qec:50,fournisseur:'EuroPharma Import'},
+  {id:'D5',x:450,y:300,w:80,h:50,zone:'temperee',name:'Arômes alimentaires',ref:'EXC-008',qty:35,max:120,unit:'kg',methode:'Point de commande',pc:30,qec:80,fournisseur:'FlavorTech Fès'},
+
+  {id:'E1',x:590,y:60,w:80,h:50,zone:'seche',name:'Film thermoformable',ref:'COND-008',qty:18000,max:40000,unit:'m',methode:'Réappro. fixe',pc:10000,qec:20000,fournisseur:'PackPharma Tanger'},
+  {id:'E2',x:590,y:120,w:80,h:50,zone:'seche',name:'Rubans aluminium',ref:'COND-009',qty:22000,max:35000,unit:'m',methode:'Réappro. fixe',pc:8000,qec:15000,fournisseur:'PackPharma Tanger'},
+  {id:'E3',x:590,y:180,w:80,h:50,zone:'temperee',name:'Polyéthylène glycol',ref:'EXC-009',qty:310,max:400,unit:'kg',methode:'Recomplètement',pc:80,qec:200,fournisseur:'ChemPharma Casa'},
+  {id:'E4',x:590,y:240,w:80,h:50,zone:'temperee',name:'Propylène glycol',ref:'EXC-010',qty:55,max:300,unit:'L',methode:'Point de commande',pc:75,qec:180,fournisseur:'ChemPharma Casa'},
+  {id:'E5',x:590,y:300,w:80,h:50,zone:'seche',name:'Coton absorbant',ref:'COND-010',qty:1200,max:5000,unit:'rouleaux',methode:'Réappro. fixe',pc:1000,qec:3000,fournisseur:'MedSupply Meknès'},
+];
+
+function getPct(s){return s.qty/s.max;}
+function getColor(s,filter){
+  const p=getPct(s);
+  const hidden=filter!=='all'&&((filter==='critique'&&p>=0.2)||(filter==='alerte'&&(p<0.2||p>=0.5))||(filter==='normal'&&p<0.5));
+  if(hidden)return{fill:'#D3D1C7',stroke:'#B4B2A9',text:'#888780'};
+  if(p<0.2)return{fill:'#FCEBEB',stroke:'#E24B4A',text:'#A32D2D'};
+  if(p<0.5)return{fill:'#FAEEDA',stroke:'#EF9F27',text:'#854F0B'};
+  if(p<0.8)return{fill:'#EAF3DE',stroke:'#639922',text:'#3B6D11'};
+  return{fill:'#E6F1FB',stroke:'#185FA5',text:'#0C447C'};
+}
+
+const zoneBoxes=[
+  {x:10,y:30,w:120,h:290,label:'Zone froide\n2–8°C',color:'#E6F1FB',stroke:'#85B7EB',tc:'#0C447C'},
+  {x:150,y:30,w:120,h:350,label:'Zone tempérée\n15–25°C',color:'#E1F5EE',stroke:'#5DCAA5',tc:'#085041'},
+  {x:290,y:30,w:120,h:420,label:'Zone sèche\nconditionnement',color:'#FAEEDA',stroke:'#EF9F27',tc:'#854F0B'},
+  {x:430,y:30,w:120,h:350,label:'Zone mixte\nB & C',color:'#EEEDFE',stroke:'#AFA9EC',tc:'#3C3489'},
+  {x:570,y:30,w:120,h:350,label:'Zone cond.\navancée',color:'#FAEEDA',stroke:'#EF9F27',tc:'#854F0B'},
+];
+
+const structures=[
+  {x:700,y:30,w:110,h:120,label:'Réception\nmarchandises',color:'#F1EFE8',stroke:'#888780',tc:'#444441'},
+  {x:700,y:170,w:110,h:120,label:'Zone\nexpédition',color:'#F1EFE8',stroke:'#888780',tc:'#444441'},
+  {x:700,y:310,w:110,h:80,label:'Bureau\nmagasinier',color:'#F1EFE8',stroke:'#888780',tc:'#444441'},
+  {x:10,y:340,w:260,h:60,label:'Allée principale A',color:'#F1EFE8',stroke:'#B4B2A9',tc:'#5F5E5A'},
+  {x:10,y:410,w:680,h:40,label:'Allée de dégagement',color:'#F1EFE8',stroke:'#B4B2A9',tc:'#5F5E5A'},
+  {x:10,y:460,w:680,h:50,label:'Zone de preparation des commandes / QC entrée',color:'#F1EFE8',stroke:'#888780',tc:'#444441'},
+];
+
+let currentFilter='all';
+let selected=null;
+
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.btn-filter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  draw();
+}
+
+const canvas=document.getElementById('wh');
+const ctx=canvas.getContext('2d');
+
+function drawRoundRect(x,y,w,h,r,fill,stroke){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+  ctx.fillStyle=fill;ctx.fill();
+  ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#F8F7F4';
+  ctx.fillRect(0,0,W,H);
+
+  zoneBoxes.forEach(z=>{
+    drawRoundRect(z.x,z.y,z.w,z.h,6,z.color,z.stroke);
+    ctx.fillStyle=z.tc;ctx.font='500 10px sans-serif';ctx.textAlign='center';
+    const lines=z.label.split('\n');
+    lines.forEach((l,i)=>ctx.fillText(l,z.x+z.w/2,z.y+14+i*13));
+  });
+
+  structures.forEach(s=>{
+    drawRoundRect(s.x,s.y,s.w,s.h,4,s.color,s.stroke);
+    ctx.fillStyle=s.tc;ctx.font='11px sans-serif';ctx.textAlign='center';
+    const lines=s.label.split('\n');
+    const cy=s.y+s.h/2-(lines.length-1)*7;
+    lines.forEach((l,i)=>ctx.fillText(l,s.x+s.w/2,cy+i*14));
+  });
+
+  slots.forEach(s=>{
+    const c=getColor(s,currentFilter);
+    const pct=getPct(s);
+    const isSelected=selected&&selected.id===s.id;
+    drawRoundRect(s.x,s.y,s.w,s.h,4,c.fill,isSelected?'#185FA5':c.stroke);
+    if(isSelected){ctx.lineWidth=2;ctx.strokeStyle='#185FA5';ctx.stroke();ctx.lineWidth=1;}
+
+    const barH=6,barY=s.y+s.h-10,barX=s.x+4,barW=s.w-8;
+    ctx.fillStyle='#D3D1C7';
+    drawRoundRect(barX,barY,barW,barH,3,'#D3D1C7','#D3D1C7');
+    const fillW=Math.max(4,barW*pct);
+    const barFill=pct<0.2?'#E24B4A':pct<0.5?'#EF9F27':pct<0.8?'#639922':'#185FA5';
+    drawRoundRect(barX,barY,fillW,barH,3,barFill,barFill);
+
+    ctx.fillStyle=c.text;ctx.font='500 9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(s.id,s.x+s.w/2,s.y+13);
+    ctx.font='9px sans-serif';ctx.fillStyle=c.text;
+    const nm=s.name.length>14?s.name.substring(0,13)+'…':s.name;
+    ctx.fillText(nm,s.x+s.w/2,s.y+25);
+    ctx.font='500 9px sans-serif';
+    ctx.fillText(Math.round(pct*100)+'%',s.x+s.w/2,s.y+38);
+  });
+
+  ctx.fillStyle='#888780';ctx.font='10px sans-serif';ctx.textAlign='left';
+  ctx.fillText('MediCare Industries — Magasin central MP | Plan vue de dessus',10,515);
+}
+
+canvas.addEventListener('click',function(e){
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=W/rect.width,scaleY=H/rect.height;
+  const mx=(e.clientX-rect.left)*scaleX,my=(e.clientY-rect.top)*scaleY;
+  let found=null;
+  slots.forEach(s=>{if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y&&my<=s.y+s.h)found=s;});
+  selected=found;
+  draw();
+  const panel=document.getElementById('info-panel');
+  if(!found){
+    panel.innerHTML='<div class="info-hint">Cliquez sur un emplacement pour afficher les détails du produit stocké.</div>';
+    return;
+  }
+  const pct=getPct(found);
+  const pctR=Math.round(pct*100);
+  const statColor=pct<0.2?'#A32D2D':pct<0.5?'#854F0B':'#3B6D11';
+  const statBg=pct<0.2?'#FCEBEB':pct<0.5?'#FAEEDA':'#EAF3DE';
+  const statLabel=pct<0.2?'Critique':pct<0.5?'Alerte':'Normal';
+  const alerte=found.qty<=found.pc?'<span style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:2px 8px;border-radius:99px;margin-left:8px;">Commande à déclencher</span>':'';
+  panel.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <div class="info-title">${found.name} — ${found.ref}</div>
+      <span style="font-size:11px;background:${statBg};color:${statColor};padding:2px 8px;border-radius:99px;">${statLabel}</span>
+      ${alerte}
+    </div>
+    <div class="info-grid">
+      <div class="info-kpi"><div class="info-kpi-label">Stock actuel</div><div class="info-kpi-val">${found.qty.toLocaleString()} ${found.unit}</div></div>
+      <div class="info-kpi"><div class="info-kpi-label">Stock max</div><div class="info-kpi-val">${found.max.toLocaleString()} ${found.unit}</div></div>
+      <div class="info-kpi"><div class="info-kpi-label">Taux de remplissage</div><div class="info-kpi-val" style="color:${statColor};">${pctR}%</div></div>
+      <div class="info-kpi"><div class="info-kpi-label">Point de commande</div><div class="info-kpi-val">${found.pc.toLocaleString()} ${found.unit}</div></div>
+      <div class="info-kpi"><div class="info-kpi-label">QEC / lot</div><div class="info-kpi-val">${found.qec.toLocaleString()} ${found.unit}</div></div>
+      <div class="info-kpi"><div class="info-kpi-label">Méthode appro.</div><div class="info-kpi-val" style="font-size:13px;">${found.methode}</div></div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--color-text-secondary);">Fournisseur : <span style="color:var(--color-text-primary);font-weight:500;">${found.fournisseur}</span> &nbsp;·&nbsp; Emplacement : <span style="color:var(--color-text-primary);font-weight:500;">${found.id}</span> &nbsp;·&nbsp; Zone : <span style="color:var(--color-text-primary);font-weight:500;">${found.zone}</span></div>
+  `;
+});
+
+draw();
+</script>

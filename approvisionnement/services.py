@@ -11,178 +11,249 @@ from produits.models import MatierePremiere
 from .models import BonCommande
 
 
-class CalculReapproFixe:
+class PlanificateurService:
     """
-    Méthode REAPPRO_FIXE : commande de quantité Q fixe à période T fixe.
-    On commande toujours la QEC (quantité économique).
+    Service central du planificateur d'approvisionnement.
+    Analyse les matières selon leur méthode d'approvisionnement et génère des propositions.
+    Intègre une logique anti-doublon basée sur cle_deduplication.
     """
 
     @staticmethod
-    def generer_bons(utilisateur=None):
-        """
-        Parcourt toutes les matières en REAPPRO_FIXE dont la date
-        de réapprovisionnement est atteinte, et génère un BonCommande.
-        Retourne la liste des bons créés.
-        """
-        bons = []
+    def run_planificateur(utilisateur=None):
+        import datetime
+        from decimal import Decimal
+        from django.utils import timezone
+        
+        # Le statut MANUEL ou MRP n'est pas traité ici (MRP a son propre simulateur, Manuel est... manuel)
+        # Mais on peut inclure MRP s'il génère des ruptures globales sans nomenclature spécifique.
+        matieres = MatierePremiere.objects.filter(
+            actif=True, 
+            fournisseur_principal__isnull=False
+        )
+        
+        resultats = {
+            "created": 0,
+            "updated": 0,
+            "skipped": 0,
+            "errors": []
+        }
+        
         aujourd_hui = timezone.now().date()
-        matieres = MatierePremiere.objects.filter(
-            methode_approvisionnement=MatierePremiere.MethodeApprovisionnement.REAPPRO_FIXE,
-            actif=True,
-            fournisseur_principal__isnull=False,
-        )
+        
         for m in matieres:
-            # Commande si stock inférieur au point de commande
-            if m.stock_actuel <= m.point_commande:
-                qte = m.qec if m.qec > 0 else m.stock_maximum - m.stock_actuel
-                bon = BonCommande.objects.create(
-                    matiere=m,
-                    fournisseur=m.fournisseur_principal,
-                    quantite_commandee=qte,
-                    prix_unitaire=m.prix_unitaire,
-                    methode_declenchement=BonCommande.MethodeDeclenchement.REAPPRO_FIXE,
-                    statut=BonCommande.Statut.BROUILLON,
-                    cree_par=utilisateur,
-                )
-                bons.append(bon)
-        return bons
+            try:
+                methode = m.methode_approvisionnement
+                qte_proposee = 0
+                date_besoin = aujourd_hui
+                periode_cle = ""
+                
+                if methode == MatierePremiere.MethodeApprovisionnement.POINT_COMMANDE:
+                    if m.stock_actuel <= m.point_commande:
+                        qte_proposee = m.qec if m.qec > 0 else (m.stock_maximum - m.stock_actuel)
+                        if qte_proposee <= 0: qte_proposee = m.lot_minimum or 1
+                        iso_year, iso_week, _ = aujourd_hui.isocalendar()
+                        periode_cle = f"{iso_year}-W{iso_week:02d}"
+                    else:
+                        continue
+                        
+                elif methode == MatierePremiere.MethodeApprovisionnement.REAPPRO_FIXE:
+                    dernier_bc = BonCommande.objects.filter(
+                        matiere=m, 
+                        statut__in=[BonCommande.Statut.VALIDEE, BonCommande.Statut.ENVOYE, BonCommande.Statut.CONFIRME]
+                    ).order_by('-date_creation').first()
+                    
+                    if dernier_bc and m.periode_reapprovisionnement:
+                        date_prochaine = dernier_bc.date_creation.date() + datetime.timedelta(days=m.periode_reapprovisionnement)
+                        if aujourd_hui < date_prochaine:
+                            continue
+                    
+                    qte_proposee = m.qec if m.qec > 0 else (m.stock_maximum - m.stock_actuel)
+                    if qte_proposee <= 0: qte_proposee = m.lot_minimum or 1
+                    periode_cle = f"{aujourd_hui.year}-{aujourd_hui.month:02d}"
+                    
+                elif methode == MatierePremiere.MethodeApprovisionnement.RECOMPLETEMENT:
+                    qte_proposee = m.stock_maximum - m.stock_actuel
+                    # Déduire les commandes en cours ?
+                    cmd_en_cours = BonCommande.objects.filter(
+                        matiere=m, 
+                        statut__in=[BonCommande.Statut.VALIDEE, BonCommande.Statut.ENVOYE, BonCommande.Statut.CONFIRME]
+                    ).aggregate(total=models.Sum('quantite_commandee'))['total'] or 0
+                    
+                    qte_proposee -= Decimal(str(cmd_en_cours))
+                    
+                    if qte_proposee <= 0:
+                        continue
+                    periode_cle = f"{aujourd_hui.year}-{aujourd_hui.month:02d}"
+                    
+                elif methode == MatierePremiere.MethodeApprovisionnement.MRP:
+                    # Traitement basique hors-simulateur (pour les ruptures directes sur stock minimum)
+                    if m.stock_actuel <= m.stock_minimum:
+                        qte_proposee = m.qec if m.qec > 0 else (m.stock_maximum - m.stock_actuel)
+                        if qte_proposee <= 0: qte_proposee = m.lot_minimum or 1
+                        periode_cle = f"{aujourd_hui.strftime('%Y-%m-%d')}"
+                    else:
+                        continue
+                else:
+                    continue
+                    
+                if qte_proposee <= 0:
+                    continue
+                    
+                # Format de la clé : ID-METHODE-PERIODE
+                cle_dedup = f"{m.pk}-{methode}-{periode_cle}"
+                
+                # Check si un BC existant couvre déjà ce besoin (pour les 15 derniers jours)
+                bc_existants = BonCommande.objects.filter(
+                    matiere=m, 
+                    statut__in=[BonCommande.Statut.BROUILLON, BonCommande.Statut.ENVOYE, BonCommande.Statut.CONFIRME],
+                    date_creation__gte=timezone.now() - datetime.timedelta(days=15)
+                ).exists()
+                
+                if bc_existants:
+                    resultats["skipped"] += 1
+                    continue
+                
+                from .models import PropositionCommande
+                
+                # Ignorer si rejeté récemment (7 jours)
+                anciennes_rejetees = PropositionCommande.objects.filter(
+                    cle_deduplication=cle_dedup,
+                    statut=PropositionCommande.Statut.REJETEE,
+                    date_generation__gte=timezone.now() - datetime.timedelta(days=7)
+                ).exists()
+                
+                if anciennes_rejetees:
+                    resultats["skipped"] += 1
+                    continue
+                
+                # Mettre à jour si en attente, sinon créer
+                prop_existante = PropositionCommande.objects.filter(
+                    cle_deduplication=cle_dedup,
+                    statut=PropositionCommande.Statut.EN_ATTENTE
+                ).first()
+                
+                if prop_existante:
+                    nouvelle_qte = Decimal(str(round(qte_proposee, 4)))
+                    if prop_existante.quantite_proposee != nouvelle_qte:
+                        prop_existante.quantite_proposee = nouvelle_qte
+                        prop_existante.detail_calcul["updated_at"] = aujourd_hui.isoformat()
+                        prop_existante.save(update_fields=['quantite_proposee', 'detail_calcul'])
+                        resultats["updated"] += 1
+                    else:
+                        resultats["skipped"] += 1
+                else:
+                    PropositionCommande.objects.create(
+                        matiere=m,
+                        fournisseur=m.fournisseur_principal,
+                        methode=methode,
+                        cle_deduplication=cle_dedup,
+                        quantite_proposee=Decimal(str(round(qte_proposee, 4))),
+                        urgence=(m.stock_actuel <= 0),
+                        date_besoin=date_besoin,
+                        statut=PropositionCommande.Statut.EN_ATTENTE,
+                        detail_calcul={
+                            "stock_actuel": float(m.stock_actuel),
+                            "point_commande": float(m.point_commande) if m.point_commande else None,
+                            "stock_max": float(m.stock_maximum) if m.stock_maximum else None,
+                            "generateur": "Planificateur automatique"
+                        }
+                    )
+                    resultats["created"] += 1
+                    
+            except Exception as e:
+                resultats["errors"].append(f"{m.reference}: {str(e)}")
+                
+        return resultats
 
 
-class CalculPointCommande:
+class ExplosionBesoinsMRP:
     """
-    Méthode POINT_COMMANDE (ROP) :
-    Déclenche une commande quand stock <= ROP.
-    ROP = Consommation Journalière Moyenne × Délai + Stock Sécurité
-    QEC = √(2 × D × K / (h × Pu))  [Wilson]
+    Service d'explosion de nomenclature (BOM Explosion).
+    Calcule les besoins en matières premières pour une production de PF donnée.
     """
 
     @staticmethod
-    def calculer_qec(
-        demande_annuelle: float,
-        cout_passation: float,
-        cout_possession_pct: float,
-        prix_unitaire: float,
-    ) -> float:
-        """Formule de Wilson."""
-        h = cout_possession_pct * prix_unitaire
-        if h <= 0 or prix_unitaire <= 0:
+    def calculer(produit_fini, quantite_a_produire):
+        """
+        Retourne une liste de dicts contenant les calculs MRP pour chaque composant.
+        """
+        resultats = []
+        nomenclature_active = produit_fini.nomenclatures.filter(actif=True).first()
+        
+        if not nomenclature_active:
+            return resultats
+            
+        lignes = nomenclature_active.lignes.select_related("matiere", "matiere__unite")
+        
+        q_prod = float(quantite_a_produire)
+
+        for nom in lignes:
+            m = nom.matiere
+            
+            # 1. Besoin Brut (BB)
+            bb = q_prod * float(nom.quantite_par_unite)
+            
+            # 2. Besoin Ajusté (BA) avec taux de rebut (matière + nomenclature)
+            taux_total = float(m.taux_rebut) + float(nom.taux_perte)
+            ba = bb / (1 - taux_total) if taux_total < 1 else bb
+            
+            stock_dispo = float(m.stock_actuel)
+            stock_ratio = (stock_dispo / ba * 100) if ba > 0 else 100
+            
+            if m.methode_approvisionnement != 'MRP':
+                bn = max(0.0, ba - stock_dispo)
+                qp = 0.0
+                statut = "NON_MRP"
+            else:
+                # 3. Besoin Net (BN) = BA - Stock Actuel
+                bn = max(0.0, ba - stock_dispo)
+                
+                # 4. Quantité Proposée (QP) avec lotissement
+                qp = ExplosionBesoinsMRP.ajuster_par_lots(bn, m)
+                
+                # 5. Détermination du statut
+                if stock_dispo >= ba:
+                    statut = "SUFFISANT"
+                elif stock_dispo > 0:
+                    statut = "A_COMMANDER"
+                elif bn > 0:
+                    statut = "RUPTURE"
+                else:
+                    statut = "CRITIQUE"
+
+            resultats.append({
+                "matiere": m,
+                "besoin_brut": round(bb, 4),
+                "besoin_ajuste": round(ba, 4),
+                "besoin_net": round(bn, 4),
+                "quantite_proposee": round(qp, 4),
+                "stock_actuel": stock_dispo,
+                "stock_ratio": round(min(100.0, stock_ratio), 1),
+                "statut": statut,
+                "unite": m.unite.symbole if m.unite else "",
+                "bloquant": stock_dispo < ba and nom.obligatoire,
+            })
+            
+        return resultats
+
+    @staticmethod
+    def ajuster_par_lots(quantite, matiere):
+        """Applique les règles de lot minimum et de multiple de lot."""
+        if quantite <= 0:
             return 0.0
-        return math.sqrt(2 * demande_annuelle * cout_passation / h)
-
-    @staticmethod
-    def generer_bons(utilisateur=None):
-        bons = []
-        matieres = MatierePremiere.objects.filter(
-            methode_approvisionnement=MatierePremiere.MethodeApprovisionnement.POINT_COMMANDE,
-            actif=True,
-            fournisseur_principal__isnull=False,
-        )
-        for m in matieres:
-            if m.stock_actuel <= m.point_commande:
-                qte = m.qec if m.qec > 0 else (m.stock_maximum - m.stock_actuel)
-                bon = BonCommande.objects.create(
-                    matiere=m,
-                    fournisseur=m.fournisseur_principal,
-                    quantite_commandee=qte,
-                    prix_unitaire=m.prix_unitaire,
-                    methode_declenchement=BonCommande.MethodeDeclenchement.POINT_COMMANDE,
-                    statut=BonCommande.Statut.BROUILLON,
-                    cree_par=utilisateur,
-                )
-                bons.append(bon)
-        return bons
-
-
-class CalculRecompletement:
-    """
-    Méthode RECOMPLETEMENT (S, T) — Révision périodique.
-    À chaque période T, on commande : S - stock_actuel
-    Stock cible S = CJM × (T + L) + SS
-    """
-
-    @staticmethod
-    def calculer_stock_cible(
-        consommation_journaliere: float,
-        periode_jours: int,
-        delai_livraison_jours: int,
-        stock_securite: float,
-    ) -> float:
-        return consommation_journaliere * (periode_jours + delai_livraison_jours) + stock_securite
-
-    @staticmethod
-    def generer_bons(utilisateur=None):
-        bons = []
-        matieres = MatierePremiere.objects.filter(
-            methode_approvisionnement=MatierePremiere.MethodeApprovisionnement.RECOMPLETEMENT,
-            actif=True,
-            fournisseur_principal__isnull=False,
-        )
-        for m in matieres:
-            qte = m.stock_maximum - m.stock_actuel
-            if qte > 0:
-                bon = BonCommande.objects.create(
-                    matiere=m,
-                    fournisseur=m.fournisseur_principal,
-                    quantite_commandee=qte,
-                    prix_unitaire=m.prix_unitaire,
-                    methode_declenchement=BonCommande.MethodeDeclenchement.RECOMPLETEMENT,
-                    statut=BonCommande.Statut.BROUILLON,
-                    cree_par=utilisateur,
-                )
-                bons.append(bon)
-        return bons
-
-
-class CalculMRP:
-    """
-    Méthode MRP (Material Requirements Planning).
-    Calcul : BN = max(0, BB - Stock_début - Réceptions)
-    QP = BN / (1 - taux_rebut)
-    """
-
-    @staticmethod
-    def calculer_besoin_net(
-        besoin_brut: float,
-        stock_debut: float,
-        receptions_prevues: float = 0,
-    ) -> float:
-        return max(0.0, besoin_brut - stock_debut - receptions_prevues)
-
-    @staticmethod
-    def calculer_quantite_proposee(besoin_net: float, taux_rebut: float = 0) -> float:
-        if taux_rebut >= 1:
-            return besoin_net
-        return besoin_net / (1 - taux_rebut) if besoin_net > 0 else 0
-
-    @staticmethod
-    def executer_plan(matieres=None, utilisateur=None):
-        """
-        Crée les lignes BonCommande pour toutes les matières en méthode MRP
-        dont le besoin net est positif.
-        """
-        from .models import PlanMRP
-        bons = []
-        if matieres is None:
-            matieres = MatierePremiere.objects.filter(
-                methode_approvisionnement=MatierePremiere.MethodeApprovisionnement.MRP,
-                actif=True,
-                fournisseur_principal__isnull=False,
-            )
-        for m in matieres:
-            bn = CalculMRP.calculer_besoin_net(
-                besoin_brut=float(m.stock_minimum),
-                stock_debut=float(m.stock_actuel),
-            )
-            qp = CalculMRP.calculer_quantite_proposee(bn, float(m.taux_rebut))
-            if qp > 0:
-                bon = BonCommande.objects.create(
-                    matiere=m,
-                    fournisseur=m.fournisseur_principal,
-                    quantite_commandee=Decimal(str(round(qp, 4))),
-                    prix_unitaire=m.prix_unitaire,
-                    methode_declenchement=BonCommande.MethodeDeclenchement.MRP,
-                    statut=BonCommande.Statut.BROUILLON,
-                    cree_par=utilisateur,
-                )
-                bons.append(bon)
-        return bons
+            
+        res = quantite
+        lot_min = float(matiere.lot_minimum)
+        multiple = float(matiere.multiple_lot)
+        
+        # Appliquer lot minimum
+        if lot_min > 0 and res < lot_min:
+            res = lot_min
+            
+        # Appliquer multiple
+        if multiple > 0:
+            import math
+            nb_lots = math.ceil(res / multiple)
+            res = nb_lots * multiple
+            
+        return res
