@@ -1,6 +1,7 @@
 """
 mouvements/models.py
-MediCare Industries — Modèle : MouvementStock
+MediCare Industries — Modèle : 
+MouvementStock
 """
 
 from django.db import models
@@ -51,7 +52,7 @@ class MouvementStock(models.Model):
         _("Type de mouvement"), max_length=10,
         choices=TypeMouvement.choices
     )
-    quantite        = models.DecimalField(
+    quantite = models.DecimalField(
         _("Quantité mouvementée"), max_digits=14, decimal_places=4,
         validators=[MinValueValidator(0)]
     )
